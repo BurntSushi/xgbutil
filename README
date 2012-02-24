@@ -4,3 +4,5 @@ binding keys, using the EWMH or ICCCM specs with the window manager,
 moving/resizing windows, assigning function callbacks to particular events, 
 etc.
 
+Test.
+
