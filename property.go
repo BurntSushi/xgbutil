@@ -8,7 +8,7 @@
 package xgbutil
 
 import (
-    "fmt"
+    // "fmt" 
 
     "code.google.com/p/x-go-binding/xgb"
 )
@@ -76,7 +76,6 @@ func PropValNums(reply *xgb.GetPropertyReply) []uint32 {
 // Useful when the property value is a null terminated string represented
 // by integers. Also must be 8 bit format.
 func PropValStr(reply *xgb.GetPropertyReply) string {
-    fmt.Println(reply)
     if reply.Format != 8 {
         panic(perr("PropValStr: Expected format 8 but got %d", reply.Format))
     }

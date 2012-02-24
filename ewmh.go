@@ -41,22 +41,39 @@ import (
 )
 
 // _NET_ACTIVE_WINDOW
-func (c *XUtil) Ewmh_active_window() xgb.Id {
+func (c *XUtil) EwmhActiveWindow() xgb.Id {
     return PropValId(c.GetProperty(c.root, "_NET_ACTIVE_WINDOW"))
 }
 
+// _NET_ACTIVE_WINDOW
+func (c *XUtil) EwmhActiveWindowRequest(win xgb.Id) {
+    evMask := (xgb.EventMaskSubstructureNotify |
+               xgb.EventMaskSubstructureRedirect)
+    data := make([]byte, 32)
+
+    data[0] = xgb.ClientMessage
+    data[1] = 32
+    put32(data[4:], uint32(win))
+    put32(data[8:], uint32(c.Atm("_NET_ACTIVE_WINDOW")))
+    put32(data[12:], 1)
+    put32(data[16:], 0)
+    put32(data[20:], 0)
+
+    c.conn.SendEvent(false, c.root, uint32(evMask), data)
+}
+
 // _NET_CLIENT_LIST
-func (c *XUtil) Ewmh_client_list() []xgb.Id {
+func (c *XUtil) EwmhClientList() []xgb.Id {
     return PropValIds(c.GetProperty(c.root, "_NET_CLIENT_LIST"))
 }
 
 // _NET_CURRENT_DESKTOP
-func (c *XUtil) Ewmh_current_desktop() uint32 {
+func (c *XUtil) EwmhCurrentDesktop() uint32 {
     return PropValNum(c.GetProperty(c.root, "_NET_CURRENT_DESKTOP"))
 }
 
 // _NET_CURRENT_DESKTOP
-func (c *XUtil) Ewmh_current_desktop_set(desk uint32) {
+func (c *XUtil) EwmhCurrentDesktopSet(desk uint32) {
     data := make([]byte, 4)
     put32(data, desk)
     c.conn.ChangeProperty(xgb.PropModeReplace, c.root,
@@ -65,7 +82,7 @@ func (c *XUtil) Ewmh_current_desktop_set(desk uint32) {
 }
 
 // _NET_DESKTOP_NAMES
-func (c *XUtil) Ewmh_desktop_names() []string {
+func (c *XUtil) EwmhDesktopNames() []string {
     return PropValStrs(c.GetProperty(c.root, "_NET_DESKTOP_NAMES"))
 }
 
@@ -77,14 +94,14 @@ type DesktopGeometry struct {
 }
 
 // _NET_DESKTOP_GEOMETRY
-func (c *XUtil) Ewmh_desktop_geometry() DesktopGeometry {
+func (c *XUtil) EwmhDesktopGeometry() DesktopGeometry {
     geom := PropValNums(c.GetProperty(c.root, "_NET_DESKTOP_GEOMETRY"))
 
     return DesktopGeometry{Width: geom[0], Height: geom[1]}
 }
 
 // _NET_WM_NAME
-func (c *XUtil) Ewmh_wm_name(win xgb.Id) string {
+func (c *XUtil) EwmhWmName(win xgb.Id) string {
     return PropValStr(c.GetProperty(win, "_NET_WM_NAME"))
 }
 
