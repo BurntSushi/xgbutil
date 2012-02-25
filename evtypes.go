@@ -38,22 +38,38 @@ type ClientMessageEvent struct {
 // Right now, this function only supports a list of up to 5 uint32s.
 // XXX: Use type assertions to support bytes and uint16s.
 func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
-                      data ...uint32) (cm *ClientMessageEvent) {
+                      data ...interface{}) (cm *ClientMessageEvent) {
     // Create the client data list first
     clientData := new(xgb.ClientMessageData)
 
     // Don't support formats 8 or 16 yet. They aren't used in EWMH anyway.
     switch Format {
     case 8:
-        panic(perr("NewClientMessage: Format 8 not implemented."))
+        // copy(clientData.Data8[:], data.([]byte)) 
+        // Using a loop here instead of a straight copy because
+        // it appears I can't use type assertions like 'data.([]byte)'.
+        // I'm still on my second day with Go, so I'm not sure why that is yet.
+        for i := 0; i < 20; i++ {
+            if i >= len(data) {
+                clientData.Data8[i] = 0
+            } else {
+                clientData.Data8[i] = data[i].(byte)
+            }
+        }
     case 16:
-        panic(perr("NewClientMessage: Format 16 not implemented."))
+        for i := 0; i < 10; i++ {
+            if i >= len(data) {
+                clientData.Data16[i] = 0
+            } else {
+                clientData.Data16[i] = data[i].(uint16)
+            }
+        }
     case 32:
         for i := 0; i < 5; i++ {
             if i >= len(data) {
                 clientData.Data32[i] = 0
             } else {
-                clientData.Data32[i] = data[i]
+                clientData.Data32[i] = data[i].(uint32)
             }
         }
     default:
