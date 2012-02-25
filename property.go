@@ -13,6 +13,40 @@ import (
     "code.google.com/p/x-go-binding/xgb"
 )
 
+// GetProperty abstracts the messiness of calling xgb.GetProperty.
+func (xu *XUtil) GetProperty(win xgb.Id, atom string) (*xgb.GetPropertyReply) {
+    reply, err := xu.conn.GetProperty(false, win, xu.Atm(atom),
+                                      xgb.GetPropertyTypeAny, 0, (1 << 32) - 1)
+
+    if err != nil {
+        panic(perr("Error retrieving property '%s' on window %x: %v",
+                   atom, win, err))
+    }
+
+    return reply
+}
+
+// ChangeProperty abstracts the semi-nastiness of xgb.ChangeProperty.
+func (xu *XUtil) ChangeProperty(win xgb.Id, format byte, prop string,
+                                typ string, data []byte) {
+    xu.conn.ChangeProperty(xgb.PropModeReplace, win, xu.Atm(prop),
+                           xu.Atm(typ), format, data)
+}
+
+// ChangeProperty32 makes changing 32 bit formatted properties easier
+// by constructing the raw X data for you.
+func (xu *XUtil) ChangeProperty32(win xgb.Id, prop string, typ string,
+                                  data ...uint32) {
+    var buf []byte
+
+    buf = make([]byte, len(data) * 4)
+    for i, datum := range data {
+        put32(buf[(i * 4):], datum)
+    }
+
+    xu.ChangeProperty(win, 32, prop, typ, buf)
+}
+
 // PropValId transforms a GetPropertyReply struct into an X resource
 // identifier (typically a window id). 
 // The property reply must be in 32 bit format.
