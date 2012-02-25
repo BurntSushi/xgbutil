@@ -4,5 +4,6 @@ binding keys, using the EWMH or ICCCM specs with the window manager,
 moving/resizing windows, assigning function callbacks to particular events, 
 etc.
 
-Test.
+Much of the functionality found in this package is a very close port to my
+other project, xpybutil.
 
