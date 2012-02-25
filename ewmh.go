@@ -10,13 +10,18 @@
 
     Here is the naming scheme using "_NET_ACTIVE_WINDOW" as an example.
 
-    Methods "Ewmh_active_window" and "Ewmh_active_window_set" get and set the
+    Methods "EwmhActiveWindow" and "EwmhActiveWindowSet" get and set the
     property, respectively. Both of these methods exist for all EWMH properties.
     Additionally, some EWMH properties support sending a client message event
     to request the window manager perform some action. In the case of
     "_NET_ACTIVE_WINDOW", this request is used to set the active window.
-    These sorts of methods end in "_request". So for "_NET_ACTIVE_WINDOW",
-    the method name is "Ewmh_active_window_request".
+    These sorts of methods end in "Req". So for "_NET_ACTIVE_WINDOW",
+    the method name is "EwmhActiveWindowReq". Moreover, most requests include
+    various parameters that don't need to be changed often (like the source
+    indication). Thus, by default, methods ending in "Req" force these to
+    sensible defaults. If you need access to all of the parameters, use the
+    corresponding "ReqExtra" method. So for "_NET_ACTIVE_WINDOW", that would
+    be "EwmhActiveWindowReqExtra".
 
     For properties that store more than just a simple integer, name or list
     of integers, structs have been created and exposed to organized the
@@ -41,49 +46,57 @@ import (
 )
 
 // _NET_ACTIVE_WINDOW
-func (c *XUtil) EwmhActiveWindow() xgb.Id {
-    return PropValId(c.GetProperty(c.root, "_NET_ACTIVE_WINDOW"))
+func (xu *XUtil) EwmhActiveWindow() xgb.Id {
+    return PropValId(xu.GetProperty(xu.root, "_NET_ACTIVE_WINDOW"))
 }
 
 // _NET_ACTIVE_WINDOW
-func (c *XUtil) EwmhActiveWindowRequest(win xgb.Id) {
-    evMask := (xgb.EventMaskSubstructureNotify |
-               xgb.EventMaskSubstructureRedirect)
-    data := make([]byte, 32)
+func (xu *XUtil) EwmhActiveWindowReq(win xgb.Id) {
+    xu.EwmhActiveWindowReqExtra(win, 2, 0, 0)
+}
 
-    data[0] = xgb.ClientMessage
-    data[1] = 32
-    put32(data[4:], uint32(win))
-    put32(data[8:], uint32(c.Atm("_NET_ACTIVE_WINDOW")))
-    put32(data[12:], 1)
-    put32(data[16:], 0)
-    put32(data[20:], 0)
-
-    c.conn.SendEvent(false, c.root, uint32(evMask), data)
+// _NET_ACTIVE_WINDOW
+func (xu *XUtil) EwmhActiveWindowReqExtra(win xgb.Id, source uint32,
+                                          time xgb.Timestamp,
+                                          current_active xgb.Id) {
+    cm := NewClientMessage(32, win, xu.Atm("_NET_ACTIVE_WINDOW"), source,
+                           uint32(time), uint32(current_active))
+    xu.SendRootEvent(cm)
 }
 
 // _NET_CLIENT_LIST
-func (c *XUtil) EwmhClientList() []xgb.Id {
-    return PropValIds(c.GetProperty(c.root, "_NET_CLIENT_LIST"))
+func (xu *XUtil) EwmhClientList() []xgb.Id {
+    return PropValIds(xu.GetProperty(xu.root, "_NET_CLIENT_LIST"))
 }
 
 // _NET_CURRENT_DESKTOP
-func (c *XUtil) EwmhCurrentDesktop() uint32 {
-    return PropValNum(c.GetProperty(c.root, "_NET_CURRENT_DESKTOP"))
+func (xu *XUtil) EwmhCurrentDesktop() uint32 {
+    return PropValNum(xu.GetProperty(xu.root, "_NET_CURRENT_DESKTOP"))
 }
 
 // _NET_CURRENT_DESKTOP
-func (c *XUtil) EwmhCurrentDesktopSet(desk uint32) {
-    data := make([]byte, 4)
-    put32(data, desk)
-    c.conn.ChangeProperty(xgb.PropModeReplace, c.root,
-                          c.Atm("_NET_CURRENT_DESKTOP"), xgb.AtomCardinal,
-                          32, data)
+func (xu *XUtil) EwmhCurrentDesktopSet(desk uint32) {
+    xu.ChangeProperty32(xu.root, "_NET_CURRENT_DESKTOP", "CARDINAL", desk)
+    // data := make([]byte, 4) 
+    // put32(data, desk) 
+    // xu.conn.ChangeProperty(xgb.PropModeReplace, xu.root, 
+                           // xu.Atm("_NET_CURRENT_DESKTOP"), xgb.AtomCardinal, 
+                           // 32, data) 
 }
 
 // _NET_DESKTOP_NAMES
-func (c *XUtil) EwmhDesktopNames() []string {
-    return PropValStrs(c.GetProperty(c.root, "_NET_DESKTOP_NAMES"))
+func (xu *XUtil) EwmhDesktopNames() []string {
+    return PropValStrs(xu.GetProperty(xu.root, "_NET_DESKTOP_NAMES"))
+}
+
+// _NET_DESKTOP_NAMES
+func (xu *XUtil) EwmhDesktopNamesSet(names []string) {
+    nullterm := make([]byte, 0)
+    for _, name := range names {
+        nullterm = append(nullterm, name...)
+        nullterm = append(nullterm, 0)
+    }
+    xu.ChangeProperty(xu.root, 8, "_NET_DESKTOP_NAMES", "UTF8_STRING", nullterm)
 }
 
 // DesktopGeometry is a struct that houses the width and height of a
@@ -94,14 +107,19 @@ type DesktopGeometry struct {
 }
 
 // _NET_DESKTOP_GEOMETRY
-func (c *XUtil) EwmhDesktopGeometry() DesktopGeometry {
-    geom := PropValNums(c.GetProperty(c.root, "_NET_DESKTOP_GEOMETRY"))
+func (xu *XUtil) EwmhDesktopGeometry() DesktopGeometry {
+    geom := PropValNums(xu.GetProperty(xu.root, "_NET_DESKTOP_GEOMETRY"))
 
     return DesktopGeometry{Width: geom[0], Height: geom[1]}
 }
 
 // _NET_WM_NAME
-func (c *XUtil) EwmhWmName(win xgb.Id) string {
-    return PropValStr(c.GetProperty(win, "_NET_WM_NAME"))
+func (xu *XUtil) EwmhWmName(win xgb.Id) string {
+    return PropValStr(xu.GetProperty(win, "_NET_WM_NAME"))
+}
+
+// _NET_WM_NAME
+func (xu *XUtil) EwmhWmNameSet(win xgb.Id, name string) {
+    xu.ChangeProperty(win, 8, "_NET_WM_NAME", "UTF8_STRING", []byte(name))
 }
 
