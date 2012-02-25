@@ -4,6 +4,8 @@ import (
     "flag"
     "fmt"
     "image"
+    "image/color"
+    "image/draw"
     "image/png"
     "os"
     "strconv"
@@ -51,8 +53,34 @@ func main() {
         errMsg("Could not write %s", pngdest)
     }
 
-    destImg := image.NewNRGBA(image.Rect(0, 0, neww, newh))
+    destImg := image.NewRGBA(image.Rect(0, 0, neww, newh))
     graphics.Scale(destImg, srcImg)
+
+    // for x := 0; x < destImg.Bounds().Max.X; x++ { 
+        // for y := 0; y < destImg.Bounds().Max.Y; y++ { 
+            // c := destImg.At(x, y).(color.RGBA) 
+            // blah := 0.3 * 0xff 
+            // c.A = uint8(blah) 
+            // destImg.SetRGBA(x, y, c) 
+        // } 
+    // } 
+
+    // finalDest := image.NewRGBA(image.Rect(0, 0, neww, newh)) 
+    // blue := color.RGBA{255, 255, 255, 255} 
+    // draw.Draw(finalDest, finalDest.Bounds(), image.NewUniform(blue), 
+              // image.ZP, draw.Src) 
+
+    // Create a transparency mask
+    mask := image.NewUniform(color.Alpha16{32767})
+
+    // Now blend our scaled image 
+    draw.DrawMask(destImg, destImg.Bounds(), destImg, image.ZP, mask,
+                  image.ZP, draw.Src)
+
     png.Encode(destWriter, destImg)
+
+    fmt.Printf("Type of src: %T\n", srcImg)
+    fmt.Printf("Source opaque? %v\n", srcImg.(*image.RGBA).Opaque())
+    fmt.Printf("Destination opaque? %v\n", destImg.Opaque())
 }
 
