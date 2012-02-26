@@ -7,6 +7,9 @@ import (
     "image/draw"
     "time"
 
+    "io/ioutil"
+    "code.google.com/p/freetype-go/freetype"
+
     "code.google.com/p/x-go-binding/xgb"
     "github.com/BurntSushi/xgbutil"
 )
@@ -26,6 +29,50 @@ func Recovery() {
     if r := recover(); r != nil {
         fmt.Println("ERROR:", r)
         // os.Exit(1) 
+    }
+}
+
+func WriteText(img draw.Image) {
+    // w, h := img.Bounds().Max.X, img.Bounds().Max.Y 
+    text := "Hello, world!"
+    fontFile := "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"
+
+    fontBytes, err := ioutil.ReadFile(fontFile)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+
+    font, err := freetype.ParseFont(fontBytes)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+
+    fg := image.NewUniform(color.RGBA{0xff, 0xff, 0xff, 0xff})
+    // ruler := color.RGBA{0xdd, 0xdd, 0xdd, 0xff} 
+    // rgba := image.NewRGBA(image.Rect(0, 0, w, h)) 
+    c := freetype.NewContext()
+    c.SetDPI(72)
+    c.SetFont(font)
+    c.SetFontSize(14)
+    c.SetClip(img.Bounds())
+    c.SetDst(img)
+    c.SetSrc(fg)
+
+    // Draw the guidelines
+    // for i := 0; i < 200; i++ { 
+        // img.Set(10, 10 + i, ruler) 
+        // img.Set(10 + i, 10, ruler) 
+    // } 
+
+    // Draw the text
+    pt := freetype.Pt(14, 75 + c.FUnitToPixelRU(font.UnitsPerEm()))
+    // pt := freetype.Pt(8, 127) 
+    _, err = c.DrawString(text, pt)
+    if err != nil {
+        fmt.Println(err)
+        return
     }
 }
 
@@ -75,6 +122,9 @@ func main() {
     allBlue := image.NewUniform(color.RGBA{127, 127, 127, 255})
     draw.Draw(dest, dest.Bounds(), allBlue, image.ZP, draw.Src)
     draw.DrawMask(dest, dest.Bounds(), img, image.ZP, mask, image.ZP, draw.Over)
+
+    // Let's try to write some text...
+    WriteText(dest)
 
     // destWriter, err := os.Create("someicon.png") 
     // if err != nil { 
