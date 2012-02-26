@@ -113,6 +113,38 @@ func (xu *XUtil) EwmhDesktopGeometry() DesktopGeometry {
     return DesktopGeometry{Width: geom[0], Height: geom[1]}
 }
 
+// WmIcon is a struct that contains data for a single icon.
+// The EwmhWmIcon method will return a list of these, since a single
+// client can specify multiple icons of varying sizes.
+type WmIcon struct {
+    Width uint32
+    Height uint32
+    Data []uint32
+}
+
+// _NET_WM_ICON
+func (xu *XUtil) EwmhWmIcon(win xgb.Id) []WmIcon {
+    icon := PropValNums(xu.GetProperty(win, "_NET_WM_ICON"))
+
+    wmicons := make([]WmIcon, 0)
+    start := uint32(0)
+    for int(start) < len(icon) {
+        w, h := icon[start], icon[start + 1]
+        upto := w * h
+
+        wmicon := WmIcon{
+            Width: w,
+            Height: h,
+            Data: icon[(start + 2):(start + upto + 2)],
+        }
+        wmicons = append(wmicons, wmicon)
+
+        start += upto + 2
+    }
+
+    return wmicons
+}
+
 // _NET_WM_NAME
 func (xu *XUtil) EwmhWmName(win xgb.Id) string {
     return PropValStr(xu.GetProperty(win, "_NET_WM_NAME"))

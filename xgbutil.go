@@ -20,8 +20,18 @@ type XUtil struct {
     root xgb.Id
 }
 
-// Alias for error printing
-var perr = fmt.Sprintf
+type XError struct {
+    funcName string // some identifier so we know where the error comes from
+    err string // free form string explaining the error
+}
+
+func (xe *XError) String() string {
+    return fmt.Sprintf("%s: %s", xe.funcName, xe.err)
+}
+
+func xerr (funcName string, err string, params ...interface{}) *XError {
+    return &XError{funcName: funcName, err: fmt.Sprintf(err, params...)}
+}
 
 // Dial connects to the X server and creates a new XUtil.
 func Dial(display string) (*XUtil, error) {
@@ -66,7 +76,7 @@ func (xu *XUtil) Atm(name string) (xgb.Id) {
         return aid
     }
 
-    panic(perr("Atom '%s' returned an identifier of 0.", name))
+    panic(xerr("Atm", "'%s' returned an identifier of 0.", name))
 }
 
 // Atom interns an atom and panics if there is any error.
@@ -74,7 +84,7 @@ func (xu *XUtil) Atom(name string, only_if_exists bool) (xgb.Id) {
     reply, err := xu.conn.InternAtom(only_if_exists, name)
 
     if err != nil {
-        panic(perr("Error interning atom '%s': %v", name, err))
+        panic(xerr("Atom", "Error interning atom '%s': %v", name, err))
     }
 
     return reply.Atom

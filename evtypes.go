@@ -73,7 +73,7 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
             }
         }
     default:
-        panic(perr("NewClientMessage: Unsupported format '%d'.", Format))
+        panic(xerr("NewClientMessage", "Unsupported format '%d'.", Format))
     }
 
     cm = &ClientMessageEvent{&xgb.ClientMessageEvent{
@@ -113,7 +113,7 @@ func (ev *ClientMessageEvent) Bytes() []byte {
             put32(data[(i * 4):], datum)
         }
     default:
-        panic(perr("Bytes: Unsupported format '%d'.", ev.Format))
+        panic(xerr("Bytes", "Unsupported format '%d'.", ev.Format))
     }
 
     return buf
