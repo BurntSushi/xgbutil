@@ -5,12 +5,19 @@ import (
     "image"
     "image/color"
     "image/draw"
-    "image/png"
-    "os"
+    "time"
 
-    // "code.google.com/p/x-go-binding/xgb" 
+    "code.google.com/p/x-go-binding/xgb"
     "github.com/BurntSushi/xgbutil"
 )
+
+// If we want to save the image as png output,
+// these imports need to be added and the writer
+// needs to be uncommented below.
+// import ( 
+    // "image/png" 
+    // "os" 
+// ) 
 
 var X *xgbutil.XUtil
 var Xerr error
@@ -65,16 +72,62 @@ func main() {
     var mask image.Image
     // mask = image.NewUniform(color.Alpha{127}) 
     dest := image.NewRGBA(image.Rect(0, 0, width, height))
-    allBlue := image.NewUniform(color.RGBA{0, 0, 255, 255})
+    allBlue := image.NewUniform(color.RGBA{127, 127, 127, 255})
     draw.Draw(dest, dest.Bounds(), allBlue, image.ZP, draw.Src)
     draw.DrawMask(dest, dest.Bounds(), img, image.ZP, mask, image.ZP, draw.Over)
 
-    destWriter, err := os.Create("someicon.png")
-    if err != nil {
-        fmt.Print("could not create someicon.png")
-        os.Exit(1)
-    }
+    // destWriter, err := os.Create("someicon.png") 
+    // if err != nil { 
+        // fmt.Print("could not create someicon.png") 
+        // os.Exit(1) 
+    // } 
 
-    png.Encode(destWriter, dest)
+    // png.Encode(destWriter, dest) 
+
+    // Let's see if we can paint the image we generated above to a window.
+
+    win := X.Conn().NewId()
+    gc := X.Conn().NewId()
+    scrn := X.Conn().DefaultScreen()
+
+    winMask := uint32(xgb.CWBackPixmap | xgb.CWOverrideRedirect |
+                      xgb.CWBackPixel)
+    winVals := []uint32{xgb.BackPixmapParentRelative, scrn.BlackPixel, 1}
+    X.Conn().CreateWindow(scrn.RootDepth, win, X.RootWin(), 100, 100,
+                          uint16(width), uint16(height),
+                          0, xgb.WindowClassInputOutput, scrn.RootVisual,
+                          winMask, winVals)
+    X.Conn().CreateGC(gc, X.RootWin(), xgb.GCForeground,
+                      []uint32{scrn.WhitePixel})
+    X.Conn().MapWindow(win)
+
+    // try paitning the image we created above...
+    // First we have to transform the image into X format.
+    // Then we have to allocate resources for the pixmap.
+    // Then we can paint the pixmap.
+    // Finally, we attach that pixmap as the "BackPixmap" of our window above.
+    // (And free pixmap right thereafter, of course.)
+    imgData := make([]byte, width * height * 4)
+    for x := 0; x < width; x++ {
+        for y := 0; y < height; y++ {
+            r, g, b, a := dest.At(x, y).RGBA()
+            i := 4 * (x + (y * height))
+            imgData[i + 0] = byte(b)
+            imgData[i + 1] = byte(g)
+            imgData[i + 2] = byte(r)
+            imgData[i + 3] = byte(a)
+        }
+    }
+    pix := X.Conn().NewId()
+    X.Conn().CreatePixmap(scrn.RootDepth, pix, X.RootWin(),
+                          uint16(width), uint16(height))
+    X.Conn().PutImage(xgb.ImageFormatZPixmap, pix, gc,
+                      uint16(width), uint16(height), 0, 0, 0, 24, imgData)
+    X.Conn().ChangeWindowAttributes(win, uint32(xgb.CWBackPixmap),
+                                    []uint32{uint32(pix)})
+    X.Conn().ClearArea(false, win, 0, 0, 0, 0)
+    X.Conn().FreePixmap(pix)
+
+    time.Sleep(20 * time.Second)
 }
 
