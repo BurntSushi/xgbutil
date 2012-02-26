@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "math/rand"
+    // "os" 
     "time"
 
     "code.google.com/p/x-go-binding/xgb"
@@ -12,7 +13,16 @@ import (
 var X *xgbutil.XUtil
 var Xerr error
 
+func Recovery() {
+    if r := recover(); r != nil {
+        fmt.Println("ERROR:", r)
+        // os.Exit(1) 
+    }
+}
+
 func main() {
+    defer Recovery()
+
     X, Xerr = xgbutil.Dial("")
     if Xerr != nil {
         panic(Xerr)
@@ -64,10 +74,18 @@ func main() {
     X.EwmhWmNameSet(active, string(randStr))
     fmt.Printf("New name: %s\n", X.EwmhWmName(active))
 
-    deskNames := X.EwmhDesktopNames()
-    fmt.Printf("Desktop names: %s\n", deskNames)
-    deskNames[len(deskNames) - 1] = "xgbutil"
-    X.EwmhDesktopNamesSet(deskNames)
-    fmt.Printf("Desktop names: %s\n", X.EwmhDesktopNames())
+    // deskNames := X.EwmhDesktopNames() 
+    // fmt.Printf("Desktop names: %s\n", deskNames) 
+    // deskNames[len(deskNames) - 1] = "xgbutil" 
+    // X.EwmhDesktopNamesSet(deskNames) 
+    // fmt.Printf("Desktop names: %s\n", X.EwmhDesktopNames()) 
+
+    icons := X.EwmhWmIcon(active)
+    fmt.Printf("Active window's (%x) icon data: (length: %v)\n", 
+               active, len(icons))
+    for _, icon := range icons {
+        fmt.Printf("\t(%d, %d)", icon.Width, icon.Height)
+        fmt.Printf(" :: %d == %d\n", icon.Width * icon.Height, len(icon.Data))
+    }
 }
 
