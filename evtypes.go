@@ -20,11 +20,8 @@ type XEvent interface {
 
 // SendRootEvent takes a type implementing the XEvent interface, converts it
 // to raw X bytes, and sends it off using the SendEvent request.
-func (xu *XUtil) SendRootEvent(ev XEvent) {
-    evMask := (xgb.EventMaskSubstructureNotify |
-               xgb.EventMaskSubstructureRedirect)
-
-    xu.conn.SendEvent(false, xu.root, uint32(evMask), ev.Bytes())
+func (xu *XUtil) SendRootEvent(ev XEvent, evMask uint32) {
+    xu.conn.SendEvent(false, xu.root, evMask, ev.Bytes())
 }
 
 // ClientMessageEvent embeds the struct by the same name from the xgb library.
@@ -73,7 +70,7 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
             }
         }
     default:
-        panic(xerr("NewClientMessage", "Unsupported format '%d'.", Format))
+        panic(xuerr("NewClientMessage", "Unsupported format '%d'.", Format))
     }
 
     cm = &ClientMessageEvent{&xgb.ClientMessageEvent{
@@ -113,7 +110,7 @@ func (ev *ClientMessageEvent) Bytes() []byte {
             put32(data[(i * 4):], datum)
         }
     default:
-        panic(xerr("Bytes", "Unsupported format '%d'.", ev.Format))
+        panic(xuerr("Bytes", "Unsupported format '%d'.", ev.Format))
     }
 
     return buf
