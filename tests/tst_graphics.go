@@ -1,3 +1,12 @@
+// This test file is a giant soup that had one goal: act as a testing ground
+// to get various graphical routines working in X. Namely:
+//
+// Blending one image on top of another (with alpha).
+// Painting an arbitrary image into a window.
+// Drawing text on to an image.
+//
+// All of this is done here successfully. Most of this file will be split up
+// into nicer pieces in my window manager.
 package main
 
 import (
@@ -152,7 +161,7 @@ func main() {
     X.Conn().MapWindow(win)
 
     // try paitning the image we created above...
-    // First we have to transform the image into X format.
+    // First we have to transform the image into X format. (BGRA)
     // Then we have to allocate resources for the pixmap.
     // Then we can paint the pixmap.
     // Finally, we attach that pixmap as the "BackPixmap" of our window above.
