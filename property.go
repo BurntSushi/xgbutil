@@ -19,9 +19,8 @@ func (xu *XUtil) GetProperty(win xgb.Id, atom string) (*xgb.GetPropertyReply) {
                                       xgb.GetPropertyTypeAny, 0, (1 << 32) - 1)
 
     if err != nil {
-        panic(xerr("GetProperty",
-                   "Error retrieving property '%s' on window %x: %v",
-                   atom, win, err))
+        panic(xerr(err, "GetProperty",
+                   "Error retrieving property '%s' on window %x", atom, win))
     }
 
     return reply
@@ -38,9 +37,7 @@ func (xu *XUtil) ChangeProperty(win xgb.Id, format byte, prop string,
 // by constructing the raw X data for you.
 func (xu *XUtil) ChangeProperty32(win xgb.Id, prop string, typ string,
                                   data ...uint32) {
-    var buf []byte
-
-    buf = make([]byte, len(data) * 4)
+    buf := make([]byte, len(data) * 4)
     for i, datum := range data {
         put32(buf[(i * 4):], datum)
     }
@@ -48,12 +45,52 @@ func (xu *XUtil) ChangeProperty32(win xgb.Id, prop string, typ string,
     xu.ChangeProperty(win, 32, prop, typ, buf)
 }
 
+// IdTo32 is a covenience function for converting []xgb.Id to []uint32.
+func IdTo32(ids []xgb.Id) (ids32 []uint32) {
+    ids32 = make([]uint32, len(ids))
+    for i, v := range ids {
+        ids32[i] = uint32(v)
+    }
+    return
+}
+
+// PropValAtom transforms a GetPropertyReply struct into an ATOM name.
+// The property reply must be in 32 bit format.
+// This is a method of an XUtil struct, unlike the other 'PropVal...' functions.
+func (xu *XUtil) PropValAtom(reply *xgb.GetPropertyReply) string {
+    if reply.Format != 32 {
+        panic(xuerr("PropValAtom", "Expected format 32 but got %d",
+                    reply.Format))
+    }
+
+    return xu.AtomName(xgb.Id(get32(reply.Value)))
+}
+
+// PropValAtoms is the same as PropValAtom, except that it returns a slice
+// of atom names. Also must be 32 bit format.
+// This is a method of an XUtil struct, unlike the other 'PropVal...' functions.
+func (xu *XUtil) PropValAtoms(reply *xgb.GetPropertyReply) []string {
+    if reply.Format != 32 {
+        panic(xuerr("PropValAtoms", "Expected format 32 but got %d",
+                    reply.Format))
+    }
+
+    ids := make([]string, reply.ValueLen)
+    vals := reply.Value
+    for i := 0; len(vals) >= 4; i++ {
+        ids[i] = xu.AtomName(xgb.Id(get32(vals)))
+        vals = vals[4:]
+    }
+
+    return ids
+}
+
 // PropValId transforms a GetPropertyReply struct into an X resource
 // identifier (typically a window id). 
 // The property reply must be in 32 bit format.
 func PropValId(reply *xgb.GetPropertyReply) (xgb.Id) {
     if reply.Format != 32 {
-        panic(xerr("PropValId", "Expected format 32 but got %d", reply.Format))
+        panic(xuerr("PropValId", "Expected format 32 but got %d", reply.Format))
     }
 
     return xgb.Id(get32(reply.Value))
@@ -63,7 +100,8 @@ func PropValId(reply *xgb.GetPropertyReply) (xgb.Id) {
 // of identifiers. Also must be 32 bit format.
 func PropValIds(reply *xgb.GetPropertyReply) []xgb.Id {
     if reply.Format != 32 {
-        panic(xerr("PropValIds", "Expected format 32 but got %d", reply.Format))
+        panic(xuerr("PropValIds", "Expected format 32 but got %d",
+                    reply.Format))
     }
 
     ids := make([]xgb.Id, reply.ValueLen)
@@ -80,7 +118,8 @@ func PropValIds(reply *xgb.GetPropertyReply) []xgb.Id {
 // integer. Useful when the property value is a single integer.
 func PropValNum(reply *xgb.GetPropertyReply) (uint32) {
     if reply.Format != 32 {
-        panic(xerr("PropValNum", "Expected format 32 but got %d", reply.Format))
+        panic(xuerr("PropValNum", "Expected format 32 but got %d",
+                    reply.Format))
     }
 
     return get32(reply.Value)
@@ -90,7 +129,8 @@ func PropValNum(reply *xgb.GetPropertyReply) (uint32) {
 // of integers. Also must be 32 bit format.
 func PropValNums(reply *xgb.GetPropertyReply) []uint32 {
     if reply.Format != 32 {
-        panic(xerr("PropValIds", "Expected format 32 but got %d", reply.Format))
+        panic(xuerr("PropValIds", "Expected format 32 but got %d",
+                    reply.Format))
     }
 
     nums := make([]uint32, reply.ValueLen)
@@ -108,7 +148,7 @@ func PropValNums(reply *xgb.GetPropertyReply) []uint32 {
 // by integers. Also must be 8 bit format.
 func PropValStr(reply *xgb.GetPropertyReply) string {
     if reply.Format != 8 {
-        panic(xerr("PropValStr", "Expected format 8 but got %d", reply.Format))
+        panic(xuerr("PropValStr", "Expected format 8 but got %d", reply.Format))
     }
 
     return string(reply.Value)
@@ -119,7 +159,8 @@ func PropValStr(reply *xgb.GetPropertyReply) string {
 // which is translated into a slice of strings.
 func PropValStrs(reply *xgb.GetPropertyReply) []string {
     if reply.Format != 8 {
-        panic(xerr("PropValStrs", "Expected format 8 but got %d", reply.Format))
+        panic(xuerr("PropValStrs", "Expected format 8 but got %d",
+                    reply.Format))
     }
 
     var strs []string
