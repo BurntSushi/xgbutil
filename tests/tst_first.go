@@ -2,6 +2,7 @@ package main
 
 import (
     "fmt"
+    "log"
     "math/rand"
     // "os" 
     "time"
@@ -15,7 +16,20 @@ var Xerr error
 
 func Recovery() {
     if r := recover(); r != nil {
-        fmt.Println("ERROR:", r)
+        // if xuError, ok := r.(*xgbutil.XError); ok { 
+            // if xuError.XGBError != nil { 
+                // if xuError.XGBError.Detail == xgb.BadValue { 
+                    // log.Println("BadValue") 
+                // } else { 
+                    // log.Println("WOOYAA") 
+                // } 
+            // } else { 
+                // log.Println(r) 
+            // } 
+        // } else { 
+            // log.Println(r) 
+        // } 
+        log.Println("ERROR:", r)
         // os.Exit(1) 
     }
 }
@@ -55,7 +69,7 @@ func main() {
     X.EwmhCurrentDesktopSet(curdesk)
     // fmt.Printf("Current desktop is now: %d\n", X.EwmhCurrentDesktop()) 
 
-    var newactive xgb.Id = 0x2e00016
+    newactive := xgb.Id(0x2e00016)
     fmt.Printf("Setting active win to %x\n", newactive)
     X.EwmhActiveWindowReq(newactive)
 
