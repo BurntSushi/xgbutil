@@ -1,3 +1,4 @@
+// This is simply testing Google's graphics library that scales images.
 package main
 
 import (

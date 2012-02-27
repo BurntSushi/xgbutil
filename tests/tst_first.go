@@ -44,6 +44,14 @@ func main() {
 
     fmt.Println(X)
 
+    wmName, err := X.GetEwmhWM()
+    if err != nil {
+        fmt.Printf("No conforming window manager found... :-(\n")
+        fmt.Println(err)
+    } else {
+        fmt.Printf("Window manager: %s\n", wmName)
+    }
+
     geom := X.EwmhDesktopGeometry()
     active := X.EwmhActiveWindow()
     desktops := X.EwmhDesktopNames()
@@ -101,5 +109,32 @@ func main() {
         fmt.Printf("\t(%d, %d)", icon.Width, icon.Height)
         fmt.Printf(" :: %d == %d\n", icon.Width * icon.Height, len(icon.Data))
     }
+
+    fmt.Printf("Supported hints: %v\n", X.EwmhSupported())
+    fmt.Printf("Setting supported hints...\n")
+    X.EwmhSupportedSet([]string{"_NET_CLIENT_LIST", "_NET_WM_NAME",
+                                "_NET_WM_DESKTOP"})
+    fmt.Printf("Supported hints: %v\n", X.EwmhSupported())
+
+    fmt.Printf("Number of desktops: %d\n", X.EwmhNumberOfDesktops())
+    // X.EwmhNumberOfDesktopsReq(X.EwmhNumberOfDesktops() + 1) 
+    // time.Sleep(time.Second) 
+    // fmt.Printf("Number of desktops: %d\n", X.EwmhNumberOfDesktops()) 
+
+    viewports := X.EwmhDesktopViewport()
+    fmt.Printf("Viewports (%d): %v\n", len(viewports), viewports)
+
+    // viewports[2].X = 50
+    // viewports[2].Y = 293 
+    // X.EwmhDesktopViewportSet(viewports) 
+    // time.Sleep(time.Second) 
+//  
+    // viewports = X.EwmhDesktopViewport() 
+    // fmt.Printf("Viewports (%d): %v\n", len(viewports), viewports) 
+
+    // X.EwmhCurrentDesktopReq(3) 
+
+    fmt.Printf("Visible desktops: %v\n", X.EwmhVisibleDesktops())
+    fmt.Printf("Workareas: %v\n", X.EwmhWorkarea())
 }
 
