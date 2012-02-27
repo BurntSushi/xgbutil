@@ -18,19 +18,42 @@ import (
 type XUtil struct {
     conn *xgb.Conn
     root xgb.Id
+    atoms map[string]xgb.Id
+    atomNames map[xgb.Id]string
 }
 
 type XError struct {
     funcName string // some identifier so we know where the error comes from
     err string // free form string explaining the error
+    XGBError *xgb.Error // error struct from XGB - to get the raw X error
 }
 
-func (xe *XError) String() string {
+func (xe *XError) Error() string {
     return fmt.Sprintf("%s: %s", xe.funcName, xe.err)
 }
 
-func xerr (funcName string, err string, params ...interface{}) *XError {
-    return &XError{funcName: funcName, err: fmt.Sprintf(err, params...)}
+// Constructs an error struct from an X error
+func xerr (xgberr interface{}, funcName string, err string,
+           params ...interface{}) *XError {
+    switch e := xgberr.(type) {
+    case *xgb.Error:
+        return &XError{
+            funcName: funcName,
+            err: fmt.Sprintf("%s: %v", fmt.Sprintf(err, params...), e),
+            XGBError: e,
+        }
+    }
+
+    panic(xuerr("xerr", "Unsupported error type: %T", err))
+}
+
+// Constructs an error struct from an error inside xgbutil (i.e., user error)
+func xuerr (funcName string, err string, params ...interface{}) *XError {
+    return &XError{
+        funcName: funcName,
+        err: fmt.Sprintf(err, params...),
+        XGBError: nil,
+    }
 }
 
 // Dial connects to the X server and creates a new XUtil.
@@ -43,7 +66,9 @@ func Dial(display string) (*XUtil, error) {
 
     xu := &XUtil{
         conn: c,
-        root: c.Setup.Roots[0].Root,
+        root: c.DefaultScreen().Root,
+        atoms: make(map[string]xgb.Id, 50), // start with a nice size
+        atomNames: make(map[xgb.Id]string, 50),
     }
 
     return xu, nil
@@ -76,18 +101,73 @@ func (xu *XUtil) Atm(name string) (xgb.Id) {
         return aid
     }
 
-    panic(xerr("Atm", "'%s' returned an identifier of 0.", name))
+    panic(xuerr("Atm", "'%s' returned an identifier of 0.", name))
 }
 
 // Atom interns an atom and panics if there is any error.
 func (xu *XUtil) Atom(name string, only_if_exists bool) (xgb.Id) {
+    // Check the cache first
+    if aid, ok := xu.atoms[name]; ok {
+        return aid
+    }
+
     reply, err := xu.conn.InternAtom(only_if_exists, name)
 
     if err != nil {
-        panic(xerr("Atom", "Error interning atom '%s': %v", name, err))
+        panic(xerr(err, "Atom", "Error interning atom '%s'", name))
     }
 
+    // If we're here, it means we didn't have this atom cached. So cache it!
+    xu.atoms[name] = reply.Atom
+    xu.atomNames[reply.Atom] = name
+
     return reply.Atom
+}
+
+// AtomName fetches a string representation of an ATOM given its integer id.
+func (xu *XUtil) AtomName(aid xgb.Id) string {
+    // Check the cache first
+    if atomName, ok := xu.atomNames[aid]; ok {
+        return string(atomName)
+    }
+
+    reply, err := xu.conn.GetAtomName(aid)
+
+    if err != nil {
+        panic(xerr(err, "AtomName", "Error fetching name for ATOM id '%d'",
+                   aid))
+    }
+
+    // If we're here, it means we didn't have ths ATOM id cached. So cache it.
+    atomName := string(reply.Name)
+    xu.atoms[atomName] = aid
+    xu.atomNames[aid] = atomName
+
+    return atomName
+}
+
+// GetEwmhWM uses the EWMH spec to find if a conforming window manager
+// is currently running or not. If it is, then its name will be returned.
+// Otherwise, an error will be returned explaining why one couldn't be found.
+func (xu *XUtil) GetEwmhWM() (wmName string, err error) {
+    defer func() {
+        if r:= recover(); r != nil {
+            wmName = ""
+            err = xuerr("GetEwmhWM", "Failed because: %v", r)
+        }
+    }()
+
+    childCheck := xu.EwmhSupportingWmCheck(xu.root)
+    childCheck2 := xu.EwmhSupportingWmCheck(childCheck)
+
+    if childCheck != childCheck2 {
+        return "", xuerr("GetEwmhWM",
+                         "_NET_SUPPORTING_WM_CHECK value on the root window " +
+                         "(%x) does not match _NET_SUPPORTING_WM_CHECK value " +
+                         "on the child window (%x).", childCheck, childCheck2)
+    }
+
+    return xu.EwmhWmName(childCheck), nil
 }
 
 // put16 adds a 16 bit integer to a byte slice.
