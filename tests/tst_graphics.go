@@ -26,10 +26,10 @@ import (
 // If we want to save the image as png output,
 // these imports need to be added and the writer
 // needs to be uncommented below.
-// import ( 
-    // "image/png" 
-    // "os" 
-// ) 
+import (
+    "image/png"
+    "os"
+)
 
 var X *xgbutil.XUtil
 var Xerr error
@@ -102,11 +102,14 @@ func main() {
         fmt.Printf(" :: %d == %d\n", icon.Width * icon.Height, len(icon.Data))
     }
 
-    work := icons[3]
+    work := icons[2]
     fmt.Printf("Working with (%d, %d)\n", work.Width, work.Height)
 
+
     width, height := int(work.Width), int(work.Height)
+    mask := image.NewRGBA(image.Rect(0, 0, width, height))
     img := image.NewRGBA(image.Rect(0, 0, width, height))
+
     for x := 0; x < width; x++ {
         for y := 0; y < height; y++ {
             argb := work.Data[x + (y * height)]
@@ -122,11 +125,18 @@ func main() {
                 A: uint8(alpha),
             }
             img.SetRGBA(x, y, c)
+
+            // ac := color.RGBA{ 
+                // R: uint8(alpha), G: uint8(alpha), 
+                // B: uint8(alpha), A: uint8(alpha), 
+            // } 
+            mask.Set(x, y, color.Alpha{uint8(alpha)})
         }
     }
 
-    var mask image.Image
-    // mask = image.NewUniform(color.Alpha{127}) 
+    blendMask := image.NewUniform(color.Alpha{127})
+    draw.DrawMask(mask, mask.Bounds(), mask, image.ZP, blendMask, image.ZP, draw.Src)
+
     dest := image.NewRGBA(image.Rect(0, 0, width, height))
     allBlue := image.NewUniform(color.RGBA{127, 127, 127, 255})
     draw.Draw(dest, dest.Bounds(), allBlue, image.ZP, draw.Src)
@@ -135,13 +145,13 @@ func main() {
     // Let's try to write some text...
     WriteText(dest)
 
-    // destWriter, err := os.Create("someicon.png") 
-    // if err != nil { 
-        // fmt.Print("could not create someicon.png") 
-        // os.Exit(1) 
-    // } 
+    destWriter, err := os.Create("someicon.png")
+    if err != nil {
+        fmt.Print("could not create someicon.png")
+        os.Exit(1)
+    }
 
-    // png.Encode(destWriter, dest) 
+    png.Encode(destWriter, dest)
 
     // Let's see if we can paint the image we generated above to a window.
 
