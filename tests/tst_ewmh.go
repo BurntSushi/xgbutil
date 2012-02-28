@@ -29,7 +29,16 @@ func Recovery() {
         // } else { 
             // log.Println(r) 
         // } 
-        log.Println("ERROR:", r)
+
+        switch err := r.(type) {
+        case *xgb.Error:
+            log.Println("XGB ERROR:", err)
+        case *xgbutil.XError:
+            log.Println("XGB UTIL ERROR:", err)
+        default: // not our problem, produce stack trace
+            panic(err)
+        }
+
         // os.Exit(1) 
     }
 }
@@ -43,6 +52,8 @@ func main() {
     }
 
     fmt.Println(X)
+
+    fmt.Printf("Showing desktop? %v\n", X.EwmhShowingDesktop())
 
     wmName, err := X.GetEwmhWM()
     if err != nil {
@@ -102,14 +113,6 @@ func main() {
     // X.EwmhDesktopNamesSet(deskNames) 
     // fmt.Printf("Desktop names: %s\n", X.EwmhDesktopNames()) 
 
-    icons := X.EwmhWmIcon(active)
-    fmt.Printf("Active window's (%x) icon data: (length: %v)\n", 
-               active, len(icons))
-    for _, icon := range icons {
-        fmt.Printf("\t(%d, %d)", icon.Width, icon.Height)
-        fmt.Printf(" :: %d == %d\n", icon.Width * icon.Height, len(icon.Data))
-    }
-
     fmt.Printf("Supported hints: %v\n", X.EwmhSupported())
     fmt.Printf("Setting supported hints...\n")
     X.EwmhSupportedSet([]string{"_NET_CLIENT_LIST", "_NET_WM_NAME",
@@ -136,5 +139,73 @@ func main() {
 
     fmt.Printf("Visible desktops: %v\n", X.EwmhVisibleDesktops())
     fmt.Printf("Workareas: %v\n", X.EwmhWorkarea())
+    // fmt.Printf("Virtual roots: %v\n", X.EwmhVirtualRoots()) 
+    // fmt.Printf("Desktop layout: %v\n", X.EwmhDesktopLayout()) 
+    fmt.Printf("Closing window %x\n", 0x2e004c5)
+    X.EwmhCloseWindow(0x2e004c5)
+
+    fmt.Printf("Moving/resizing window: %x\n", 0x2e004d0)
+    X.EwmhMoveresizeWindow(0x2e004d0, 1920, 30, 500, 500)
+
+    // fmt.Printf("Trying to initiate a moveresize...\n") 
+    // X.EwmhWmMoveresize(0x2e004db, xgbutil.EwmhMove) 
+    // time.Sleep(5 * time.Second) 
+    // X.EwmhWmMoveresize(0x2e004db, xgbutil.EwmhCancel) 
+
+    // fmt.Printf("Stacking window %x...\n", 0x2e00509) 
+    // X.EwmhRestackWindow(0x2e00509) 
+
+    fmt.Printf("Requesting frame extents for active window...\n")
+    X.EwmhRequestFrameExtents(active)
+
+    actOpacity := X.EwmhWmWindowOpacity(X.ParentWindow(active))
+    // actOpacity2 := X.EwmhWmWindowOpacity(X.ParentWindow(X.EwmhActiveWindow())) 
+    fmt.Printf("Opacity for active window: %f\n", actOpacity)
+    // fmt.Printf("Opacity for real active window: %f\n", actOpacity2) 
+    // X.EwmhWmWindowOpacitySet(X.ParentWindow(active), 0.5) 
+
+    fmt.Printf("Active window's desktop: %d\n", X.EwmhWmDesktop(active))
+    fmt.Printf("Active's types: %v\n", X.EwmhWmWindowType(active))
+    fmt.Printf("Pager's types: %v\n", X.EwmhWmWindowType(0x180001e))
+
+    fmt.Printf("Pager's state: %v\n", X.EwmhWmState(0x180001e))
+
+    // X.EwmhWmStateReq(active, xgbutil.EwmhStateToggle, "_NET_WM_STATE_HIDDEN") 
+    // X.EwmhWmStateReqExtra(active, xgbutil.EwmhStateToggle, 
+                          // "_NET_WM_STATE_MAXIMIZED_VERT", 
+                          // "_NET_WM_STATE_MAXIMIZED_HORZ", 2) 
+
+    fmt.Printf("Allowed actions on active: %v\n", X.EwmhWmAllowedActions(active))
+
+    struts, err := xgbutil.Safe(func() interface{} {
+                                        return X.EwmhWmStrut(0x180001e)
+                                    })
+    if err != nil {
+        fmt.Printf("Pager struts: %v\n", err)
+    } else {
+        fmt.Printf("Pager struts: %v\n", struts)
+    }
+
+    pstruts, err := xgbutil.Safe(func() interface{} {
+        return X.EwmhWmStrutPartial(0x180001e)
+    })
+    if err != nil {
+        fmt.Printf("Pager struts partial: nil\n")
+    } else {
+        pstruts := pstruts.(xgbutil.WmStrutPartial)
+        fmt.Printf("Pager struts partial: %v\n", pstruts.BottomStartX)
+    }
+
+    // fmt.Printf("Icon geometry for active: %v\n", X.EwmhWmIconGeometry(active)) 
+
+    icons := X.EwmhWmIcon(active)
+    fmt.Printf("Active window's (%x) icon data: (length: %v)\n",
+               active, len(icons))
+    for _, icon := range icons {
+        fmt.Printf("\t(%d, %d)", icon.Width, icon.Height)
+        fmt.Printf(" :: %d == %d\n", icon.Width * icon.Height, len(icon.Data))
+    }
+    // fmt.Printf("Now set them again...\n") 
+    // X.EwmhWmIconSet(active, icons[:len(icons) - 1]) 
 }
 
