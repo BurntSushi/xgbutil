@@ -126,10 +126,6 @@ func main() {
             }
             img.SetRGBA(x, y, c)
 
-            // ac := color.RGBA{ 
-                // R: uint8(alpha), G: uint8(alpha), 
-                // B: uint8(alpha), A: uint8(alpha), 
-            // } 
             mask.Set(x, y, color.Alpha{uint8(alpha)})
         }
     }
