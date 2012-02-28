@@ -168,7 +168,7 @@ func main() {
     fmt.Printf("Active's types: %v\n", X.EwmhWmWindowType(active))
     fmt.Printf("Pager's types: %v\n", X.EwmhWmWindowType(0x180001e))
 
-    fmt.Printf("Pager's state: %v\n", X.EwmhWmState(0x180001e))
+    // fmt.Printf("Pager's state: %v\n", X.EwmhWmState(0x180001e)) 
 
     // X.EwmhWmStateReq(active, xgbutil.EwmhStateToggle, "_NET_WM_STATE_HIDDEN") 
     // X.EwmhWmStateReqExtra(active, xgbutil.EwmhStateToggle, 
