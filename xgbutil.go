@@ -149,6 +149,7 @@ func (xu *XUtil) AtomName(aid xgb.Id) string {
 // GetEwmhWM uses the EWMH spec to find if a conforming window manager
 // is currently running or not. If it is, then its name will be returned.
 // Otherwise, an error will be returned explaining why one couldn't be found.
+// (This function is safe.)
 func (xu *XUtil) GetEwmhWM() (wmName string, err error) {
     defer func() {
         if r:= recover(); r != nil {
@@ -168,6 +169,31 @@ func (xu *XUtil) GetEwmhWM() (wmName string, err error) {
     }
 
     return xu.EwmhWmName(childCheck), nil
+}
+
+// Safe will recover from any panic produced by xgb or xgbutil and transform
+// it into an idiomatic Go error as a second return value.
+// NOTE: Generality comes at a cost. The return value will need to be
+//       type asserted.
+func Safe(fun func() interface{}) (val interface{}, err error) {
+    defer func() {
+        if r := recover(); r != nil {
+            val = nil
+
+            // If we get an error that isn't from xgbutil or xgb itself,
+            // then let the panic happen.
+            var ok bool
+            err, ok = r.(*XError)
+            if !ok {
+                err, ok = r.(*xgb.Error)
+                if !ok { // some other error, panic!
+                    panic(r)
+                }
+            }
+        }
+    }()
+
+    return fun(), nil
 }
 
 // put16 adds a 16 bit integer to a byte slice.
