@@ -23,7 +23,29 @@ func (xu *XUtil) GetProperty(win xgb.Id, atom string) (*xgb.GetPropertyReply) {
                    "Error retrieving property '%s' on window %x", atom, win))
     }
 
+    if reply.Format == 0 {
+        panic(xuerr("GetProperty", "No such property '%s' on window %x.",
+                    atom, win))
+    }
+
     return reply
+}
+
+// SafeGetProperty is a wrapper for GetProperty that will transform panics
+// into Go idiomatic errors.
+func (xu *XUtil) SafeGetProperty(win xgb.Id, atom string) (
+     reply *xgb.GetPropertyReply, err error) {
+    maybeReply, err := Safe(func() interface{} {
+        return xu.GetProperty(win, atom)
+    })
+
+    if err != nil {
+        reply = nil
+    } else {
+        reply = maybeReply.(*xgb.GetPropertyReply)
+    }
+
+    return
 }
 
 // ChangeProperty abstracts the semi-nastiness of xgb.ChangeProperty.
@@ -50,6 +72,17 @@ func IdTo32(ids []xgb.Id) (ids32 []uint32) {
     ids32 = make([]uint32, len(ids))
     for i, v := range ids {
         ids32[i] = uint32(v)
+    }
+    return
+}
+
+// StrToAtoms is a convenience function for converting
+// []string to []uint32 atoms.
+// NOTE: If an atom name in the list doesn't exist, it will be created.
+func (xu *XUtil) StrToAtoms(atomNames []string) (atoms []uint32) {
+    atoms = make([]uint32, len(atomNames))
+    for i, atomName := range atomNames {
+        atoms[i] = uint32(xu.Atom(atomName, false))
     }
     return
 }
