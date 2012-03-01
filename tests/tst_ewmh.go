@@ -44,7 +44,7 @@ func Recovery() {
 }
 
 func main() {
-    defer Recovery()
+    // defer Recovery() 
 
     X, Xerr = xgbutil.Dial("")
     if Xerr != nil {
@@ -53,7 +53,8 @@ func main() {
 
     fmt.Println(X)
 
-    fmt.Printf("Showing desktop? %v\n", X.EwmhShowingDesktop())
+    showDesk, _ := X.EwmhShowingDesktop()
+    fmt.Printf("Showing desktop? %v\n", showDesk)
 
     wmName, err := X.GetEwmhWM()
     if err != nil {
@@ -63,18 +64,22 @@ func main() {
         fmt.Printf("Window manager: %s\n", wmName)
     }
 
-    geom := X.EwmhDesktopGeometry()
-    active := X.EwmhActiveWindow()
-    desktops := X.EwmhDesktopNames()
-    curdesk := X.EwmhCurrentDesktop()
+    pager := xgb.Id(0x160001e)
+    middle := xgb.Id(0x3200016)
+    geom, _ := X.EwmhDesktopGeometry()
+    active, _ := X.EwmhActiveWindow()
+    desktops, _ := X.EwmhDesktopNames()
+    curdesk, _ := X.EwmhCurrentDesktop()
+    clients, _ := X.EwmhClientList()
+    activeName, _ := X.EwmhWmName(active)
 
     fmt.Printf("Active window: %x\n", active)
-    fmt.Printf("Current desktop: %d\n", X.EwmhCurrentDesktop())
-    fmt.Printf("Client list: %v\n", X.EwmhClientList())
+    fmt.Printf("Current desktop: %d\n", curdesk)
+    fmt.Printf("Client list: %v\n", clients)
     fmt.Printf("Desktop geometry: (width: %d, height: %d)\n",
                geom.Width, geom.Height)
-    fmt.Printf("Active window name: %s\n", X.EwmhWmName(active))
-    fmt.Printf("Desktop names: %s\n", X.EwmhDesktopNames())
+    fmt.Printf("Active window name: %s\n", activeName)
+    fmt.Printf("Desktop names: %s\n", desktops)
 
     var desk string
     if curdesk < uint32(len(desktops)) {
@@ -88,9 +93,8 @@ func main() {
     X.EwmhCurrentDesktopSet(curdesk)
     // fmt.Printf("Current desktop is now: %d\n", X.EwmhCurrentDesktop()) 
 
-    newactive := xgb.Id(0x2e00016)
-    fmt.Printf("Setting active win to %x\n", newactive)
-    X.EwmhActiveWindowReq(newactive)
+    fmt.Printf("Setting active win to %x\n", middle)
+    X.EwmhActiveWindowReq(middle)
 
     rand.Seed(int64(time.Now().Nanosecond()))
     randStr := make([]byte, 20)
@@ -105,7 +109,8 @@ func main() {
     }
 
     X.EwmhWmNameSet(active, string(randStr))
-    fmt.Printf("New name: %s\n", X.EwmhWmName(active))
+    newName, _ := X.EwmhWmName(active)
+    fmt.Printf("New name: %s\n", newName)
 
     // deskNames := X.EwmhDesktopNames() 
     // fmt.Printf("Desktop names: %s\n", deskNames) 
@@ -113,18 +118,19 @@ func main() {
     // X.EwmhDesktopNamesSet(deskNames) 
     // fmt.Printf("Desktop names: %s\n", X.EwmhDesktopNames()) 
 
-    fmt.Printf("Supported hints: %v\n", X.EwmhSupported())
+    supported, _ := X.EwmhSupported()
+    fmt.Printf("Supported hints: %v\n", supported)
     fmt.Printf("Setting supported hints...\n")
     X.EwmhSupportedSet([]string{"_NET_CLIENT_LIST", "_NET_WM_NAME",
                                 "_NET_WM_DESKTOP"})
-    fmt.Printf("Supported hints: %v\n", X.EwmhSupported())
 
-    fmt.Printf("Number of desktops: %d\n", X.EwmhNumberOfDesktops())
+    numDesks, _ := X.EwmhNumberOfDesktops()
+    fmt.Printf("Number of desktops: %d\n", numDesks)
     // X.EwmhNumberOfDesktopsReq(X.EwmhNumberOfDesktops() + 1) 
     // time.Sleep(time.Second) 
     // fmt.Printf("Number of desktops: %d\n", X.EwmhNumberOfDesktops()) 
 
-    viewports := X.EwmhDesktopViewport()
+    viewports, _ := X.EwmhDesktopViewport()
     fmt.Printf("Viewports (%d): %v\n", len(viewports), viewports)
 
     // viewports[2].X = 50
@@ -137,8 +143,10 @@ func main() {
 
     // X.EwmhCurrentDesktopReq(3) 
 
-    fmt.Printf("Visible desktops: %v\n", X.EwmhVisibleDesktops())
-    fmt.Printf("Workareas: %v\n", X.EwmhWorkarea())
+    visDesks, _ := X.EwmhVisibleDesktops()
+    workarea, _ := X.EwmhWorkarea()
+    fmt.Printf("Visible desktops: %v\n", visDesks)
+    fmt.Printf("Workareas: %v\n", workarea)
     // fmt.Printf("Virtual roots: %v\n", X.EwmhVirtualRoots()) 
     // fmt.Printf("Desktop layout: %v\n", X.EwmhDesktopLayout()) 
     fmt.Printf("Closing window %x\n", 0x2e004c5)
@@ -158,15 +166,17 @@ func main() {
     fmt.Printf("Requesting frame extents for active window...\n")
     X.EwmhRequestFrameExtents(active)
 
-    actOpacity := X.EwmhWmWindowOpacity(X.ParentWindow(active))
+    actOpacity, _ := X.EwmhWmWindowOpacity(X.ParentWindow(active))
     // actOpacity2 := X.EwmhWmWindowOpacity(X.ParentWindow(X.EwmhActiveWindow())) 
     fmt.Printf("Opacity for active window: %f\n", actOpacity)
     // fmt.Printf("Opacity for real active window: %f\n", actOpacity2) 
     // X.EwmhWmWindowOpacitySet(X.ParentWindow(active), 0.5) 
 
-    fmt.Printf("Active window's desktop: %d\n", X.EwmhWmDesktop(active))
-    fmt.Printf("Active's types: %v\n", X.EwmhWmWindowType(active))
-    fmt.Printf("Pager's types: %v\n", X.EwmhWmWindowType(0x180001e))
+    activeDesk, _ := X.EwmhWmDesktop(active)
+    activeType, _ := X.EwmhWmWindowType(active)
+    fmt.Printf("Active window's desktop: %d\n", activeDesk)
+    fmt.Printf("Active's types: %v\n", activeType)
+    // fmt.Printf("Pager's types: %v\n", X.EwmhWmWindowType(0x180001e)) 
 
     // fmt.Printf("Pager's state: %v\n", X.EwmhWmState(0x180001e)) 
 
@@ -175,30 +185,26 @@ func main() {
                           // "_NET_WM_STATE_MAXIMIZED_VERT", 
                           // "_NET_WM_STATE_MAXIMIZED_HORZ", 2) 
 
-    fmt.Printf("Allowed actions on active: %v\n", X.EwmhWmAllowedActions(active))
+    activeAllowed, _ := X.EwmhWmAllowedActions(active)
+    fmt.Printf("Allowed actions on active: %v\n", activeAllowed)
 
-    struts, err := xgbutil.Safe(func() interface{} {
-                                        return X.EwmhWmStrut(0x180001e)
-                                    })
+    struts, err := X.EwmhWmStrut(pager)
     if err != nil {
         fmt.Printf("Pager struts: %v\n", err)
     } else {
         fmt.Printf("Pager struts: %v\n", struts)
     }
 
-    pstruts, err := xgbutil.Safe(func() interface{} {
-        return X.EwmhWmStrutPartial(0x180001e)
-    })
+    pstruts, err := X.EwmhWmStrutPartial(pager)
     if err != nil {
-        fmt.Printf("Pager struts partial: nil\n")
+        fmt.Printf("Pager struts partial: %v - %v\n", pstruts, err)
     } else {
-        pstruts := pstruts.(xgbutil.WmStrutPartial)
         fmt.Printf("Pager struts partial: %v\n", pstruts.BottomStartX)
     }
 
     // fmt.Printf("Icon geometry for active: %v\n", X.EwmhWmIconGeometry(active)) 
 
-    icons := X.EwmhWmIcon(active)
+    icons, _ := X.EwmhWmIcon(active)
     fmt.Printf("Active window's (%x) icon data: (length: %v)\n",
                active, len(icons))
     for _, icon := range icons {
