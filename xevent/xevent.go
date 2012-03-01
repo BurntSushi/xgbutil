@@ -5,12 +5,13 @@
            for dealing with common X events. event.go on the other hand,
            is more concerned with responding to events that X sends us.)
 */
-package xgbutil
+package xevent
 
 import "code.google.com/p/x-go-binding/xgb"
+import "github.com/BurntSushi/xgbutil"
 
 // ReplayPointer is a quick alias to AllowEvents with 'ReplayPointer' mode.
-func (xu *XUtil) ReplayPointer() {
-    xu.conn.AllowEvents(xgb.AllowReplayPointer, 0)
+func ReplayPointer(xu *xgbutil.XUtil) {
+    xu.Conn().AllowEvents(xgb.AllowReplayPointer, 0)
 }
 

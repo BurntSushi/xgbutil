@@ -9,7 +9,7 @@ package xgbutil
 
 import (
     "fmt"
-
+    "log"
     "code.google.com/p/x-go-binding/xgb"
 )
 
@@ -20,7 +20,6 @@ type XUtil struct {
     root xgb.Id
     atoms map[string]xgb.Id
     atomNames map[xgb.Id]string
-    WindowManager string
 }
 
 type XError struct {
@@ -34,8 +33,8 @@ func (xe *XError) Error() string {
 }
 
 // Constructs an error struct from an X error
-func xerr(xgberr interface{}, funcName string, err string,
-           params ...interface{}) *XError {
+func Xerr(xgberr interface{}, funcName string, err string,
+          params ...interface{}) *XError {
     switch e := xgberr.(type) {
     case *xgb.Error:
         return &XError{
@@ -45,11 +44,11 @@ func xerr(xgberr interface{}, funcName string, err string,
         }
     }
 
-    panic(xuerr("xerr", "Unsupported error type: %T", err))
+    panic(Xuerr("Xerr", "Unsupported error type: %T", err))
 }
 
 // Constructs an error struct from an error inside xgbutil (i.e., user error)
-func xuerr(funcName string, err string, params ...interface{}) *XError {
+func Xuerr(funcName string, err string, params ...interface{}) *XError {
     return &XError{
         funcName: funcName,
         err: fmt.Sprintf(err, params...),
@@ -72,10 +71,17 @@ func Dial(display string) (*XUtil, error) {
         atoms: make(map[string]xgb.Id, 50), // start with a nice size
         atomNames: make(map[xgb.Id]string, 50),
     }
-    xu.WindowManager, _ = xu.GetEwmhWM()
 
     // Register the Xinerama extension... because it doesn't cost much.
-    xu.conn.RegisterExtension("XINERAMA")
+    err = xu.conn.RegisterExtension("XINERAMA")
+
+    // If we can't register Xinerama, that's okay. Output something
+    // and move on.
+    if err != nil {
+        log.Printf("WARNING: %s\n", err)
+        log.Printf("MESSAGE: The 'xinerama' package cannot be used because " +
+                   "the XINERAMA extension could not be loaded.")
+    }
 
     return xu, nil
 }
@@ -98,85 +104,22 @@ func (xu *XUtil) SetRootWin(root xgb.Id) {
     xu.root = root
 }
 
-// Atm is a short alias for Atom in the common case of interning an atom.
-// Namely, only_if_exists is set to true, so that if "name" is an atom that
-// does not exist, X will return "0" as an atom identifier. In which case,
-// we panic because that isn't what anyone wants.
-func (xu *XUtil) Atm(name string) (xgb.Id, error) {
-    aid, err := xu.Atom(name, true)
-    if err != nil {
-        return 0, err
-    }
-    if aid == 0 {
-        return 0, xuerr("Atm", "'%s' returned an identifier of 0.", name)
-    }
-
-    return aid, err
+// GetAtom retrieves an atom identifier from a cache if it exists.
+func (xu *XUtil) GetAtom(name string) (aid xgb.Id, ok bool) {
+    aid, ok = xu.atoms[name]
+    return
 }
 
-// Atom interns an atom and panics if there is any error.
-func (xu *XUtil) Atom(name string, only_if_exists bool) (xgb.Id, error) {
-    // Check the cache first
-    if aid, ok := xu.atoms[name]; ok {
-        return aid, nil
-    }
-
-    reply, err := xu.conn.InternAtom(only_if_exists, name)
-    if err != nil {
-        return 0, xerr(err, "Atom", "Error interning atom '%s'", name)
-    }
-
-    // If we're here, it means we didn't have this atom cached. So cache it!
-    xu.atoms[name] = reply.Atom
-    xu.atomNames[reply.Atom] = name
-
-    return reply.Atom, nil
+// GetAtomName retrieves an atom name from a cache if it exists.
+func (xu *XUtil) GetAtomName(aid xgb.Id) (name string, ok bool) {
+    name, ok = xu.atomNames[aid]
+    return
 }
 
-// AtomName fetches a string representation of an ATOM given its integer id.
-func (xu *XUtil) AtomName(aid xgb.Id) (string, error) {
-    // Check the cache first
-    if atomName, ok := xu.atomNames[aid]; ok {
-        return string(atomName), nil
-    }
-
-    reply, err := xu.conn.GetAtomName(aid)
-    if err != nil {
-        return "", xerr(err, "AtomName",
-                        "Error fetching name for ATOM id '%d'", aid)
-    }
-
-    // If we're here, it means we didn't have ths ATOM id cached. So cache it.
-    atomName := string(reply.Name)
-    xu.atoms[atomName] = aid
-    xu.atomNames[aid] = atomName
-
-    return atomName, nil
-}
-
-// GetEwmhWM uses the EWMH spec to find if a conforming window manager
-// is currently running or not. If it is, then its name will be returned.
-// Otherwise, an error will be returned explaining why one couldn't be found.
-// (This function is safe.)
-func (xu *XUtil) GetEwmhWM() (wmName string, err error) {
-    childCheck, err := xu.EwmhSupportingWmCheck(xu.root)
-    if err != nil {
-        return "", xuerr("GetEwmhWM", "Failed because: %v", err)
-    }
-
-    childCheck2, err := xu.EwmhSupportingWmCheck(childCheck)
-    if err != nil {
-        return "", xuerr("GetEwmhWM", "Failed because: %v", err)
-    }
-
-    if childCheck != childCheck2 {
-        return "", xuerr("GetEwmhWM",
-                         "_NET_SUPPORTING_WM_CHECK value on the root window " +
-                         "(%x) does not match _NET_SUPPORTING_WM_CHECK value " +
-                         "on the child window (%x).", childCheck, childCheck2)
-    }
-
-    return xu.EwmhWmName(childCheck)
+// CacheAtom puts an atom into the cache.
+func (xu *XUtil) CacheAtom(name string, aid xgb.Id) {
+    xu.atoms[name] = aid
+    xu.atomNames[aid] = name
 }
 
 // BeSafe will recover from any panic produced by xgb or xgbutil and transform
@@ -198,14 +141,14 @@ func BeSafe(err *error) {
 
 // put16 adds a 16 bit integer to a byte slice.
 // Lifted from the xgb package.
-func put16(buf []byte, v uint16) {
+func Put16(buf []byte, v uint16) {
 	buf[0] = byte(v)
 	buf[1] = byte(v >> 8)
 }
 
 // put32 adds a 32 bit integer to a byte slice.
 // Lifted from the xgb package.
-func put32(buf []byte, v uint32) {
+func Put32(buf []byte, v uint32) {
 	buf[0] = byte(v)
 	buf[1] = byte(v >> 8)
 	buf[2] = byte(v >> 16)
@@ -214,7 +157,7 @@ func put32(buf []byte, v uint32) {
 
 // get16 extracts a 16 bit integer from a byte slice.
 // Lifted from the xgb package.
-func get16(buf []byte) uint16 {
+func Get16(buf []byte) uint16 {
 	v := uint16(buf[0])
 	v |= uint16(buf[1]) << 8
 	return v
@@ -222,7 +165,7 @@ func get16(buf []byte) uint16 {
 
 // get32 extracts a 32 bit integer from a byte slice.
 // Lifted from the xgb package.
-func get32(buf []byte) uint32 {
+func Get32(buf []byte) uint32 {
 	v := uint32(buf[0])
 	v |= uint32(buf[1]) << 8
 	v |= uint32(buf[2]) << 16

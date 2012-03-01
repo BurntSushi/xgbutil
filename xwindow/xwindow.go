@@ -22,9 +22,11 @@
 
     Window manager developers may find 'ParentWindow' and 'Listen' useful.
 */
-package xgbutil
+package xwindow
 
 import "code.google.com/p/x-go-binding/xgb"
+import "github.com/BurntSushi/xgbutil"
+import "github.com/BurntSushi/xgbutil/ewmh"
 
 // Geometry is a struct representing a window rectangle.
 // The top left corner is the origin. Window coordinates could be
@@ -35,12 +37,12 @@ type Geometry struct {
 }
 
 // ParentWindow queries the QueryTree and finds the parent window.
-func (xu *XUtil) ParentWindow(win xgb.Id) (xgb.Id, error) {
-    tree, err := xu.conn.QueryTree(win)
+func ParentWindow(xu *xgbutil.XUtil, win xgb.Id) (xgb.Id, error) {
+    tree, err := xu.Conn().QueryTree(win)
 
     if err != nil {
-        return 0, xerr(err, "ParentWindow",
-                       "Error retrieving parent window for %x", win)
+        return 0, xgbutil.Xerr(err, "ParentWindow",
+                               "Error retrieving parent window for %x", win)
     }
 
     return tree.Parent, nil
@@ -49,29 +51,29 @@ func (xu *XUtil) ParentWindow(win xgb.Id) (xgb.Id, error) {
 // MoveResize is an accurate means of resizing a window, accounting for
 // decorations. Usually, the x,y coordinates are fine---we just need to
 // adjust the width and height.
-func (xu *XUtil) MoveResize(win xgb.Id, x, y int32, w, h uint32) error {
-    neww, newh, err := xu.adjustSize(win, w, h)
+func MoveResize(xu *xgbutil.XUtil, win xgb.Id, x, y int32, w, h uint32) error {
+    neww, newh, err := adjustSize(xu, win, w, h)
     if err != nil {
         return err
     }
 
-    return xu.EwmhMoveresizeWindowExtra(win, uint32(x), uint32(y), neww, newh,
-                                        xgb.GravityBitForget, 2, true, true)
+    return ewmh.MoveresizeWindowExtra(xu, win, uint32(x), uint32(y), neww, newh,
+                                      xgb.GravityBitForget, 2, true, true)
 }
 
 // Move changes the position of a window without touching the size.
-func (xu *XUtil) Move(win xgb.Id, x, y int32) error {
-    return xu.EwmhMoveWindow(win, uint32(x), uint32(y))
+func Move(xu *xgbutil.XUtil, win xgb.Id, x, y int32) error {
+    return ewmh.MoveWindow(xu, win, uint32(x), uint32(y))
 }
 
 // Resize changes the size of a window without touching the position.
-func (xu *XUtil) Resize(win xgb.Id, w, h uint32) error {
-    neww, newh, err := xu.adjustSize(win, w, h)
+func Resize(xu *xgbutil.XUtil, win xgb.Id, w, h uint32) error {
+    neww, newh, err := adjustSize(xu, win, w, h)
     if err != nil {
         return err
     }
 
-    return xu.EwmhResizeWindow(win, neww, newh)
+    return ewmh.ResizeWindow(xu, win, neww, newh)
 }
 
 // adjustSize takes a client and dimensions, and adjust them so that they'll
@@ -83,13 +85,14 @@ func (xu *XUtil) Resize(win xgb.Id, w, h uint32) error {
 // not what you want. Therefore, transform 200 into
 // 200 - decoration window width - client window width.
 // Similarly for height.
-func (xu *XUtil) adjustSize(win xgb.Id, w, h uint32) (uint32, uint32, error) {
-    cGeom, err := xu.RawGeometry(win) // raw client geometry
+func adjustSize(xu *xgbutil.XUtil, win xgb.Id, w, h uint32) (
+     uint32, uint32, error) {
+    cGeom, err := RawGeometry(xu, win) // raw client geometry
     if err != nil {
         return 0, 0, err
     }
 
-    pGeom, err := xu.GetGeometry(win) // geometry with decorations
+    pGeom, err := GetGeometry(xu, win) // geometry with decorations
     if err != nil {
         return 0, 0, err
     }
@@ -115,11 +118,11 @@ func (xu *XUtil) adjustSize(win xgb.Id, w, h uint32) (uint32, uint32, error) {
 // The idea then is to traverse up the tree until we hit the root window.
 // Therefore, we're at a top-level window which should accurately reflect
 // the width/height.
-func (xu *XUtil) GetGeometry(win xgb.Id) (*Geometry, error) {
-    parent, err := xu.ParentWindow(win)
+func GetGeometry(xu *xgbutil.XUtil, win xgb.Id) (*Geometry, error) {
+    parent, err := ParentWindow(xu, win)
     for {
-        tempParent, err := xu.ParentWindow(parent)
-        if err != nil || tempParent == xu.root {
+        tempParent, err := ParentWindow(xu, parent)
+        if err != nil || tempParent == xu.RootWin() {
             break
         }
         parent = tempParent
@@ -128,12 +131,12 @@ func (xu *XUtil) GetGeometry(win xgb.Id) (*Geometry, error) {
         return nil, err
     }
 
-    return xu.RawGeometry(parent)
+    return RawGeometry(xu, parent)
 }
 
 // RawGeometry isn't smart. It just queries the window given for geometry.
-func (xu *XUtil) RawGeometry(win xgb.Id) (*Geometry, error) {
-    xgeom, err := xu.conn.GetGeometry(win)
+func RawGeometry(xu *xgbutil.XUtil, win xgb.Id) (*Geometry, error) {
+    xgeom, err := xu.Conn().GetGeometry(win)
     if err != nil {
         return nil, err
     }

@@ -7,9 +7,11 @@
     your displays. Considering this is the only extension I have working with
     XGB, this is good news.
 */
-package xgbutil
+package xinerama
 
 import "sort"
+
+import "github.com/BurntSushi/xgbutil"
 
 // Head is a struct representing an X head rectangle
 // (the top left corner is the origin).
@@ -38,8 +40,8 @@ func (hds Heads) Swap(i int, j int) {
 
 // Heads returns the list of heads in a physical ordering.
 // Namely, left to right then top to bottom. (Defined by (X, Y).)
-func (xu *XUtil) Heads() (Heads, error) {
-    xinfo, err := xu.conn.XineramaQueryScreens()
+func PhysicalHeads(xu *xgbutil.XUtil) (Heads, error) {
+    xinfo, err := xu.Conn().XineramaQueryScreens()
     if err != nil {
         return nil, err
     }

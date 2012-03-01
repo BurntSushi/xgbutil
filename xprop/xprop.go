@@ -5,67 +5,125 @@
     Technically, not all possible property replies are supported (yet).
     But everything needed to implement EWMH, ICCCM and Motif is here.
 */
-package xgbutil
+package xprop
 
 import (
     // "fmt" 
 
     "code.google.com/p/x-go-binding/xgb"
+    "github.com/BurntSushi/xgbutil"
 )
 
 // GetProperty abstracts the messiness of calling xgb.GetProperty.
-func (xu *XUtil) GetProperty(win xgb.Id, atom string) (
+func GetProperty(xu *xgbutil.XUtil, win xgb.Id, atom string) (
                  *xgb.GetPropertyReply, error) {
-    atomId, err := xu.Atm(atom)
+    atomId, err := Atm(xu, atom)
     if err != nil {
         return nil, err
     }
 
-    reply, err := xu.conn.GetProperty(false, win, atomId,
-                                      xgb.GetPropertyTypeAny, 0, (1 << 32) - 1)
+    reply, err := xu.Conn().GetProperty(false, win, atomId,
+                                        xgb.GetPropertyTypeAny, 0,
+                                        (1 << 32) - 1)
 
     if err != nil {
-        return nil, xerr(err, "GetProperty",
-                         "Error retrieving property '%s' on window %x",
-                         atom, win)
+        return nil, xgbutil.Xerr(err, "GetProperty",
+                                 "Error retrieving property '%s' on window %x",
+                                 atom, win)
     }
 
     if reply.Format == 0 {
-        return nil, xuerr("GetProperty", "No such property '%s' on window %x.",
-                          atom, win)
+        return nil, xgbutil.Xuerr("GetProperty",
+                                  "No such property '%s' on window %x.",
+                                  atom, win)
     }
 
     return reply, nil
 }
 
 // ChangeProperty abstracts the semi-nastiness of xgb.ChangeProperty.
-func (xu *XUtil) ChangeProperty(win xgb.Id, format byte, prop string,
-                                typ string, data []byte) error {
-    propAtom, err := xu.Atm(prop)
+func ChangeProp(xu *xgbutil.XUtil, win xgb.Id, format byte, prop string,
+                    typ string, data []byte) error {
+    propAtom, err := Atm(xu, prop)
     if err != nil {
         return err
     }
 
-    typAtom, err := xu.Atm(typ)
+    typAtom, err := Atm(xu, typ)
     if err != nil {
         return err
     }
 
-    xu.conn.ChangeProperty(xgb.PropModeReplace, win, propAtom,
-                           typAtom, format, data)
+    xu.Conn().ChangeProperty(xgb.PropModeReplace, win, propAtom,
+                             typAtom, format, data)
     return nil
 }
 
 // ChangeProperty32 makes changing 32 bit formatted properties easier
 // by constructing the raw X data for you.
-func (xu *XUtil) ChangeProperty32(win xgb.Id, prop string, typ string,
-                                  data ...uint32) error {
+func ChangeProp32(xu *xgbutil.XUtil, win xgb.Id, prop string, typ string,
+                      data ...uint32) error {
     buf := make([]byte, len(data) * 4)
     for i, datum := range data {
-        put32(buf[(i * 4):], datum)
+        xgbutil.Put32(buf[(i * 4):], datum)
     }
 
-    return xu.ChangeProperty(win, 32, prop, typ, buf)
+    return ChangeProp(xu, win, 32, prop, typ, buf)
+}
+
+// Atm is a short alias for Atom in the common case of interning an atom.
+// Namely, only_if_exists is set to true, so that if "name" is an atom that
+// does not exist, X will return "0" as an atom identifier. In which case,
+// we panic because that isn't what anyone wants.
+func Atm(xu *xgbutil.XUtil, name string) (xgb.Id, error) {
+    aid, err := Atom(xu, name, true)
+    if err != nil {
+        return 0, err
+    }
+    if aid == 0 {
+        return 0, xgbutil.Xuerr("Atm", "'%s' returned an identifier of 0.",
+                                name)
+    }
+
+    return aid, err
+}
+
+// Atom interns an atom and panics if there is any error.
+func Atom(xu *xgbutil.XUtil, name string, only_if_exists bool) (xgb.Id, error) {
+    // Check the cache first
+    if aid, ok := xu.GetAtom(name); ok {
+        return aid, nil
+    }
+
+    reply, err := xu.Conn().InternAtom(only_if_exists, name)
+    if err != nil {
+        return 0, xgbutil.Xerr(err, "Atom", "Error interning atom '%s'", name)
+    }
+
+    // If we're here, it means we didn't have this atom cached. So cache it!
+    xu.CacheAtom(name, reply.Atom)
+
+    return reply.Atom, nil
+}
+
+// AtomName fetches a string representation of an ATOM given its integer id.
+func AtomName(xu *xgbutil.XUtil, aid xgb.Id) (string, error) {
+    // Check the cache first
+    if atomName, ok := xu.GetAtomName(aid); ok {
+        return string(atomName), nil
+    }
+
+    reply, err := xu.Conn().GetAtomName(aid)
+    if err != nil {
+        return "", xgbutil.Xerr(err, "AtomName",
+                                "Error fetching name for ATOM id '%d'", aid)
+    }
+
+    // If we're here, it means we didn't have ths ATOM id cached. So cache it.
+    atomName := string(reply.Name)
+    xu.CacheAtom(atomName, aid)
+
+    return atomName, nil
 }
 
 // IdTo32 is a covenience function for converting []xgb.Id to []uint32.
@@ -80,10 +138,11 @@ func IdTo32(ids []xgb.Id) (ids32 []uint32) {
 // StrToAtoms is a convenience function for converting
 // []string to []uint32 atoms.
 // NOTE: If an atom name in the list doesn't exist, it will be created.
-func (xu *XUtil) StrToAtoms(atomNames []string) (atoms []uint32, err error) {
+func StrToAtoms(xu *xgbutil.XUtil, atomNames []string) (
+     atoms []uint32, err error) {
     atoms = make([]uint32, len(atomNames))
     for i, atomName := range atomNames {
-        a, err := xu.Atom(atomName, false)
+        a, err := Atom(xu, atomName, false)
         if err != nil {
             return nil, err
         }
@@ -96,36 +155,36 @@ func (xu *XUtil) StrToAtoms(atomNames []string) (atoms []uint32, err error) {
 // PropValAtom transforms a GetPropertyReply struct into an ATOM name.
 // The property reply must be in 32 bit format.
 // This is a method of an XUtil struct, unlike the other 'PropVal...' functions.
-func (xu *XUtil) PropValAtom(reply *xgb.GetPropertyReply, err error) (
-                 string, error) {
+func PropValAtom(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply, err error) (
+     string, error) {
     if err != nil {
         return "", err
     }
     if reply.Format != 32 {
-        return "", xuerr("PropValAtom", "Expected format 32 but got %d",
-                         reply.Format)
+        return "", xgbutil.Xuerr("PropValAtom", "Expected format 32 but got %d",
+                                 reply.Format)
     }
 
-    return xu.AtomName(xgb.Id(get32(reply.Value)))
+    return AtomName(xu, xgb.Id(xgbutil.Get32(reply.Value)))
 }
 
 // PropValAtoms is the same as PropValAtom, except that it returns a slice
 // of atom names. Also must be 32 bit format.
 // This is a method of an XUtil struct, unlike the other 'PropVal...' functions.
-func (xu *XUtil) PropValAtoms(reply *xgb.GetPropertyReply, err error) (
-                 []string, error) {
+func PropValAtoms(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply, err error) (
+     []string, error) {
     if err != nil {
         return nil, err
     }
     if reply.Format != 32 {
-        return nil, xuerr("PropValAtoms", "Expected format 32 but got %d",
-                          reply.Format)
+        return nil, xgbutil.Xuerr("PropValAtoms",
+                                  "Expected format 32 but got %d", reply.Format)
     }
 
     ids := make([]string, reply.ValueLen)
     vals := reply.Value
     for i := 0; len(vals) >= 4; i++ {
-        ids[i], err = xu.AtomName(xgb.Id(get32(vals)))
+        ids[i], err = AtomName(xu, xgb.Id(xgbutil.Get32(vals)))
         if err != nil {
             return nil, err
         }
@@ -144,11 +203,11 @@ func PropValId(reply *xgb.GetPropertyReply, err error) (xgb.Id, error) {
         return 0, err
     }
     if reply.Format != 32 {
-        return 0, xuerr("PropValId", "Expected format 32 but got %d",
-                        reply.Format)
+        return 0, xgbutil.Xuerr("PropValId", "Expected format 32 but got %d",
+                                reply.Format)
     }
 
-    return xgb.Id(get32(reply.Value)), nil
+    return xgb.Id(xgbutil.Get32(reply.Value)), nil
 }
 
 // PropValIds is the same as PropValId, except that it returns a slice
@@ -158,14 +217,14 @@ func PropValIds(reply *xgb.GetPropertyReply, err error) ([]xgb.Id, error) {
         return nil, err
     }
     if reply.Format != 32 {
-        return nil, xuerr("PropValIds", "Expected format 32 but got %d",
-                          reply.Format)
+        return nil, xgbutil.Xuerr("PropValIds", "Expected format 32 but got %d",
+                                  reply.Format)
     }
 
     ids := make([]xgb.Id, reply.ValueLen)
     vals := reply.Value
     for i := 0; len(vals) >= 4; i++ {
-        ids[i] = xgb.Id(get32(vals))
+        ids[i] = xgb.Id(xgbutil.Get32(vals))
         vals = vals[4:]
     }
 
@@ -179,11 +238,11 @@ func PropValNum(reply *xgb.GetPropertyReply, err error) (uint32, error) {
         return 0, err
     }
     if reply.Format != 32 {
-        return 0, xuerr("PropValNum", "Expected format 32 but got %d",
-                        reply.Format)
+        return 0, xgbutil.Xuerr("PropValNum", "Expected format 32 but got %d",
+                                reply.Format)
     }
 
-    return get32(reply.Value), nil
+    return xgbutil.Get32(reply.Value), nil
 }
 
 // PropValNums is the same as PropValNum, except that it returns a slice
@@ -193,14 +252,14 @@ func PropValNums(reply *xgb.GetPropertyReply, err error) ([]uint32, error) {
         return nil, err
     }
     if reply.Format != 32 {
-        return nil, xuerr("PropValIds", "Expected format 32 but got %d",
-                          reply.Format)
+        return nil, xgbutil.Xuerr("PropValIds", "Expected format 32 but got %d",
+                                  reply.Format)
     }
 
     nums := make([]uint32, reply.ValueLen)
     vals := reply.Value
     for i := 0; len(vals) >= 4; i++ {
-        nums[i] = get32(vals)
+        nums[i] = xgbutil.Get32(vals)
         vals = vals[4:]
     }
 
@@ -215,8 +274,8 @@ func PropValStr(reply *xgb.GetPropertyReply, err error) (string, error) {
         return "", err
     }
     if reply.Format != 8 {
-        return "", xuerr("PropValStr", "Expected format 8 but got %d",
-                         reply.Format)
+        return "", xgbutil.Xuerr("PropValStr", "Expected format 8 but got %d",
+                                 reply.Format)
     }
 
     return string(reply.Value), nil
@@ -230,8 +289,8 @@ func PropValStrs(reply *xgb.GetPropertyReply, err error) ([]string, error) {
         return nil, err
     }
     if reply.Format != 8 {
-        return nil, xuerr("PropValStrs", "Expected format 8 but got %d",
-                          reply.Format)
+        return nil, xgbutil.Xuerr("PropValStrs", "Expected format 8 but got %d",
+                                  reply.Format)
     }
 
     var strs []string

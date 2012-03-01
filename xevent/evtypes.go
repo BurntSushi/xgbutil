@@ -6,10 +6,11 @@
     it doesn't support all events. (It probably only has enough events to
     make xgbutil's core functionality work.)
 */
-package xgbutil
+package xevent
 
 import (
     "code.google.com/p/x-go-binding/xgb"
+    "github.com/BurntSushi/xgbutil"
 )
 
 // XEvent is an interface whereby an event struct ought to be convertible into
@@ -20,8 +21,8 @@ type XEvent interface {
 
 // SendRootEvent takes a type implementing the XEvent interface, converts it
 // to raw X bytes, and sends it off using the SendEvent request.
-func (xu *XUtil) SendRootEvent(ev XEvent, evMask uint32) {
-    xu.conn.SendEvent(false, xu.root, evMask, ev.Bytes())
+func SendRootEvent(xu *xgbutil.XUtil, ev XEvent, evMask uint32) {
+    xu.Conn().SendEvent(false, xu.RootWin(), evMask, ev.Bytes())
 }
 
 // ClientMessageEvent embeds the struct by the same name from the xgb library.
@@ -70,8 +71,8 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
             }
         }
     default:
-        return nil, xuerr("NewClientMessage",
-                          "Unsupported format '%d'.", Format)
+        return nil, xgbutil.Xuerr("NewClientMessage",
+                                  "Unsupported format '%d'.", Format)
     }
 
     return &ClientMessageEvent{&xgb.ClientMessageEvent{
@@ -88,8 +89,8 @@ func (ev *ClientMessageEvent) Bytes() []byte {
 
     buf[0] = xgb.ClientMessage
     buf[1] = ev.Format
-    put32(buf[4:], uint32(ev.Window))
-    put32(buf[8:], uint32(ev.Type))
+    xgbutil.Put32(buf[4:], uint32(ev.Window))
+    xgbutil.Put32(buf[8:], uint32(ev.Type))
 
     // ClientMessage data is a 20 byte list and can be one of:
     // 20 8-bit values
@@ -102,14 +103,14 @@ func (ev *ClientMessageEvent) Bytes() []byte {
         copy(data, ev.Data.Data8[:])
     case 16:
         for i, datum := range ev.Data.Data16 {
-            put16(data[(i * 2):], datum)
+            xgbutil.Put16(data[(i * 2):], datum)
         }
     case 32:
         for i, datum := range ev.Data.Data32 {
-            put32(data[(i * 4):], datum)
+            xgbutil.Put32(data[(i * 4):], datum)
         }
     default:
-        panic(xuerr("Bytes", "Unsupported format '%d'.", ev.Format))
+        panic(xgbutil.Xuerr("Bytes", "Unsupported format '%d'.", ev.Format))
     }
 
     return buf
