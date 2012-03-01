@@ -6,9 +6,13 @@ import (
     "math/rand"
     // "os" 
     "time"
-
     "code.google.com/p/x-go-binding/xgb"
+)
+
+import (
     "github.com/BurntSushi/xgbutil"
+    "github.com/BurntSushi/xgbutil/ewmh"
+    "github.com/BurntSushi/xgbutil/xwindow"
 )
 
 var X *xgbutil.XUtil
@@ -53,10 +57,10 @@ func main() {
 
     fmt.Println(X)
 
-    showDesk, _ := X.EwmhShowingDesktop()
+    showDesk, _ := ewmh.ShowingDesktopGet(X)
     fmt.Printf("Showing desktop? %v\n", showDesk)
 
-    wmName, err := X.GetEwmhWM()
+    wmName, err := ewmh.GetEwmhWM(X)
     if err != nil {
         fmt.Printf("No conforming window manager found... :-(\n")
         fmt.Println(err)
@@ -66,12 +70,12 @@ func main() {
 
     pager := xgb.Id(0x160001e)
     middle := xgb.Id(0x3200016)
-    geom, _ := X.EwmhDesktopGeometry()
-    active, _ := X.EwmhActiveWindow()
-    desktops, _ := X.EwmhDesktopNames()
-    curdesk, _ := X.EwmhCurrentDesktop()
-    clients, _ := X.EwmhClientList()
-    activeName, _ := X.EwmhWmName(active)
+    geom, _ := ewmh.DesktopGeometryGet(X)
+    active, _ := ewmh.ActiveWindowGet(X)
+    desktops, _ := ewmh.DesktopNamesGet(X)
+    curdesk, _ := ewmh.CurrentDesktopGet(X)
+    clients, _ := ewmh.ClientListGet(X)
+    activeName, _ := ewmh.WmNameGet(X, active)
 
     fmt.Printf("Active window: %x\n", active)
     fmt.Printf("Current desktop: %d\n", curdesk)
@@ -90,121 +94,122 @@ func main() {
     fmt.Printf("Current desktop: %s\n", desk)
 
     // fmt.Printf("\nChanging current desktop to 25 from %d\n", curdesk) 
-    X.EwmhCurrentDesktopSet(curdesk)
-    // fmt.Printf("Current desktop is now: %d\n", X.EwmhCurrentDesktop()) 
+    ewmh.CurrentDesktopSet(X, curdesk)
+    // fmt.Printf("Current desktop is now: %d\n", ewmh.CurrentDesktop(X)) 
 
     fmt.Printf("Setting active win to %x\n", middle)
-    X.EwmhActiveWindowReq(middle)
+    ewmh.ActiveWindowReq(X, middle)
 
     rand.Seed(int64(time.Now().Nanosecond()))
     randStr := make([]byte, 20)
     for i, _ := range randStr {
-        if rf := rand.Float32(); rf < 0.33 {
+        if rf := rand.Float32(); rf < 0.40 {
             randStr[i] = byte('a' + rand.Intn('z' - 'a'))
-        } else if rf < 0.66 {
+        } else if rf < 0.80 {
             randStr[i] = byte('A' + rand.Intn('Z' - 'A'))
         } else {
             randStr[i] = ' '
         }
     }
 
-    X.EwmhWmNameSet(active, string(randStr))
-    newName, _ := X.EwmhWmName(active)
+    ewmh.WmNameSet(X, active, string(randStr))
+    newName, _ := ewmh.WmNameGet(X, active)
     fmt.Printf("New name: %s\n", newName)
 
-    // deskNames := X.EwmhDesktopNames() 
+    // deskNames := ewmh.DesktopNamesGet(X) 
     // fmt.Printf("Desktop names: %s\n", deskNames) 
     // deskNames[len(deskNames) - 1] = "xgbutil" 
-    // X.EwmhDesktopNamesSet(deskNames) 
-    // fmt.Printf("Desktop names: %s\n", X.EwmhDesktopNames()) 
+    // ewmh.DesktopNamesSet(X, deskNames) 
+    // fmt.Printf("Desktop names: %s\n", ewmh.DesktopNamesGet(X)) 
 
-    supported, _ := X.EwmhSupported()
+    supported, _ := ewmh.SupportedGet(X)
     fmt.Printf("Supported hints: %v\n", supported)
     fmt.Printf("Setting supported hints...\n")
-    X.EwmhSupportedSet([]string{"_NET_CLIENT_LIST", "_NET_WM_NAME",
+    ewmh.SupportedSet(X, []string{"_NET_CLIENT_LIST", "_NET_WM_NAME",
                                 "_NET_WM_DESKTOP"})
 
-    numDesks, _ := X.EwmhNumberOfDesktops()
+    numDesks, _ := ewmh.NumberOfDesktopsGet(X)
     fmt.Printf("Number of desktops: %d\n", numDesks)
-    // X.EwmhNumberOfDesktopsReq(X.EwmhNumberOfDesktops() + 1) 
+    // ewmh.NumberOfDesktopsReq(X.EwmhNumberOfDesktops(X) + 1) 
     // time.Sleep(time.Second) 
-    // fmt.Printf("Number of desktops: %d\n", X.EwmhNumberOfDesktops()) 
+    // fmt.Printf("Number of desktops: %d\n", ewmh.NumberOfDesktops(X)) 
 
-    viewports, _ := X.EwmhDesktopViewport()
+    viewports, _ := ewmh.DesktopViewportGet(X)
     fmt.Printf("Viewports (%d): %v\n", len(viewports), viewports)
 
     // viewports[2].X = 50
     // viewports[2].Y = 293 
-    // X.EwmhDesktopViewportSet(viewports) 
+    // ewmh.DesktopViewportSet(X, viewports) 
     // time.Sleep(time.Second) 
 //  
-    // viewports = X.EwmhDesktopViewport() 
+    // viewports = ewmh.DesktopViewport(X) 
     // fmt.Printf("Viewports (%d): %v\n", len(viewports), viewports) 
 
-    // X.EwmhCurrentDesktopReq(3) 
+    // ewmh.CurrentDesktopReq(X, 3) 
 
-    visDesks, _ := X.EwmhVisibleDesktops()
-    workarea, _ := X.EwmhWorkarea()
+    visDesks, _ := ewmh.VisibleDesktopsGet(X)
+    workarea, _ := ewmh.WorkareaGet(X)
     fmt.Printf("Visible desktops: %v\n", visDesks)
     fmt.Printf("Workareas: %v\n", workarea)
-    // fmt.Printf("Virtual roots: %v\n", X.EwmhVirtualRoots()) 
-    // fmt.Printf("Desktop layout: %v\n", X.EwmhDesktopLayout()) 
+    // fmt.Printf("Virtual roots: %v\n", ewmh.VirtualRoots(X)) 
+    // fmt.Printf("Desktop layout: %v\n", ewmh.DesktopLayout(X)) 
     fmt.Printf("Closing window %x\n", 0x2e004c5)
-    X.EwmhCloseWindow(0x2e004c5)
+    ewmh.CloseWindow(X, 0x2e004c5)
 
     fmt.Printf("Moving/resizing window: %x\n", 0x2e004d0)
-    X.EwmhMoveresizeWindow(0x2e004d0, 1920, 30, 500, 500)
+    ewmh.MoveresizeWindow(X, 0x2e004d0, 1920, 30, 500, 500)
 
     // fmt.Printf("Trying to initiate a moveresize...\n") 
-    // X.EwmhWmMoveresize(0x2e004db, xgbutil.EwmhMove) 
+    // ewmh.WmMoveresize(X, 0x2e004db, xgbutil.EwmhMove) 
     // time.Sleep(5 * time.Second) 
-    // X.EwmhWmMoveresize(0x2e004db, xgbutil.EwmhCancel) 
+    // ewmh.WmMoveresize(X, 0x2e004db, xgbutil.EwmhCancel) 
 
     // fmt.Printf("Stacking window %x...\n", 0x2e00509) 
-    // X.EwmhRestackWindow(0x2e00509) 
+    // ewmh.RestackWindow(X, 0x2e00509) 
 
     fmt.Printf("Requesting frame extents for active window...\n")
-    X.EwmhRequestFrameExtents(active)
+    ewmh.RequestFrameExtents(X, active)
 
-    actOpacity, _ := X.EwmhWmWindowOpacity(X.ParentWindow(active))
-    // actOpacity2 := X.EwmhWmWindowOpacity(X.ParentWindow(X.EwmhActiveWindow())) 
+    parent, _ := xwindow.ParentWindow(X, active)
+    actOpacity, _ := ewmh.WmWindowOpacityGet(X, parent)
+    // actOpacity2 := ewmh.WmWindowOpacityGet(X.ParentWindow(X.EwmhActiveWindow(X))) 
     fmt.Printf("Opacity for active window: %f\n", actOpacity)
     // fmt.Printf("Opacity for real active window: %f\n", actOpacity2) 
-    // X.EwmhWmWindowOpacitySet(X.ParentWindow(active), 0.5) 
+    // ewmh.WmWindowOpacitySet(X.ParentWindow(X, active), 0.5) 
 
-    activeDesk, _ := X.EwmhWmDesktop(active)
-    activeType, _ := X.EwmhWmWindowType(active)
+    activeDesk, _ := ewmh.WmDesktopGet(X, active)
+    activeType, _ := ewmh.WmWindowTypeGet(X, active)
     fmt.Printf("Active window's desktop: %d\n", activeDesk)
     fmt.Printf("Active's types: %v\n", activeType)
-    // fmt.Printf("Pager's types: %v\n", X.EwmhWmWindowType(0x180001e)) 
+    // fmt.Printf("Pager's types: %v\n", ewmh.WmWindowType(X, 0x180001e)) 
 
-    // fmt.Printf("Pager's state: %v\n", X.EwmhWmState(0x180001e)) 
+    // fmt.Printf("Pager's state: %v\n", ewmh.WmState(X, 0x180001e)) 
 
-    // X.EwmhWmStateReq(active, xgbutil.EwmhStateToggle, "_NET_WM_STATE_HIDDEN") 
-    // X.EwmhWmStateReqExtra(active, xgbutil.EwmhStateToggle, 
+    // ewmh.WmStateReq(X, active, xgbutil.EwmhStateToggle, "_NET_WM_STATE_HIDDEN") 
+    // ewmh.WmStateReqExtra(X, active, xgbutil.EwmhStateToggle, 
                           // "_NET_WM_STATE_MAXIMIZED_VERT", 
                           // "_NET_WM_STATE_MAXIMIZED_HORZ", 2) 
 
-    activeAllowed, _ := X.EwmhWmAllowedActions(active)
+    activeAllowed, _ := ewmh.WmAllowedActionsGet(X, active)
     fmt.Printf("Allowed actions on active: %v\n", activeAllowed)
 
-    struts, err := X.EwmhWmStrut(pager)
+    struts, err := ewmh.WmStrutGet(X, pager)
     if err != nil {
         fmt.Printf("Pager struts: %v\n", err)
     } else {
         fmt.Printf("Pager struts: %v\n", struts)
     }
 
-    pstruts, err := X.EwmhWmStrutPartial(pager)
+    pstruts, err := ewmh.WmStrutPartialGet(X, pager)
     if err != nil {
         fmt.Printf("Pager struts partial: %v - %v\n", pstruts, err)
     } else {
         fmt.Printf("Pager struts partial: %v\n", pstruts.BottomStartX)
     }
 
-    // fmt.Printf("Icon geometry for active: %v\n", X.EwmhWmIconGeometry(active)) 
+    // fmt.Printf("Icon geometry for active: %v\n", ewmh.WmIconGeometry(X, active)) 
 
-    icons, _ := X.EwmhWmIcon(active)
+    icons, _ := ewmh.WmIconGet(X, active)
     fmt.Printf("Active window's (%x) icon data: (length: %v)\n",
                active, len(icons))
     for _, icon := range icons {
@@ -212,6 +217,6 @@ func main() {
         fmt.Printf(" :: %d == %d\n", icon.Width * icon.Height, len(icon.Data))
     }
     // fmt.Printf("Now set them again...\n") 
-    // X.EwmhWmIconSet(active, icons[:len(icons) - 1]) 
+    // ewmh.WmIconSet(X, active, icons[:len(icons) - 1]) 
 }
 

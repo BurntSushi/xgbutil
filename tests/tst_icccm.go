@@ -2,7 +2,12 @@ package main
 
 import "fmt"
 import "code.google.com/p/x-go-binding/xgb"
-import "github.com/BurntSushi/xgbutil"
+
+import (
+    "github.com/BurntSushi/xgbutil"
+    "github.com/BurntSushi/xgbutil/ewmh"
+    "github.com/BurntSushi/xgbutil/icccm"
+)
 
 func showTest(vals...interface{}) {
     fmt.Printf("%s\n\t%v\n\t%v\n", vals...)
@@ -10,56 +15,56 @@ func showTest(vals...interface{}) {
 func main() {
     X, _ := xgbutil.Dial("")
 
-    active, err := X.EwmhActiveWindow()
+    active, err := ewmh.ActiveWindowGet(X)
 
-    wmName, err := X.IcccmWmName(active)
+    wmName, err := icccm.WmNameGet(X, active)
     showTest("WM_NAME get", wmName, err)
 
-    err = X.IcccmWmNameSet(active, "hooblah")
-    wmName, _ = X.IcccmWmName(active)
+    err = icccm.WmNameSet(X, active, "hooblah")
+    wmName, _ = icccm.WmNameGet(X, active)
     showTest("WM_NAME set", wmName, err)
 
-    wmNormHints, err := X.IcccmWmNormalHints(active)
+    wmNormHints, err := icccm.WmNormalHintsGet(X, active)
     showTest("WM_NORMAL_HINTS get", wmNormHints, err)
 
     wmNormHints.Width += 5
-    err = X.IcccmWmNormalHintsSet(active, wmNormHints)
+    err = icccm.WmNormalHintsSet(X, active, wmNormHints)
     showTest("WM_NORMAL_HINTS set", wmNormHints, err)
 
-    wmHints, err := X.IcccmWmHints(active)
+    wmHints, err := icccm.WmHintsGet(X, active)
     showTest("WM_HINTS get", wmHints, err)
 
-    wmHints.InitialState = xgbutil.StateNormal
-    err = X.IcccmWmHintsSet(active, wmHints)
+    wmHints.InitialState = icccm.StateNormal
+    err = icccm.WmHintsSet(X, active, wmHints)
     showTest("WM_NORMAL_HINTS set", wmHints, err)
 
-    wmClass, err := X.IcccmWmClass(active)
+    wmClass, err := icccm.WmClassGet(X, active)
     showTest("WM_CLASS get", wmClass, err)
 
-    wmClass.Instance = "kOnSoLe!!?!"
-    err = X.IcccmWmClassSet(active, wmClass)
+    wmClass.Instance = "hoopdy hoop"
+    err = icccm.WmClassSet(X, active, wmClass)
     showTest("WM_CLASS set", wmClass, err)
 
-    wmTrans, err := X.IcccmWmTransientFor(active)
+    wmTrans, err := icccm.WmTransientForGet(X, active)
     showTest("WM_TRANSIENT_FOR get", wmTrans, err)
 
-    wmProts, err := X.IcccmWmProtocols(active)
+    wmProts, err := icccm.WmProtocolsGet(X, active)
     showTest("WM_PROTOCOLS get", wmProts, err)
 
-    wmClient, err := X.IcccmWmClientMachine(active)
+    wmClient, err := icccm.WmClientMachineGet(X, active)
     showTest("WM_CLIENT_MACHINE get", wmClient, err)
 
-    err = X.IcccmWmClientMachineSet(active, "Leopard")
-    wmClient, _ = X.IcccmWmClientMachine(active)
+    err = icccm.WmClientMachineSet(X, active, "Leopard")
+    wmClient, _ = icccm.WmClientMachineGet(X, active)
     showTest("WM_CLIENT_MACHINE set", wmClient, err)
 
-    wmState, err := X.IcccmWmState(active)
+    wmState, err := icccm.WmStateGet(X, active)
     showTest("WM_STATE get", wmState, err)
 
     wmState.Icon = xgb.Id(8365538)
-    wmState.State = xgbutil.StateNormal
-    err = X.IcccmWmStateSet(active, wmState)
-    wmState, _ = X.IcccmWmState(active)
+    wmState.State = icccm.StateNormal
+    err = icccm.WmStateSet(X, active, wmState)
+    wmState, _ = icccm.WmStateGet(X, active)
     showTest("WM_STATE set", wmState, err)
 }
 
