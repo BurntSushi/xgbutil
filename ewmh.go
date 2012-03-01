@@ -53,102 +53,116 @@ import "code.google.com/p/x-go-binding/xgb"
 // EwmhClientEvent is a convenience function that sends ClientMessage events
 // to the root window as specified by the EWMH spec.
 func (xu *XUtil) EwmhClientEvent(window xgb.Id, message_type string,
-                                 data ...interface{}) {
+                                 data ...interface{}) error {
+    mstype, err := xu.Atm(message_type)
+    if err != nil {
+        return err
+    }
+
     evMask := (xgb.EventMaskSubstructureNotify |
                xgb.EventMaskSubstructureRedirect)
-    cm := NewClientMessage(32, window, xu.Atm(message_type), data...)
+    cm, err := NewClientMessage(32, window, mstype, data...)
+    if err != nil {
+        return err
+    }
+
     xu.SendRootEvent(cm, uint32(evMask))
+    return nil
 }
 
 // _NET_ACTIVE_WINDOW get
-func (xu *XUtil) EwmhActiveWindow() xgb.Id {
+func (xu *XUtil) EwmhActiveWindow() (xgb.Id, error) {
     return PropValId(xu.GetProperty(xu.root, "_NET_ACTIVE_WINDOW"))
 }
 
 // _NET_ACTIVE_WINDOW set
-func (xu *XUtil) EwmhActiveWindowSet(win xgb.Id) {
-    xu.ChangeProperty32(xu.root, "_NET_ACTIVE_WINDOW", "WINDOW", uint32(win))
+func (xu *XUtil) EwmhActiveWindowSet(win xgb.Id) error {
+    return xu.ChangeProperty32(xu.root, "_NET_ACTIVE_WINDOW", "WINDOW",
+                               uint32(win))
 }
 
 // _NET_ACTIVE_WINDOW req
-func (xu *XUtil) EwmhActiveWindowReq(win xgb.Id) {
-    xu.EwmhActiveWindowReqExtra(win, 2, 0, 0)
+func (xu *XUtil) EwmhActiveWindowReq(win xgb.Id) error {
+    return xu.EwmhActiveWindowReqExtra(win, 2, 0, 0)
 }
 
 // _NET_ACTIVE_WINDOW req extra
 func (xu *XUtil) EwmhActiveWindowReqExtra(win xgb.Id, source uint32,
                                           time xgb.Timestamp,
-                                          current_active xgb.Id) {
-    xu.EwmhClientEvent(win, "_NET_ACTIVE_WINDOW", source, uint32(time),
-                       uint32(current_active))
+                                          current_active xgb.Id) error {
+    return xu.EwmhClientEvent(win, "_NET_ACTIVE_WINDOW", source, uint32(time),
+                              uint32(current_active))
 }
 
 // _NET_CLIENT_LIST get
-func (xu *XUtil) EwmhClientList() []xgb.Id {
+func (xu *XUtil) EwmhClientList() ([]xgb.Id, error) {
     return PropValIds(xu.GetProperty(xu.root, "_NET_CLIENT_LIST"))
 }
 
 // _NET_CLIENT_LIST set
-func (xu *XUtil) EwmhClientListSet(wins []xgb.Id) {
-    xu.ChangeProperty32(xu.root, "_NET_CLIENT_LIST", "WINDOW",
-                        IdTo32(wins)...)
+func (xu *XUtil) EwmhClientListSet(wins []xgb.Id) error {
+    return xu.ChangeProperty32(xu.root, "_NET_CLIENT_LIST", "WINDOW",
+                               IdTo32(wins)...)
 }
 
 // _NET_CLIENT_LIST_STACKING get
-func (xu *XUtil) EwmhClientListStacking() []xgb.Id {
+func (xu *XUtil) EwmhClientListStacking() ([]xgb.Id, error) {
     return PropValIds(xu.GetProperty(xu.root, "_NET_CLIENT_LIST_STACKING"))
 }
 
 // _NET_CLIENT_LIST_STACKING set
-func (xu *XUtil) EwmhClientListStackingSet(wins []xgb.Id) {
-    xu.ChangeProperty32(xu.root, "_NET_CLIENT_LIST_STACKING", "WINDOW",
-                        IdTo32(wins)...)
+func (xu *XUtil) EwmhClientListStackingSet(wins []xgb.Id) error {
+    return xu.ChangeProperty32(xu.root, "_NET_CLIENT_LIST_STACKING", "WINDOW",
+                               IdTo32(wins)...)
 }
 
 // _NET_CLOSE_WINDOW req
-func (xu *XUtil) EwmhCloseWindow(win xgb.Id) {
-    xu.EwmhCloseWindowExtra(win, 0, 2)
+func (xu *XUtil) EwmhCloseWindow(win xgb.Id) error {
+    return xu.EwmhCloseWindowExtra(win, 0, 2)
 }
 
 // _NET_CLOSE_WINDOW req extra
 func (xu *XUtil) EwmhCloseWindowExtra(win xgb.Id, time xgb.Timestamp,
-                                         source uint32) {
-    xu.EwmhClientEvent(win, "_NET_CLOSE_WINDOW", uint32(time), source)
+                                         source uint32) error {
+    return xu.EwmhClientEvent(win, "_NET_CLOSE_WINDOW", uint32(time), source)
 }
 
 // _NET_CURRENT_DESKTOP get
-func (xu *XUtil) EwmhCurrentDesktop() uint32 {
+func (xu *XUtil) EwmhCurrentDesktop() (uint32, error) {
     return PropValNum(xu.GetProperty(xu.root, "_NET_CURRENT_DESKTOP"))
 }
 
 // _NET_CURRENT_DESKTOP set
-func (xu *XUtil) EwmhCurrentDesktopSet(desk uint32) {
-    xu.ChangeProperty32(xu.root, "_NET_CURRENT_DESKTOP", "CARDINAL", desk)
+func (xu *XUtil) EwmhCurrentDesktopSet(desk uint32) error {
+    return xu.ChangeProperty32(xu.root, "_NET_CURRENT_DESKTOP", "CARDINAL",
+                               desk)
 }
 
 // _NET_CURRENT_DESKTOP req
-func (xu *XUtil) EwmhCurrentDesktopReq(desk uint32) {
-    xu.EwmhClientEvent(xu.root, "_NET_CURRENT_DESKTOP", desk)
+func (xu *XUtil) EwmhCurrentDesktopReq(desk uint32) error {
+    return xu.EwmhCurrentDesktopReqExtra(desk, 0)
 }
 
 // _NET_CURRENT_DESKTOP req extra
-func (xu *XUtil) EwmhCurrentDesktopReqExtra(desk uint32, time xgb.Timestamp) {
-    xu.EwmhClientEvent(xu.root, "_NET_CURRENT_DESKTOP", desk, time)
+func (xu *XUtil) EwmhCurrentDesktopReqExtra(desk uint32,
+                                            time xgb.Timestamp) error {
+    return xu.EwmhClientEvent(xu.root, "_NET_CURRENT_DESKTOP", desk, time)
 }
 
 // _NET_DESKTOP_NAMES get
-func (xu *XUtil) EwmhDesktopNames() []string {
+func (xu *XUtil) EwmhDesktopNames() ([]string, error) {
     return PropValStrs(xu.GetProperty(xu.root, "_NET_DESKTOP_NAMES"))
 }
 
 // _NET_DESKTOP_NAMES set
-func (xu *XUtil) EwmhDesktopNamesSet(names []string) {
+func (xu *XUtil) EwmhDesktopNamesSet(names []string) error {
     nullterm := make([]byte, 0)
     for _, name := range names {
         nullterm = append(nullterm, name...)
         nullterm = append(nullterm, 0)
     }
-    xu.ChangeProperty(xu.root, 8, "_NET_DESKTOP_NAMES", "UTF8_STRING", nullterm)
+    return xu.ChangeProperty(xu.root, 8, "_NET_DESKTOP_NAMES", "UTF8_STRING",
+                             nullterm)
 }
 
 // DesktopGeometry is a struct that houses the width and height of a
@@ -159,21 +173,25 @@ type DesktopGeometry struct {
 }
 
 // _NET_DESKTOP_GEOMETRY get
-func (xu *XUtil) EwmhDesktopGeometry() DesktopGeometry {
-    geom := PropValNums(xu.GetProperty(xu.root, "_NET_DESKTOP_GEOMETRY"))
+func (xu *XUtil) EwmhDesktopGeometry() (DesktopGeometry, error) {
+    geom, err := PropValNums(xu.GetProperty(xu.root, "_NET_DESKTOP_GEOMETRY"))
+    if err != nil {
+        return DesktopGeometry{}, err
+    }
 
-    return DesktopGeometry{Width: geom[0], Height: geom[1]}
+    return DesktopGeometry{Width: geom[0], Height: geom[1]}, nil
 }
 
 // _NET_DESKTOP_GEOMETRY set
-func (xu *XUtil) EwmhDesktopGeometrySet(dg DesktopGeometry) {
-    xu.ChangeProperty32(xu.root, "_NET_DESKTOP_GEOMETRY", "CARDINAL",
-                        dg.Width, dg.Height)
+func (xu *XUtil) EwmhDesktopGeometrySet(dg DesktopGeometry) error {
+    return xu.ChangeProperty32(xu.root, "_NET_DESKTOP_GEOMETRY", "CARDINAL",
+                               dg.Width, dg.Height)
 }
 
 // _NET_DESKTOP_GEOMETRY req
-func (xu *XUtil) EwmhDesktopGeometryReq(dg DesktopGeometry) {
-    xu.EwmhClientEvent(xu.root, "_NET_DESKTOP_GEOMETRY", dg.Width, dg.Height)
+func (xu *XUtil) EwmhDesktopGeometryReq(dg DesktopGeometry) error {
+    return xu.EwmhClientEvent(xu.root, "_NET_DESKTOP_GEOMETRY", dg.Width,
+                              dg.Height)
 }
 
 // DesktopLayout is a struct that organizes information pertaining to
@@ -201,8 +219,11 @@ const (
 )
 
 // _NET_DESKTOP_LAYOUT get
-func (xu *XUtil) EwmhDesktopLayout() (dl DesktopLayout) {
-    dlraw := PropValNums(xu.GetProperty(xu.root, "_NET_DESKTOP_LAYOUT"))
+func (xu *XUtil) EwmhDesktopLayout() (dl DesktopLayout, err error) {
+    dlraw, err := PropValNums(xu.GetProperty(xu.root, "_NET_DESKTOP_LAYOUT"))
+    if err != nil {
+        return DesktopLayout{}, err
+    }
 
     dl.Orientation = dlraw[0]
     dl.Columns = dlraw[1]
@@ -214,14 +235,14 @@ func (xu *XUtil) EwmhDesktopLayout() (dl DesktopLayout) {
         dl.StartingCorner = EwmhTopLeft
     }
 
-    return dl
+    return dl, nil
 }
 
 // _NET_DESKTOP_LAYOUT set
 func (xu *XUtil) EwmhDesktopLayoutSet(orientation, columns, rows,
-                                      startingCorner uint32) {
-    xu.ChangeProperty32(xu.root, "_NET_DESKTOP_LAYOUT", "CARDINAL",
-                        orientation, columns, rows, startingCorner)
+                                      startingCorner uint32) error {
+    return xu.ChangeProperty32(xu.root, "_NET_DESKTOP_LAYOUT", "CARDINAL",
+                               orientation, columns, rows, startingCorner)
 }
 
 // DesktopViewport is a struct that contains a pairing of x,y coordinates
@@ -233,34 +254,37 @@ type DesktopViewport struct {
 }
 
 // _NET_DESKTOP_VIEWPORT get
-func (xu *XUtil) EwmhDesktopViewport() []DesktopViewport {
-    coords := PropValNums(xu.GetProperty(xu.root, "_NET_DESKTOP_VIEWPORT"))
-    viewports := make([]DesktopViewport, len(coords) / 2)
+func (xu *XUtil) EwmhDesktopViewport() ([]DesktopViewport, error) {
+    coords, err := PropValNums(xu.GetProperty(xu.root, "_NET_DESKTOP_VIEWPORT"))
+    if err != nil {
+        return nil, err
+    }
 
+    viewports := make([]DesktopViewport, len(coords) / 2)
     for i, _ := range viewports {
         viewports[i] = DesktopViewport{
             X: coords[i * 2],
             Y: coords[i * 2 + 1],
         }
     }
-
-    return viewports
+    return viewports, nil
 }
 
 // _NET_DESKTOP_VIEWPORT set
-func (xu *XUtil) EwmhDesktopViewportSet(viewports []DesktopViewport) {
+func (xu *XUtil) EwmhDesktopViewportSet(viewports []DesktopViewport) error {
     coords := make([]uint32, len(viewports) * 2)
     for i, viewport := range viewports {
         coords[i * 2] = viewport.X
         coords[i * 2 + 1] = viewport.Y
     }
 
-    xu.ChangeProperty32(xu.root, "_NET_DESKTOP_VIEWPORT", "CARDINAL", coords...)
+    return xu.ChangeProperty32(xu.root, "_NET_DESKTOP_VIEWPORT", "CARDINAL",
+                               coords...)
 }
 
 // _NET_DESKTOP_VIEWPORT req
-func (xu *XUtil) EwmhDesktopViewportReq(x uint32, y uint32) {
-    xu.EwmhClientEvent(xu.root, "_NET_DESKTOP_VIEWPORT", x, y)
+func (xu *XUtil) EwmhDesktopViewportReq(x uint32, y uint32) error {
+    return xu.EwmhClientEvent(xu.root, "_NET_DESKTOP_VIEWPORT", x, y)
 }
 
 // FrameExtents is a struct that organizes information associated with
@@ -274,47 +298,50 @@ type FrameExtents struct {
 }
 
 // _NET_FRAME_EXTENTS get
-func (xu *XUtil) EwmhFrameExtents(win xgb.Id) FrameExtents {
-    raw := PropValNums(xu.GetProperty(win, "_NET_FRAME_EXTENTS"))
+func (xu *XUtil) EwmhFrameExtents(win xgb.Id) (FrameExtents, error) {
+    raw, err := PropValNums(xu.GetProperty(win, "_NET_FRAME_EXTENTS"))
+    if err != nil {
+        return FrameExtents{}, nil
+    }
 
     return FrameExtents{
         Left: raw[0],
         Right: raw[1],
         Top: raw[2],
         Bottom: raw[3],
-    }
+    }, nil
 }
 
 // _NET_FRAME_EXTENTS set
-func (xu *XUtil) EwmhFrameExtentsSet(win xgb.Id, extents FrameExtents) {
+func (xu *XUtil) EwmhFrameExtentsSet(win xgb.Id, extents FrameExtents) error {
     raw := make([]uint32, 4)
     raw[0] = extents.Left
     raw[1] = extents.Right
     raw[2] = extents.Top
     raw[3] = extents.Bottom
 
-    xu.ChangeProperty32(win, "_NET_FRAME_EXTENTS", "CARDINAL", raw...)
+    return xu.ChangeProperty32(win, "_NET_FRAME_EXTENTS", "CARDINAL", raw...)
 }
 
 // _NET_MOVERESIZE_WINDOW req
 // If 'w' or 'h' are 0, then they are not sent.
 // If you need to resize a window without moving it, use the ReqExtra variant,
 // or EwmhResize.
-func (xu *XUtil) EwmhMoveresizeWindow(win xgb.Id, x, y, w, h uint32) {
-    xu.EwmhMoveresizeWindowExtra(win, x, y, w, h, xgb.GravityBitForget, 2,
-                                    true, true)
+func (xu *XUtil) EwmhMoveresizeWindow(win xgb.Id, x, y, w, h uint32) error {
+    return xu.EwmhMoveresizeWindowExtra(win, x, y, w, h, xgb.GravityBitForget,
+                                        2, true, true)
 }
 
 // _NET_MOVERESIZE_WINDOW req resize only
-func (xu *XUtil) EwmhResizeWindow(win xgb.Id, w, h uint32) {
-    xu.EwmhMoveresizeWindowExtra(win, 0, 0, w, h, xgb.GravityBitForget, 2,
-                                    false, false)
+func (xu *XUtil) EwmhResizeWindow(win xgb.Id, w, h uint32) error {
+    return xu.EwmhMoveresizeWindowExtra(win, 0, 0, w, h, xgb.GravityBitForget,
+                                        2, false, false)
 }
 
 // _NET_MOVERESIZE_WINDOW req move only
-func (xu *XUtil) EwmhMoveWindow(win xgb.Id, x, y uint32) {
-    xu.EwmhMoveresizeWindowExtra(win, x, y, 0, 0, xgb.GravityBitForget, 2,
-                                    true, true)
+func (xu *XUtil) EwmhMoveWindow(win xgb.Id, x, y uint32) error {
+    return xu.EwmhMoveresizeWindowExtra(win, x, y, 0, 0, xgb.GravityBitForget,
+                                        2, true, true)
 }
 
 // _NET_MOVERESIZE_WINDOW req extra
@@ -322,7 +349,7 @@ func (xu *XUtil) EwmhMoveWindow(win xgb.Id, x, y uint32) {
 // To not set 'x' or 'y', 'usex' or 'usey' need to be set to false.
 func (xu *XUtil) EwmhMoveresizeWindowExtra(win xgb.Id, x, y, w, h,
                                            gravity, source uint32,
-                                           usex, usey bool) {
+                                           usex, usey bool) error {
     flags := gravity
     flags |= source << 12
     if usex {
@@ -338,109 +365,117 @@ func (xu *XUtil) EwmhMoveresizeWindowExtra(win xgb.Id, x, y, w, h,
         flags |= 1 << 11
     }
 
-    xu.EwmhClientEvent(win, "_NET_MOVERESIZE_WINDOW", flags, x, y, w, h)
+    return xu.EwmhClientEvent(win, "_NET_MOVERESIZE_WINDOW", flags, x, y, w, h)
 }
 
 // _NET_NUMBER_OF_DESKTOPS get
-func (xu *XUtil) EwmhNumberOfDesktops() uint32 {
+func (xu *XUtil) EwmhNumberOfDesktops() (uint32, error) {
     return PropValNum(xu.GetProperty(xu.root, "_NET_NUMBER_OF_DESKTOPS"))
 }
 
 // _NET_NUMBER_OF_DESKTOPS set
-func (xu *XUtil) EwmhNumberOfDesktopsSet(numDesks uint32) {
-    xu.ChangeProperty32(xu.root, "_NET_NUMBER_OF_DESKTOPS", "CARDINAL",
-                        numDesks)
+func (xu *XUtil) EwmhNumberOfDesktopsSet(numDesks uint32) error {
+    return xu.ChangeProperty32(xu.root, "_NET_NUMBER_OF_DESKTOPS", "CARDINAL",
+                               numDesks)
 }
 
 // _NET_NUMBER_OF_DESKTOPS req
-func (xu *XUtil) EwmhNumberOfDesktopsReq(numDesks uint32) {
-    xu.EwmhClientEvent(xu.root, "_NET_NUMBER_OF_DESKTOPS", numDesks)
+func (xu *XUtil) EwmhNumberOfDesktopsReq(numDesks uint32) error {
+    return xu.EwmhClientEvent(xu.root, "_NET_NUMBER_OF_DESKTOPS", numDesks)
 }
 
 // _NET_REQUEST_FRAME_EXTENTS req
-func (xu *XUtil) EwmhRequestFrameExtents(win xgb.Id) {
-    xu.EwmhClientEvent(win, "_NET_REQUEST_FRAME_EXTENTS")
+func (xu *XUtil) EwmhRequestFrameExtents(win xgb.Id) error {
+    return xu.EwmhClientEvent(win, "_NET_REQUEST_FRAME_EXTENTS")
 }
 
 // _NET_RESTACK_WINDOW req
 // The shortcut here is to just raise the window to the top of the window stack.
-func (xu *XUtil) EwmhRestackWindow(win xgb.Id) {
-    xu.EwmhRestackWindowExtra(win, xgb.StackModeAbove, 0, 2)
+func (xu *XUtil) EwmhRestackWindow(win xgb.Id) error {
+    return xu.EwmhRestackWindowExtra(win, xgb.StackModeAbove, 0, 2)
 }
 
 // _NET_RESTACK_WINDOW req extra
 func (xu *XUtil) EwmhRestackWindowExtra(win xgb.Id, stack_mode uint32,
-                                        sibling xgb.Id, source uint32) {
-    xu.EwmhClientEvent(win, "_NET_RESTACK_WINDOW", source, uint32(sibling),
-                       stack_mode)
+                                        sibling xgb.Id, source uint32) error {
+    return xu.EwmhClientEvent(win, "_NET_RESTACK_WINDOW", source,
+                              uint32(sibling), stack_mode)
 }
 
 // _NET_SHOWING_DESKTOP get
-func (xu *XUtil) EwmhShowingDesktop() bool {
-    reply, err := xu.SafeGetProperty(xu.root, "_NET_SHOWING_DESKTOP")
-
+func (xu *XUtil) EwmhShowingDesktop() (bool, error) {
+    reply, err := xu.GetProperty(xu.root, "_NET_SHOWING_DESKTOP")
     if err != nil {
-        return false
+        return false, err
     }
 
-    val := PropValNum(reply)
-    return val == 1
+    val, err := PropValNum(reply, nil)
+    if err != nil {
+        return false, err
+    }
+
+    return val == 1, nil
 }
 
 // _NET_SHOWING_DESKTOP set
-func (xu *XUtil) EwmhShowingDesktopSet(show bool) {
+func (xu *XUtil) EwmhShowingDesktopSet(show bool) error {
     var showInt uint32
     if show {
         showInt = 1
     } else {
         showInt = 0
     }
-    xu.ChangeProperty32(xu.root, "_NET_SHOWING_DESKTOP", "CARDINAL", showInt)
+    return xu.ChangeProperty32(xu.root, "_NET_SHOWING_DESKTOP", "CARDINAL",
+                               showInt)
 }
 
 // _NET_SHOWING_DESKTOP req
-func (xu *XUtil) EwmhShowingDesktopReq(show bool) {
+func (xu *XUtil) EwmhShowingDesktopReq(show bool) error {
     var showInt uint32
     if show {
         showInt = 1
     } else {
         showInt = 0
     }
-    xu.EwmhClientEvent(xu.root, "_NET_SHOWING_DESKTOP", showInt)
+    return xu.EwmhClientEvent(xu.root, "_NET_SHOWING_DESKTOP", showInt)
 }
 
 // _NET_SUPPORTED get
-func (xu *XUtil) EwmhSupported() []string {
+func (xu *XUtil) EwmhSupported() ([]string, error) {
     return xu.PropValAtoms(xu.GetProperty(xu.root, "_NET_SUPPORTED"))
 }
 
 // _NET_SUPPORTED set
 // This will create any atoms in the argument if they don't already exist.
-func (xu *XUtil) EwmhSupportedSet(atomNames []string) {
-    xu.ChangeProperty32(xu.root, "_NET_SUPPORTED", "ATOM",
-                        xu.StrToAtoms(atomNames)...)
+func (xu *XUtil) EwmhSupportedSet(atomNames []string) error {
+    atoms, err := xu.StrToAtoms(atomNames)
+    if err != nil {
+        return err
+    }
+
+    return xu.ChangeProperty32(xu.root, "_NET_SUPPORTED", "ATOM", atoms...)
 }
 
 // _NET_SUPPORTING_WM_CHECK get
-func (xu *XUtil) EwmhSupportingWmCheck(win xgb.Id) xgb.Id {
+func (xu *XUtil) EwmhSupportingWmCheck(win xgb.Id) (xgb.Id, error) {
     return PropValId(xu.GetProperty(win, "_NET_SUPPORTING_WM_CHECK"))
 }
 
 // _NET_SUPPORTING_WM_CHECK set
-func (xu *XUtil) EwmhSupportingWmCheckSet(win xgb.Id, wm_win xgb.Id) {
-    xu.ChangeProperty32(win, "_NET_SUPPORTING_WM_CHECK", "WINDOW",
-                        uint32(wm_win))
+func (xu *XUtil) EwmhSupportingWmCheckSet(win xgb.Id, wm_win xgb.Id) error {
+    return xu.ChangeProperty32(win, "_NET_SUPPORTING_WM_CHECK", "WINDOW",
+                               uint32(wm_win))
 }
 
 // _NET_VIRTUAL_ROOTS get
-func (xu *XUtil) EwmhVirtualRoots() []xgb.Id {
+func (xu *XUtil) EwmhVirtualRoots() ([]xgb.Id, error) {
     return PropValIds(xu.GetProperty(xu.root, "_NET_VIRTUAL_ROOTS"))
 }
 
 // _NET_VIRTUAL_ROOTS set
-func (xu *XUtil) EwmhVirtualRootsSet(wins []xgb.Id) {
-    xu.ChangeProperty32(xu.root, "_NET_VIRTUAL_ROOTS", "WINDOW",
-                        IdTo32(wins)...)
+func (xu *XUtil) EwmhVirtualRootsSet(wins []xgb.Id) error {
+    return xu.ChangeProperty32(xu.root, "_NET_VIRTUAL_ROOTS", "WINDOW",
+                               IdTo32(wins)...)
 }
 
 // _NET_VISIBLE_DESKTOPS get
@@ -448,45 +483,50 @@ func (xu *XUtil) EwmhVirtualRootsSet(wins []xgb.Id) {
 // It allows the window manager to report that it has multiple desktops
 // viewable at the same time. (This conflicts with other EWMH properties,
 // so I don't think this will ever be added to the official spec.)
-func (xu *XUtil) EwmhVisibleDesktops() []uint32 {
+func (xu *XUtil) EwmhVisibleDesktops() ([]uint32, error) {
     return PropValNums(xu.GetProperty(xu.root, "_NET_VISIBLE_DESKTOPS"))
 }
 
 // _NET_VISIBLE_DESKTOPS set
-func (xu *XUtil) EwmhVisibleDesktopsSet(desktops []uint32) {
-    xu.ChangeProperty32(xu.root, "_NET_VISIBLE_DESKTOPS", "CARDINAL",
-                        desktops...)
+func (xu *XUtil) EwmhVisibleDesktopsSet(desktops []uint32) error {
+    return xu.ChangeProperty32(xu.root, "_NET_VISIBLE_DESKTOPS", "CARDINAL",
+                               desktops...)
 }
 
 // _NET_WM_ALLOWED_ACTIONS get
-func (xu *XUtil) EwmhWmAllowedActions(win xgb.Id) []string {
+func (xu *XUtil) EwmhWmAllowedActions(win xgb.Id) ([]string, error) {
     return xu.PropValAtoms(xu.GetProperty(win, "_NET_WM_ALLOWED_ACTIONS"))
 }
 
 // _NET_WM_ALLOWED_ACTIONS set
-func (xu *XUtil) EwmhWmAllowedActionsSet(win xgb.Id, atomNames []string) {
-    xu.ChangeProperty32(win, "_NET_WM_ALLOWED_ACTIONS", "ATOM",
-                        xu.StrToAtoms(atomNames)...)
+func (xu *XUtil) EwmhWmAllowedActionsSet(win xgb.Id, atomNames []string) error {
+    atoms, err := xu.StrToAtoms(atomNames)
+    if err != nil {
+        return err
+    }
+
+    return xu.ChangeProperty32(win, "_NET_WM_ALLOWED_ACTIONS", "ATOM", atoms...)
 }
 
 // _NET_WM_DESKTOP get
-func (xu *XUtil) EwmhWmDesktop(win xgb.Id) uint32 {
+func (xu *XUtil) EwmhWmDesktop(win xgb.Id) (uint32, error) {
     return PropValNum(xu.GetProperty(win, "_NET_WM_DESKTOP"))
 }
 
 // _NET_WM_DESKTOP set
-func (xu *XUtil) EwmhWmDesktopSet(win xgb.Id, desk uint32) {
-    xu.ChangeProperty32(win, "_NET_WM_DESKTOP", "CARDINAL", desk)
+func (xu *XUtil) EwmhWmDesktopSet(win xgb.Id, desk uint32) error {
+    return xu.ChangeProperty32(win, "_NET_WM_DESKTOP", "CARDINAL", desk)
 }
 
 // _NET_WM_DESKTOP req
-func (xu *XUtil) EwmhWmDesktopReq(win xgb.Id, desk uint32) {
-    xu.EwmhWmDesktopReqExtra(win, desk, 2)
+func (xu *XUtil) EwmhWmDesktopReq(win xgb.Id, desk uint32) error {
+    return xu.EwmhWmDesktopReqExtra(win, desk, 2)
 }
 
 // _NET_WM_DESKTOP req extra
-func (xu *XUtil) EwmhWmDesktopReqExtra(win xgb.Id, desk uint32, source uint32) {
-    xu.EwmhClientEvent(win, "_NET_WM_DESKTOP", desk, source)
+func (xu *XUtil) EwmhWmDesktopReqExtra(win xgb.Id, desk uint32,
+                                       source uint32) error {
+    return xu.EwmhClientEvent(win, "_NET_WM_DESKTOP", desk, source)
 }
 
 // WmFullscreenMonitors is a struct that organizes information related to the
@@ -500,64 +540,74 @@ type WmFullscreenMonitors struct {
 }
 
 // _NET_WM_FULLSCREEN_MONITORS get
-func (xu *XUtil) EwmhWmFullscreenMonitors(win xgb.Id) WmFullscreenMonitors {
-    raw := PropValNums(xu.GetProperty(win, "_NET_WM_FULLSCREEN_MONITORS"))
+func (xu *XUtil) EwmhWmFullscreenMonitors(win xgb.Id) (
+                 WmFullscreenMonitors, error) {
+    raw, err := PropValNums(xu.GetProperty(win, "_NET_WM_FULLSCREEN_MONITORS"))
+    if err != nil {
+        return WmFullscreenMonitors{}, err
+    }
 
     return WmFullscreenMonitors{
         Top: raw[0],
         Bottom: raw[1],
         Left: raw[2],
         Right: raw[3],
-    }
+    }, err
 }
 
 // _NET_WM_FULLSCREEN_MONITORS set
 func (xu *XUtil) EwmhWmFullscreenMonitorsSet(win xgb.Id,
-                                             edges WmFullscreenMonitors) {
+                                             edges WmFullscreenMonitors) error {
     raw := make([]uint32, 4)
     raw[0] = edges.Top
     raw[1] = edges.Bottom
     raw[2] = edges.Left
     raw[3] = edges.Right
 
-    xu.ChangeProperty32(win, "_NET_WM_FULLSCREEN_MONITORS", "CARDINAL", raw...)
+    return xu.ChangeProperty32(win, "_NET_WM_FULLSCREEN_MONITORS", "CARDINAL",
+                               raw...)
 }
 
 // _NET_WM_FULLSCREEN_MONITORS req
 func (xu *XUtil) EwmhWmFullscreenMonitorsReq(win xgb.Id,
-                                             edges WmFullscreenMonitors) {
-    xu.EwmhWmFullscreenMonitorsReqExtra(win, edges, 2)
+                                             edges WmFullscreenMonitors) error {
+    return xu.EwmhWmFullscreenMonitorsReqExtra(win, edges, 2)
 }
 
 // _NET_WM_FULLSCREEN_MONITORS req extra
 func (xu *XUtil) EwmhWmFullscreenMonitorsReqExtra(win xgb.Id,
                                                   edges WmFullscreenMonitors,
-                                                  source uint32) {
-    xu.EwmhClientEvent(win, "_NET_WM_FULLSCREEN_MONITORS",
-                       edges.Top, edges.Bottom, edges.Left, edges.Right, source)
+                                                  source uint32) error {
+    return xu.EwmhClientEvent(win, "_NET_WM_FULLSCREEN_MONITORS",
+                              edges.Top, edges.Bottom, edges.Left, edges.Right,
+                              source)
 }
 
 // _NET_WM_HANDLED_ICONS get
-func (xu *XUtil) EwmhWmHandledIcons(win xgb.Id) bool {
-    reply, err := xu.SafeGetProperty(win, "_NET_WM_HANDLED_ICONS")
-
+func (xu *XUtil) EwmhWmHandledIcons(win xgb.Id) (bool, error) {
+    reply, err := xu.GetProperty(win, "_NET_WM_HANDLED_ICONS")
     if err != nil {
-        return false
+        return false, err
     }
 
-    val := PropValNum(reply)
-    return val == 1
+    val, err := PropValNum(reply, nil)
+    if err != nil {
+        return false, err
+    }
+
+    return val == 1, nil
 }
 
 // _NET_WM_HANDLED_ICONS set
-func (xu *XUtil) EwmhWmHandledIconsSet(handle bool) {
+func (xu *XUtil) EwmhWmHandledIconsSet(handle bool) error {
     var handled uint32
     if handle {
         handled = 1
     } else {
         handled = 0
     }
-    xu.ChangeProperty32(xu.root, "_NET_WM_HANDLED_ICONS", "CARDINAL", handled)
+    return xu.ChangeProperty32(xu.root, "_NET_WM_HANDLED_ICONS", "CARDINAL",
+                               handled)
 }
 
 // WmIcon is a struct that contains data for a single icon.
@@ -570,8 +620,11 @@ type WmIcon struct {
 }
 
 // _NET_WM_ICON get
-func (xu *XUtil) EwmhWmIcon(win xgb.Id) []WmIcon {
-    icon := PropValNums(xu.GetProperty(win, "_NET_WM_ICON"))
+func (xu *XUtil) EwmhWmIcon(win xgb.Id) ([]WmIcon, error) {
+    icon, err := PropValNums(xu.GetProperty(win, "_NET_WM_ICON"))
+    if err != nil {
+        return nil, err
+    }
 
     wmicons := make([]WmIcon, 0)
     start := uint32(0)
@@ -589,18 +642,18 @@ func (xu *XUtil) EwmhWmIcon(win xgb.Id) []WmIcon {
         start += upto + 2
     }
 
-    return wmicons
+    return wmicons, nil
 }
 
 // _NET_WM_ICON set
-func (xu *XUtil) EwmhWmIconSet(win xgb.Id, icons []WmIcon) {
+func (xu *XUtil) EwmhWmIconSet(win xgb.Id, icons []WmIcon) error {
     raw := make([]uint32, 0, 10000) // start big
     for _, icon := range icons {
         raw = append(raw, icon.Width, icon.Height)
         raw = append(raw, icon.Data...)
     }
 
-    xu.ChangeProperty32(win, "_NET_WM_ICON", "CARDINAL", raw...)
+    return xu.ChangeProperty32(win, "_NET_WM_ICON", "CARDINAL", raw...)
 }
 
 // WmIconGeometry struct organizes the information pertaining to the
@@ -613,36 +666,41 @@ type WmIconGeometry struct {
 }
 
 // _NET_WM_ICON_GEOMETRY get
-func (xu *XUtil) EwmhWmIconGeometry(win xgb.Id) WmIconGeometry {
-    geom := PropValNums(xu.GetProperty(win, "_NET_WM_ICON_GEOMETRY"))
+func (xu *XUtil) EwmhWmIconGeometry(win xgb.Id) (WmIconGeometry, error) {
+    geom, err := PropValNums(xu.GetProperty(win, "_NET_WM_ICON_GEOMETRY"))
+    if err != nil {
+        return WmIconGeometry{}, err
+    }
 
     return WmIconGeometry{
         X: geom[0],
         Y: geom[1],
         Width: geom[2],
         Height: geom[3],
-    }
+    }, nil
 }
 
 // _NET_WM_ICON_GEOMETRY set
-func (xu *XUtil) EwmhWmIconGeometrySet(win xgb.Id, geom WmIconGeometry) {
+func (xu *XUtil) EwmhWmIconGeometrySet(win xgb.Id, geom WmIconGeometry) error {
     rawGeom := make([]uint32, 4)
     rawGeom[0] = geom.X
     rawGeom[1] = geom.Y
     rawGeom[2] = geom.Width
     rawGeom[3] = geom.Height
 
-    xu.ChangeProperty32(win, "_NET_WM_ICON_GEOMETRY", "CARDINAL", rawGeom...)
+    return xu.ChangeProperty32(win, "_NET_WM_ICON_GEOMETRY", "CARDINAL",
+                               rawGeom...)
 }
 
 // _NET_WM_ICON_NAME get
-func (xu *XUtil) EwmhWmIconName(win xgb.Id) string {
+func (xu *XUtil) EwmhWmIconName(win xgb.Id) (string, error) {
     return PropValStr(xu.GetProperty(win, "_NET_WM_ICON_NAME"))
 }
 
 // _NET_WM_ICON_NAME set
-func (xu *XUtil) EwmhWmIconNameSet(win xgb.Id, name string) {
-    xu.ChangeProperty(win, 8, "_NET_WM_ICON_NAME", "UTF8_STRING", []byte(name))
+func (xu *XUtil) EwmhWmIconNameSet(win xgb.Id, name string) error {
+    return xu.ChangeProperty(win, 8, "_NET_WM_ICON_NAME", "UTF8_STRING",
+                             []byte(name))
 }
 
 // _NET_WM_MOVERESIZE constants
@@ -662,25 +720,26 @@ const (
 )
 
 // _NET_WM_MOVERESIZE req
-func (xu *XUtil) EwmhWmMoveresize(win xgb.Id, direction uint32) {
-    xu.EwmhWmMoveresizeExtra(win, direction, 0, 0, 0, 2)
+func (xu *XUtil) EwmhWmMoveresize(win xgb.Id, direction uint32) error {
+    return xu.EwmhWmMoveresizeExtra(win, direction, 0, 0, 0, 2)
 }
 
 // _NET_WM_MOVERESIZE req extra
 func (xu *XUtil) EwmhWmMoveresizeExtra(win xgb.Id, direction, x_root, y_root,
-                                       button, source uint32) {
-    xu.EwmhClientEvent(win, "_NET_WM_MOVERESIZE", x_root, y_root, direction,
-                       button, source)
+                                       button, source uint32) error {
+    return xu.EwmhClientEvent(win, "_NET_WM_MOVERESIZE", x_root, y_root,
+                              direction, button, source)
 }
 
 // _NET_WM_NAME get
-func (xu *XUtil) EwmhWmName(win xgb.Id) string {
+func (xu *XUtil) EwmhWmName(win xgb.Id) (string, error) {
     return PropValStr(xu.GetProperty(win, "_NET_WM_NAME"))
 }
 
 // _NET_WM_NAME set
-func (xu *XUtil) EwmhWmNameSet(win xgb.Id, name string) {
-    xu.ChangeProperty(win, 8, "_NET_WM_NAME", "UTF8_STRING", []byte(name))
+func (xu *XUtil) EwmhWmNameSet(win xgb.Id, name string) error {
+    return xu.ChangeProperty(win, 8, "_NET_WM_NAME", "UTF8_STRING",
+                             []byte(name))
 }
 
 // WmOpaqueRegion organizes information related to the _NET_WM_OPAQUE_REGION
@@ -694,10 +753,13 @@ type WmOpaqueRegion struct {
 }
 
 // _NET_WM_OPAQUE_REGION get
-func (xu *XUtil) EwmhWmOpaqueRegion(win xgb.Id) []WmOpaqueRegion {
-    raw := PropValNums(xu.GetProperty(win, "_NET_WM_OPAQUE_REGION"))
-    regions := make([]WmOpaqueRegion, len(raw) / 4)
+func (xu *XUtil) EwmhWmOpaqueRegion(win xgb.Id) ([]WmOpaqueRegion, error) {
+    raw, err := PropValNums(xu.GetProperty(win, "_NET_WM_OPAQUE_REGION"))
+    if err != nil {
+        return nil, err
+    }
 
+    regions := make([]WmOpaqueRegion, len(raw) / 4)
     for i, _ := range(regions) {
         regions[i] = WmOpaqueRegion{
             X: raw[i * 4 + 0],
@@ -706,12 +768,12 @@ func (xu *XUtil) EwmhWmOpaqueRegion(win xgb.Id) []WmOpaqueRegion {
             Height: raw[i * 4 + 3],
         }
     }
-
-    return regions
+    return regions, nil
 }
 
 // _NET_WM_OPAQUE_REGION set
-func (xu *XUtil) EwmhWmOpaqueRegionSet(win xgb.Id, regions []WmOpaqueRegion) {
+func (xu *XUtil) EwmhWmOpaqueRegionSet(win xgb.Id,
+                                       regions []WmOpaqueRegion) error {
     raw := make([]uint32, len(regions) * 4)
 
     for i, region := range(regions) {
@@ -721,28 +783,32 @@ func (xu *XUtil) EwmhWmOpaqueRegionSet(win xgb.Id, regions []WmOpaqueRegion) {
         raw[i * 4 + 3] = region.Height
     }
 
-    xu.ChangeProperty32(win, "_NET_WM_OPAQUE_REGION", "CARDINAL", raw...)
+    return xu.ChangeProperty32(win, "_NET_WM_OPAQUE_REGION", "CARDINAL", raw...)
 }
 
 // _NET_WM_PID get
-func (xu *XUtil) EwmhWmPid(win xgb.Id) uint32 {
+func (xu *XUtil) EwmhWmPid(win xgb.Id) (uint32, error) {
     return PropValNum(xu.GetProperty(win, "_NET_WM_PID"))
 }
 
 // _NET_WM_PID set
-func (xu *XUtil) EwmhWmPidSet(win xgb.Id, pid uint32) {
-    xu.ChangeProperty32(win, "_NET_WM_PID", "CARDINAL", pid)
+func (xu *XUtil) EwmhWmPidSet(win xgb.Id, pid uint32) error {
+    return xu.ChangeProperty32(win, "_NET_WM_PID", "CARDINAL", pid)
 }
 
 // _NET_WM_PING req
-func (xu *XUtil) EwmhWmPing(win xgb.Id, response bool) {
-    xu.EwmhWmPingExtra(win, response, 0)
+func (xu *XUtil) EwmhWmPing(win xgb.Id, response bool) error {
+    return xu.EwmhWmPingExtra(win, response, 0)
 }
 
 // _NET_WM_PING req extra
 func (xu *XUtil) EwmhWmPingExtra(win xgb.Id, response bool,
-                                 time xgb.Timestamp) {
-    pingAtom := xu.Atm("_NET_WM_PING")
+                                 time xgb.Timestamp) error {
+    pingAtom, err := xu.Atm("_NET_WM_PING")
+    if err != nil {
+        return err
+    }
+
     var evWindow xgb.Id
     if response {
         evWindow = xu.root
@@ -750,10 +816,12 @@ func (xu *XUtil) EwmhWmPingExtra(win xgb.Id, response bool,
         evWindow = win
     }
 
-    xu.EwmhClientEvent(evWindow, "WM_PROTOCOLS", uint32(pingAtom), time, win)
+    return xu.EwmhClientEvent(evWindow, "WM_PROTOCOLS", uint32(pingAtom), time,
+                              win)
 }
 
 // _NET_WM_STATE constants for state toggling
+// These correspond to the "action" parameter.
 const (
     EwmhStateRemove = iota
     EwmhStateAdd
@@ -761,35 +829,48 @@ const (
 )
 
 // _NET_WM_STATE get
-func (xu *XUtil) EwmhWmState(win xgb.Id) []string {
+func (xu *XUtil) EwmhWmState(win xgb.Id) ([]string, error) {
     return xu.PropValAtoms(xu.GetProperty(win, "_NET_WM_STATE"))
 }
 
 // _NET_WM_STATE set
-func (xu *XUtil) EwmhWmStateSet(win xgb.Id, atomNames []string) {
-    xu.ChangeProperty32(win, "_NET_WM_STATE", "ATOM",
-                        xu.StrToAtoms(atomNames)...)
+func (xu *XUtil) EwmhWmStateSet(win xgb.Id, atomNames []string) error {
+    atoms, err := xu.StrToAtoms(atomNames)
+    if err != nil {
+        return err
+    }
+
+    return xu.ChangeProperty32(win, "_NET_WM_STATE", "ATOM", atoms...)
 }
 
 // _NET_WM_STATE req
-func (xu *XUtil) EwmhWmStateReq(win xgb.Id, action uint32, atomName string) {
-    xu.EwmhWmStateReqExtra(win, action, atomName, "", 2)
+func (xu *XUtil) EwmhWmStateReq(win xgb.Id, action uint32,
+                                atomName string) error {
+    return xu.EwmhWmStateReqExtra(win, action, atomName, "", 2)
 }
 
 // _NET_WM_STATE req extra
 func (xu *XUtil) EwmhWmStateReqExtra(win xgb.Id, action uint32,
                                      first string, second string,
-                                     source uint32) {
-    var atom1, atom2 uint32
+                                     source uint32) (err error) {
+    var atom1, atom2 xgb.Id
 
-    atom1 = uint32(xu.Atom(first, false))
+    atom1, err = xu.Atom(first, false)
+    if err != nil {
+        return err
+    }
+
     if len(second) > 0 {
-        atom2 = uint32(xu.Atom(second, false))
+        atom2, err = xu.Atom(second, false)
+        if err != nil {
+            return err
+        }
     } else {
         atom2 = 0
     }
 
-    xu.EwmhClientEvent(win, "_NET_WM_STATE", action, atom1, atom2, source)
+    return xu.EwmhClientEvent(win, "_NET_WM_STATE", action, uint32(atom1),
+                              uint32(atom2), source)
 }
 
 // WmStrut struct organizes information for the _NET_WM_STRUT property.
@@ -802,26 +883,29 @@ type WmStrut struct {
 }
 
 // _NET_WM_STRUT get
-func (xu *XUtil) EwmhWmStrut(win xgb.Id) WmStrut {
-    struts := PropValNums(xu.GetProperty(win, "_NET_WM_STRUT"))
+func (xu *XUtil) EwmhWmStrut(win xgb.Id) (WmStrut, error) {
+    struts, err := PropValNums(xu.GetProperty(win, "_NET_WM_STRUT"))
+    if err != nil {
+        return WmStrut{}, err
+    }
 
     return WmStrut {
         Left: struts[0],
         Right: struts[1],
         Top: struts[2],
         Bottom: struts[3],
-    }
+    }, nil
 }
 
 // _NET_WM_STRUT set
-func (xu *XUtil) EwmhWmStrutSet(win xgb.Id, struts WmStrut) {
+func (xu *XUtil) EwmhWmStrutSet(win xgb.Id, struts WmStrut) error {
     rawStruts := make([]uint32, 4)
     rawStruts[0] = struts.Left
     rawStruts[1] = struts.Right
     rawStruts[2] = struts.Top
     rawStruts[3] = struts.Bottom
 
-    xu.ChangeProperty32(win, "_NET_WM_STRUT", "CARDINAL", rawStruts...)
+    return xu.ChangeProperty32(win, "_NET_WM_STRUT", "CARDINAL", rawStruts...)
 }
 
 // WmStrutPartial struct organizes information for the _NET_WM_STRUT_PARTIAL
@@ -835,8 +919,11 @@ type WmStrutPartial struct {
 }
 
 // _NET_WM_STRUT_PARTIAL get
-func (xu *XUtil) EwmhWmStrutPartial(win xgb.Id) WmStrutPartial {
-    struts := PropValNums(xu.GetProperty(win, "_NET_WM_STRUT_PARTIAL"))
+func (xu *XUtil) EwmhWmStrutPartial(win xgb.Id) (WmStrutPartial, error) {
+    struts, err := PropValNums(xu.GetProperty(win, "_NET_WM_STRUT_PARTIAL"))
+    if err != nil {
+        return WmStrutPartial{}, err
+    }
 
     return WmStrutPartial {
         Left: struts[0], Right: struts[1], Top: struts[2], Bottom: struts[3],
@@ -844,11 +931,12 @@ func (xu *XUtil) EwmhWmStrutPartial(win xgb.Id) WmStrutPartial {
         RightStartY: struts[6], RightEndY: struts[7],
         TopStartX: struts[8], TopEndX: struts[9],
         BottomStartX: struts[10], BottomEndX: struts[11],
-    }
+    }, nil
 }
 
 // _NET_WM_STRUT_PARTIAL set
-func (xu *XUtil) EwmhWmStrutPartialSet(win xgb.Id, struts WmStrutPartial) {
+func (xu *XUtil) EwmhWmStrutPartialSet(win xgb.Id,
+                                       struts WmStrutPartial) error {
     rawStruts := make([]uint32, 4)
     rawStruts[0] = struts.Left
     rawStruts[1] = struts.Right
@@ -863,80 +951,85 @@ func (xu *XUtil) EwmhWmStrutPartialSet(win xgb.Id, struts WmStrutPartial) {
     rawStruts[10] = struts.BottomStartX
     rawStruts[11] = struts.BottomEndX
 
-    xu.ChangeProperty32(win, "_NET_WM_STRUT_PARTIAL", "CARDINAL", rawStruts...)
+    return xu.ChangeProperty32(win, "_NET_WM_STRUT_PARTIAL", "CARDINAL",
+                               rawStruts...)
 }
 
 // _NET_WM_SYNC_REQUEST req
-func (xu *XUtil) EwmhWmSyncRequest(win xgb.Id, req_num uint64) {
-    xu.EwmhWmSyncRequestExtra(win, req_num, 0)
+func (xu *XUtil) EwmhWmSyncRequest(win xgb.Id, req_num uint64) error {
+    return xu.EwmhWmSyncRequestExtra(win, req_num, 0)
 }
 
 // _NET_WM_SYNC_REQUEST req extra
 func (xu *XUtil) EwmhWmSyncRequestExtra(win xgb.Id, req_num uint64,
-                                        time xgb.Timestamp) {
+                                        time xgb.Timestamp) error {
+    syncReq, err := xu.Atm("_NET_WM_SYNC_REQUEST")
+    if err != nil {
+        return err
+    }
+
     high := uint32(req_num >> 32)
     low := uint32(req_num << 32 ^ req_num)
 
-    xu.EwmhClientEvent(win, "WM_PROTOCOLS", xu.Atm("_NET_WM_SYNC_REQUEST"),
-                       time, low, high)
+    return xu.EwmhClientEvent(win, "WM_PROTOCOLS", syncReq, time, low, high)
 }
 
-// _NET_WM_SYNC_REQUEST_COUNTER req
+// _NET_WM_SYNC_REQUEST_COUNTER get 
 // I'm pretty sure this needs 64 bit integers, but I'm not quite sure
 // how to go about that yet. Any ideas?
-func (xu *XUtil) EwmhWmSyncRequestCounter(win xgb.Id) uint32 {
+func (xu *XUtil) EwmhWmSyncRequestCounter(win xgb.Id) (uint32, error) {
     return PropValNum(xu.GetProperty(win, "_NET_WM_SYNC_REQUEST_COUNTER"))
 }
 
 // _NET_WM_SYNC_REQUEST_COUNTER set
 // I'm pretty sure this needs 64 bit integers, but I'm not quite sure
 // how to go about that yet. Any ideas?
-func (xu *XUtil) EwmhWmSyncRequestCounterSet(win xgb.Id, counter uint32) {
-    xu.ChangeProperty32(win, "_NET_WM_SYNC_REQUEST_COUNTER", "CARDINAL",
-                        counter)
+func (xu *XUtil) EwmhWmSyncRequestCounterSet(win xgb.Id, counter uint32) error {
+    return xu.ChangeProperty32(win, "_NET_WM_SYNC_REQUEST_COUNTER", "CARDINAL",
+                               counter)
 }
 
 // _NET_WM_USER_TIME get
-func (xu *XUtil) EwmhWmUserTime(win xgb.Id) uint32 {
+func (xu *XUtil) EwmhWmUserTime(win xgb.Id) (uint32, error) {
     return PropValNum(xu.GetProperty(win, "_NET_WM_USER_TIME"))
 }
 
 // _NET_WM_USER_TIME set
-func (xu *XUtil) EwmhWmUserTimeSet(win xgb.Id, user_time uint32) {
-    xu.ChangeProperty32(win, "_NET_WM_USER_TIME", "CARDINAL", user_time)
+func (xu *XUtil) EwmhWmUserTimeSet(win xgb.Id, user_time uint32) error {
+    return xu.ChangeProperty32(win, "_NET_WM_USER_TIME", "CARDINAL", user_time)
 }
 
 // _NET_WM_USER_TIME_WINDOW get
-func (xu *XUtil) EwmhWmUserTimeWindow(win xgb.Id) xgb.Id {
+func (xu *XUtil) EwmhWmUserTimeWindow(win xgb.Id) (xgb.Id, error) {
     return PropValId(xu.GetProperty(win, "_NET_WM_USER_TIME_WINDOW"))
 }
 
 // _NET_WM_USER_TIME set
-func (xu *XUtil) EwmhWmUserTimeWindowSet(win xgb.Id, time_win xgb.Id) {
-    xu.ChangeProperty32(win, "_NET_WM_USER_TIME_WINDOW", "CARDINAL",
-                        uint32(time_win))
+func (xu *XUtil) EwmhWmUserTimeWindowSet(win xgb.Id, time_win xgb.Id) error {
+    return xu.ChangeProperty32(win, "_NET_WM_USER_TIME_WINDOW", "CARDINAL",
+                               uint32(time_win))
 }
 
 // _NET_WM_VISIBLE_ICON_NAME get
-func (xu *XUtil) EwmhWmVisibleIconName(win xgb.Id) string {
+func (xu *XUtil) EwmhWmVisibleIconName(win xgb.Id) (string, error) {
     return PropValStr(xu.GetProperty(win, "_NET_WM_VISIBLE_ICON_NAME"))
 }
 
 // _NET_WM_VISIBLE_ICON_NAME set
-func (xu *XUtil) EwmhWmVisibleIconNameSet(win xgb.Id, name string) {
-    xu.ChangeProperty(win, 8, "_NET_WM_VISIBLE_ICON_NAME", "UTF8_STRING",
-                      []byte(name))
+func (xu *XUtil) EwmhWmVisibleIconNameSet(win xgb.Id, name string) error {
+    return xu.ChangeProperty(win, 8, "_NET_WM_VISIBLE_ICON_NAME", "UTF8_STRING",
+                             []byte(name))
 }
 
 // _NET_WM_VISIBLE_NAME get
-func (xu *XUtil) EwmhWmVisibleName(win xgb.Id) string {
+func (xu *XUtil) EwmhWmVisibleName(win xgb.Id) (string, error) {
     return PropValStr(xu.GetProperty(win, "_NET_WM_VISIBLE_NAME"))
 }
 
 // _NET_WM_VISIBLE_NAME set
-func (xu *XUtil) EwmhWmVisibleNameSet(win xgb.Id, name string) {
-    xu.ChangeProperty(win, 8, "_NET_WM_VISIBLE_NAME", "UTF8_STRING",
-                      []byte(name))
+func (xu *XUtil) EwmhWmVisibleNameSet(win xgb.Id, name string) error {
+    return xu.ChangeProperty(win, 8, "_NET_WM_VISIBLE_NAME", "UTF8_STRING",
+                             []byte(name))
 }
 
 // _NET_WM_WINDOW_OPACITY get
@@ -944,28 +1037,35 @@ func (xu *XUtil) EwmhWmVisibleNameSet(win xgb.Id, name string) {
 // compositing managers (i.e., xcompmgr, cairo-compmgr, etc.).
 // This property is typically set not on a client window, but the *parent*
 // of a client window in reparenting window managers.
-func (xu *XUtil) EwmhWmWindowOpacity(win xgb.Id) float64 {
-    intOpacity := PropValNum(xu.GetProperty(win, "_NET_WM_WINDOW_OPACITY"))
+func (xu *XUtil) EwmhWmWindowOpacity(win xgb.Id) (float64, error) {
+    intOpacity, err := PropValNum(xu.GetProperty(win, "_NET_WM_WINDOW_OPACITY"))
+    if err != nil {
+        return 0, err
+    }
 
-    return float64(intOpacity) / float64(0xffffffff)
+    return float64(intOpacity) / float64(0xffffffff), nil
 }
 
 // _NET_WM_WINDOW_OPACITY set
-func (xu *XUtil) EwmhWmWindowOpacitySet(win xgb.Id, opacity float64) {
-    xu.ChangeProperty32(win, "_NET_WM_WINDOW_OPACITY", "CARDINAL",
-                        uint32(opacity * 0xffffffff))
+func (xu *XUtil) EwmhWmWindowOpacitySet(win xgb.Id, opacity float64) error {
+    return xu.ChangeProperty32(win, "_NET_WM_WINDOW_OPACITY", "CARDINAL",
+                               uint32(opacity * 0xffffffff))
 }
 
 // _NET_WM_WINDOW_TYPE get
-func (xu *XUtil) EwmhWmWindowType(win xgb.Id) []string {
+func (xu *XUtil) EwmhWmWindowType(win xgb.Id) ([]string, error) {
     return xu.PropValAtoms(xu.GetProperty(win, "_NET_WM_WINDOW_TYPE"))
 }
 
 // _NET_WM_WINDOW_TYPE set
 // This will create any atoms used in 'atomNames' if they don't already exist.
-func (xu *XUtil) EwmhWmWindowTypeSet(win xgb.Id, atomNames []string) {
-    xu.ChangeProperty32(win, "_NET_WM_WINDOW_TYPE", "ATOM",
-                        xu.StrToAtoms(atomNames)...)
+func (xu *XUtil) EwmhWmWindowTypeSet(win xgb.Id, atomNames []string) error {
+    atoms, err := xu.StrToAtoms(atomNames)
+    if err != nil {
+        return err
+    }
+
+    return xu.ChangeProperty32(win, "_NET_WM_WINDOW_TYPE", "ATOM", atoms...)
 }
 
 // Workarea is a struct that represents a rectangle as a bounding box of
@@ -979,10 +1079,13 @@ type Workarea struct {
 }
 
 // _NET_WORKAREA get
-func (xu *XUtil) EwmhWorkarea() []Workarea {
-    rects := PropValNums(xu.GetProperty(xu.root, "_NET_WORKAREA"))
-    workareas := make([]Workarea, len(rects) / 4)
+func (xu *XUtil) EwmhWorkarea() ([]Workarea, error) {
+    rects, err := PropValNums(xu.GetProperty(xu.root, "_NET_WORKAREA"))
+    if err != nil {
+        return nil, err
+    }
 
+    workareas := make([]Workarea, len(rects) / 4)
     for i, _ := range workareas {
         workareas[i] = Workarea {
             X: rects[i * 4],
@@ -991,12 +1094,11 @@ func (xu *XUtil) EwmhWorkarea() []Workarea {
             Height: rects[i * 4 + 3],
         }
     }
-
-    return workareas
+    return workareas, nil
 }
 
 // _NET_WORKAREA set
-func (xu *XUtil) EwmhWorkareaSet(workareas []Workarea) {
+func (xu *XUtil) EwmhWorkareaSet(workareas []Workarea) error {
     rects := make([]uint32, len(workareas) * 4)
     for i, workarea := range workareas {
         rects[i * 4] = workarea.X
@@ -1005,6 +1107,6 @@ func (xu *XUtil) EwmhWorkareaSet(workareas []Workarea) {
         rects[i * 4 + 3] = workarea.Height
     }
 
-    xu.ChangeProperty32(xu.root, "_NET_WORKAREA", "CARDINAL", rects...)
+    return xu.ChangeProperty32(xu.root, "_NET_WORKAREA", "CARDINAL", rects...)
 }
 

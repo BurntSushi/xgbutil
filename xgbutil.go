@@ -20,6 +20,7 @@ type XUtil struct {
     root xgb.Id
     atoms map[string]xgb.Id
     atomNames map[xgb.Id]string
+    WindowManager string
 }
 
 type XError struct {
@@ -33,7 +34,7 @@ func (xe *XError) Error() string {
 }
 
 // Constructs an error struct from an X error
-func xerr (xgberr interface{}, funcName string, err string,
+func xerr(xgberr interface{}, funcName string, err string,
            params ...interface{}) *XError {
     switch e := xgberr.(type) {
     case *xgb.Error:
@@ -48,7 +49,7 @@ func xerr (xgberr interface{}, funcName string, err string,
 }
 
 // Constructs an error struct from an error inside xgbutil (i.e., user error)
-func xuerr (funcName string, err string, params ...interface{}) *XError {
+func xuerr(funcName string, err string, params ...interface{}) *XError {
     return &XError{
         funcName: funcName,
         err: fmt.Sprintf(err, params...),
@@ -64,12 +65,17 @@ func Dial(display string) (*XUtil, error) {
         return nil, err
     }
 
+    // Initialize our central struct that stores everything.
     xu := &XUtil{
         conn: c,
         root: c.DefaultScreen().Root,
         atoms: make(map[string]xgb.Id, 50), // start with a nice size
         atomNames: make(map[xgb.Id]string, 50),
     }
+    xu.WindowManager, _ = xu.GetEwmhWM()
+
+    // Register the Xinerama extension... because it doesn't cost much.
+    xu.conn.RegisterExtension("XINERAMA")
 
     return xu, nil
 }
@@ -96,46 +102,48 @@ func (xu *XUtil) SetRootWin(root xgb.Id) {
 // Namely, only_if_exists is set to true, so that if "name" is an atom that
 // does not exist, X will return "0" as an atom identifier. In which case,
 // we panic because that isn't what anyone wants.
-func (xu *XUtil) Atm(name string) (xgb.Id) {
-    if aid := xu.Atom(name, true); aid > 0 {
-        return aid
+func (xu *XUtil) Atm(name string) (xgb.Id, error) {
+    aid, err := xu.Atom(name, true)
+    if err != nil {
+        return 0, err
+    }
+    if aid == 0 {
+        return 0, xuerr("Atm", "'%s' returned an identifier of 0.", name)
     }
 
-    panic(xuerr("Atm", "'%s' returned an identifier of 0.", name))
+    return aid, err
 }
 
 // Atom interns an atom and panics if there is any error.
-func (xu *XUtil) Atom(name string, only_if_exists bool) (xgb.Id) {
+func (xu *XUtil) Atom(name string, only_if_exists bool) (xgb.Id, error) {
     // Check the cache first
     if aid, ok := xu.atoms[name]; ok {
-        return aid
+        return aid, nil
     }
 
     reply, err := xu.conn.InternAtom(only_if_exists, name)
-
     if err != nil {
-        panic(xerr(err, "Atom", "Error interning atom '%s'", name))
+        return 0, xerr(err, "Atom", "Error interning atom '%s'", name)
     }
 
     // If we're here, it means we didn't have this atom cached. So cache it!
     xu.atoms[name] = reply.Atom
     xu.atomNames[reply.Atom] = name
 
-    return reply.Atom
+    return reply.Atom, nil
 }
 
 // AtomName fetches a string representation of an ATOM given its integer id.
-func (xu *XUtil) AtomName(aid xgb.Id) string {
+func (xu *XUtil) AtomName(aid xgb.Id) (string, error) {
     // Check the cache first
     if atomName, ok := xu.atomNames[aid]; ok {
-        return string(atomName)
+        return string(atomName), nil
     }
 
     reply, err := xu.conn.GetAtomName(aid)
-
     if err != nil {
-        panic(xerr(err, "AtomName", "Error fetching name for ATOM id '%d'",
-                   aid))
+        return "", xerr(err, "AtomName",
+                        "Error fetching name for ATOM id '%d'", aid)
     }
 
     // If we're here, it means we didn't have ths ATOM id cached. So cache it.
@@ -143,7 +151,7 @@ func (xu *XUtil) AtomName(aid xgb.Id) string {
     xu.atoms[atomName] = aid
     xu.atomNames[aid] = atomName
 
-    return atomName
+    return atomName, nil
 }
 
 // GetEwmhWM uses the EWMH spec to find if a conforming window manager
@@ -151,15 +159,15 @@ func (xu *XUtil) AtomName(aid xgb.Id) string {
 // Otherwise, an error will be returned explaining why one couldn't be found.
 // (This function is safe.)
 func (xu *XUtil) GetEwmhWM() (wmName string, err error) {
-    defer func() {
-        if r:= recover(); r != nil {
-            wmName = ""
-            err = xuerr("GetEwmhWM", "Failed because: %v", r)
-        }
-    }()
+    childCheck, err := xu.EwmhSupportingWmCheck(xu.root)
+    if err != nil {
+        return "", xuerr("GetEwmhWM", "Failed because: %v", err)
+    }
 
-    childCheck := xu.EwmhSupportingWmCheck(xu.root)
-    childCheck2 := xu.EwmhSupportingWmCheck(childCheck)
+    childCheck2, err := xu.EwmhSupportingWmCheck(childCheck)
+    if err != nil {
+        return "", xuerr("GetEwmhWM", "Failed because: %v", err)
+    }
 
     if childCheck != childCheck2 {
         return "", xuerr("GetEwmhWM",
@@ -168,32 +176,24 @@ func (xu *XUtil) GetEwmhWM() (wmName string, err error) {
                          "on the child window (%x).", childCheck, childCheck2)
     }
 
-    return xu.EwmhWmName(childCheck), nil
+    return xu.EwmhWmName(childCheck)
 }
 
-// Safe will recover from any panic produced by xgb or xgbutil and transform
+// BeSafe will recover from any panic produced by xgb or xgbutil and transform
 // it into an idiomatic Go error as a second return value.
-// NOTE: Generality comes at a cost. The return value will need to be
-//       type asserted.
-func Safe(fun func() interface{}) (val interface{}, err error) {
-    defer func() {
-        if r := recover(); r != nil {
-            val = nil
-
-            // If we get an error that isn't from xgbutil or xgb itself,
-            // then let the panic happen.
-            var ok bool
-            err, ok = r.(*XError)
-            if !ok {
-                err, ok = r.(*xgb.Error)
-                if !ok { // some other error, panic!
-                    panic(r)
-                }
+func BeSafe(err *error) {
+    if r := recover(); r != nil {
+        // If we get an error that isn't from xgbutil or xgb itself,
+        // then let the panic happen.
+        var ok bool
+        *err, ok = r.(*XError)
+        if !ok {
+            *err, ok = r.(*xgb.Error)
+            if !ok { // some other error, panic!
+                panic(r)
             }
         }
-    }()
-
-    return fun(), nil
+    }
 }
 
 // put16 adds a 16 bit integer to a byte slice.

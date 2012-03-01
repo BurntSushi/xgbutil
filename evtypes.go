@@ -35,7 +35,7 @@ type ClientMessageEvent struct {
 // Right now, this function only supports a list of up to 5 uint32s.
 // XXX: Use type assertions to support bytes and uint16s.
 func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
-                      data ...interface{}) (cm *ClientMessageEvent) {
+                      data ...interface{}) (*ClientMessageEvent, error) {
     // Create the client data list first
     clientData := new(xgb.ClientMessageData)
 
@@ -70,17 +70,16 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
             }
         }
     default:
-        panic(xuerr("NewClientMessage", "Unsupported format '%d'.", Format))
+        return nil, xuerr("NewClientMessage",
+                          "Unsupported format '%d'.", Format)
     }
 
-    cm = &ClientMessageEvent{&xgb.ClientMessageEvent{
+    return &ClientMessageEvent{&xgb.ClientMessageEvent{
         Format: 32,
         Window: Window,
         Type: Type,
         Data: *clientData,
-    }}
-
-    return
+    }}, nil
 }
 
 // Bytes transforms a ClientMessageEvent struct into a 32 byte slice.
