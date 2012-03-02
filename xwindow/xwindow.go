@@ -36,6 +36,19 @@ type Geometry struct {
     Width, Height uint32
 }
 
+// Listen will tell X to report events corresponding to the event masks
+// provided for the given window. If a call to Listen is omitted, you will
+// not receive the events you desire.
+func Listen(xu *xgbutil.XUtil, win xgb.Id, evMasks ...int) {
+    evMask := 0
+    for _, mask := range evMasks {
+        evMask |= mask
+    }
+
+    xu.Conn().ChangeWindowAttributes(win, xgb.CWEventMask,
+                                     []uint32{uint32(evMask)})
+}
+
 // ParentWindow queries the QueryTree and finds the parent window.
 func ParentWindow(xu *xgbutil.XUtil, win xgb.Id) (xgb.Id, error) {
     tree, err := xu.Conn().QueryTree(win)
