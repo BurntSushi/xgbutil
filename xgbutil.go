@@ -33,7 +33,7 @@ type XUtil struct {
 // a window (like MappingNotify and KeymapNotify). In this case, simply
 // use 'xgbutil.NoWindow' as the window id.
 type Callback interface {
-    Connect(xu *XUtil, evtype int, win xgb.Id)
+    Connect(xu *XUtil, win xgb.Id)
     Run(xu *XUtil, ev interface{})
 }
 

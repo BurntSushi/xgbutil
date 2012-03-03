@@ -29,15 +29,16 @@ func MyCallback2(X *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 }
 
 func main() {
+    fmt.Printf("Starting...\n")
     X, _ := xgbutil.Dial("")
 
     xwindow.Listen(X, X.RootWin(), xgb.EventMaskPropertyChange)
 
     cb := xevent.PropertyNotifyFun(MyCallback)
-    cb.Connect(X, xevent.PropertyNotify, X.RootWin())
+    cb.Connect(X, X.RootWin())
 
     cb2 := xevent.MappingNotifyFun(MyCallback2)
-    cb2.Connect(X, xevent.MappingNotify, xgbutil.NoWindow)
+    cb2.Connect(X, xgbutil.NoWindow)
 
     xevent.Main(X)
 

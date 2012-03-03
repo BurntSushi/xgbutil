@@ -10,20 +10,10 @@ package xevent
 import "code.google.com/p/x-go-binding/xgb"
 import "github.com/BurntSushi/xgbutil"
 
-type ClientMessageFun func(xu *xgbutil.XUtil, event ClientMessageEvent)
-
-func (callback ClientMessageFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
-}
-
-func (callback ClientMessageFun) Run(xu *xgbutil.XUtil, event interface{}) {
-    callback(xu, event.(ClientMessageEvent))
-}
-
 type KeyPressFun func(xu *xgbutil.XUtil, event KeyPressEvent)
 
-func (callback KeyPressFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback KeyPressFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(KeyPress, win, callback)
 }
 
 func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -32,8 +22,8 @@ func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type KeyReleaseFun func(xu *xgbutil.XUtil, event KeyReleaseEvent)
 
-func (callback KeyReleaseFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback KeyReleaseFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(KeyRelease, win, callback)
 }
 
 func (callback KeyReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -42,8 +32,8 @@ func (callback KeyReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ButtonPressFun func(xu *xgbutil.XUtil, event ButtonPressEvent)
 
-func (callback ButtonPressFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback ButtonPressFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(ButtonPress, win, callback)
 }
 
 func (callback ButtonPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -52,8 +42,8 @@ func (callback ButtonPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ButtonReleaseFun func(xu *xgbutil.XUtil, event ButtonReleaseEvent)
 
-func (callback ButtonReleaseFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback ButtonReleaseFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(ButtonRelease, win, callback)
 }
 
 func (callback ButtonReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -62,8 +52,8 @@ func (callback ButtonReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type MotionNotifyFun func(xu *xgbutil.XUtil, event MotionNotifyEvent)
 
-func (callback MotionNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback MotionNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(MotionNotify, win, callback)
 }
 
 func (callback MotionNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -72,8 +62,8 @@ func (callback MotionNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type EnterNotifyFun func(xu *xgbutil.XUtil, event EnterNotifyEvent)
 
-func (callback EnterNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback EnterNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(EnterNotify, win, callback)
 }
 
 func (callback EnterNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -82,8 +72,8 @@ func (callback EnterNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type LeaveNotifyFun func(xu *xgbutil.XUtil, event LeaveNotifyEvent)
 
-func (callback LeaveNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback LeaveNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(LeaveNotify, win, callback)
 }
 
 func (callback LeaveNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -92,8 +82,8 @@ func (callback LeaveNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type FocusInFun func(xu *xgbutil.XUtil, event FocusInEvent)
 
-func (callback FocusInFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback FocusInFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(FocusIn, win, callback)
 }
 
 func (callback FocusInFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -102,8 +92,8 @@ func (callback FocusInFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type FocusOutFun func(xu *xgbutil.XUtil, event FocusOutEvent)
 
-func (callback FocusOutFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback FocusOutFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(FocusOut, win, callback)
 }
 
 func (callback FocusOutFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -112,8 +102,8 @@ func (callback FocusOutFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type KeymapNotifyFun func(xu *xgbutil.XUtil, event KeymapNotifyEvent)
 
-func (callback KeymapNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback KeymapNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(KeymapNotify, win, callback)
 }
 
 func (callback KeymapNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -122,8 +112,8 @@ func (callback KeymapNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ExposeFun func(xu *xgbutil.XUtil, event ExposeEvent)
 
-func (callback ExposeFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback ExposeFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(Expose, win, callback)
 }
 
 func (callback ExposeFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -132,8 +122,8 @@ func (callback ExposeFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type GraphicsExposureFun func(xu *xgbutil.XUtil, event GraphicsExposureEvent)
 
-func (callback GraphicsExposureFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback GraphicsExposureFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(GraphicsExposure, win, callback)
 }
 
 func (callback GraphicsExposureFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -142,8 +132,8 @@ func (callback GraphicsExposureFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type NoExposureFun func(xu *xgbutil.XUtil, event NoExposureEvent)
 
-func (callback NoExposureFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback NoExposureFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(NoExposure, win, callback)
 }
 
 func (callback NoExposureFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -152,8 +142,8 @@ func (callback NoExposureFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type VisibilityNotifyFun func(xu *xgbutil.XUtil, event VisibilityNotifyEvent)
 
-func (callback VisibilityNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback VisibilityNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(VisibilityNotify, win, callback)
 }
 
 func (callback VisibilityNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -162,8 +152,8 @@ func (callback VisibilityNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type CreateNotifyFun func(xu *xgbutil.XUtil, event CreateNotifyEvent)
 
-func (callback CreateNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback CreateNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(CreateNotify, win, callback)
 }
 
 func (callback CreateNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -172,8 +162,8 @@ func (callback CreateNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type DestroyNotifyFun func(xu *xgbutil.XUtil, event DestroyNotifyEvent)
 
-func (callback DestroyNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback DestroyNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(DestroyNotify, win, callback)
 }
 
 func (callback DestroyNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -182,8 +172,8 @@ func (callback DestroyNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type UnmapNotifyFun func(xu *xgbutil.XUtil, event UnmapNotifyEvent)
 
-func (callback UnmapNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback UnmapNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(UnmapNotify, win, callback)
 }
 
 func (callback UnmapNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -192,8 +182,8 @@ func (callback UnmapNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type MapNotifyFun func(xu *xgbutil.XUtil, event MapNotifyEvent)
 
-func (callback MapNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback MapNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(MapNotify, win, callback)
 }
 
 func (callback MapNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -202,8 +192,8 @@ func (callback MapNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type MapRequestFun func(xu *xgbutil.XUtil, event MapRequestEvent)
 
-func (callback MapRequestFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback MapRequestFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(MapRequest, win, callback)
 }
 
 func (callback MapRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -212,8 +202,8 @@ func (callback MapRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ReparentNotifyFun func(xu *xgbutil.XUtil, event ReparentNotifyEvent)
 
-func (callback ReparentNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback ReparentNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(ReparentNotify, win, callback)
 }
 
 func (callback ReparentNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -222,8 +212,8 @@ func (callback ReparentNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ConfigureNotifyFun func(xu *xgbutil.XUtil, event ConfigureNotifyEvent)
 
-func (callback ConfigureNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback ConfigureNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(ConfigureNotify, win, callback)
 }
 
 func (callback ConfigureNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -232,8 +222,8 @@ func (callback ConfigureNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ConfigureRequestFun func(xu *xgbutil.XUtil, event ConfigureRequestEvent)
 
-func (callback ConfigureRequestFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback ConfigureRequestFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(ConfigureRequest, win, callback)
 }
 
 func (callback ConfigureRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -242,8 +232,8 @@ func (callback ConfigureRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type GravityNotifyFun func(xu *xgbutil.XUtil, event GravityNotifyEvent)
 
-func (callback GravityNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback GravityNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(GravityNotify, win, callback)
 }
 
 func (callback GravityNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -252,8 +242,8 @@ func (callback GravityNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ResizeRequestFun func(xu *xgbutil.XUtil, event ResizeRequestEvent)
 
-func (callback ResizeRequestFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback ResizeRequestFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(ResizeRequest, win, callback)
 }
 
 func (callback ResizeRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -262,8 +252,8 @@ func (callback ResizeRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type CirculateNotifyFun func(xu *xgbutil.XUtil, event CirculateNotifyEvent)
 
-func (callback CirculateNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback CirculateNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(CirculateNotify, win, callback)
 }
 
 func (callback CirculateNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -272,8 +262,8 @@ func (callback CirculateNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type CirculateRequestFun func(xu *xgbutil.XUtil, event CirculateRequestEvent)
 
-func (callback CirculateRequestFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback CirculateRequestFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(CirculateRequest, win, callback)
 }
 
 func (callback CirculateRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -282,8 +272,8 @@ func (callback CirculateRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type PropertyNotifyFun func(xu *xgbutil.XUtil, event PropertyNotifyEvent)
 
-func (callback PropertyNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback PropertyNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(PropertyNotify, win, callback)
 }
 
 func (callback PropertyNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -292,8 +282,8 @@ func (callback PropertyNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type SelectionClearFun func(xu *xgbutil.XUtil, event SelectionClearEvent)
 
-func (callback SelectionClearFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback SelectionClearFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(SelectionClear, win, callback)
 }
 
 func (callback SelectionClearFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -302,8 +292,8 @@ func (callback SelectionClearFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type SelectionRequestFun func(xu *xgbutil.XUtil, event SelectionRequestEvent)
 
-func (callback SelectionRequestFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback SelectionRequestFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(SelectionRequest, win, callback)
 }
 
 func (callback SelectionRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -312,8 +302,8 @@ func (callback SelectionRequestFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type SelectionNotifyFun func(xu *xgbutil.XUtil, event SelectionNotifyEvent)
 
-func (callback SelectionNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback SelectionNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(SelectionNotify, win, callback)
 }
 
 func (callback SelectionNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -322,18 +312,28 @@ func (callback SelectionNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ColormapNotifyFun func(xu *xgbutil.XUtil, event ColormapNotifyEvent)
 
-func (callback ColormapNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback ColormapNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(ColormapNotify, win, callback)
 }
 
 func (callback ColormapNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
     callback(xu, event.(ColormapNotifyEvent))
 }
 
+type ClientMessageFun func(xu *xgbutil.XUtil, event ClientMessageEvent)
+
+func (callback ClientMessageFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(ClientMessage, win, callback)
+}
+
+func (callback ClientMessageFun) Run(xu *xgbutil.XUtil, event interface{}) {
+    callback(xu, event.(ClientMessageEvent))
+}
+
 type MappingNotifyFun func(xu *xgbutil.XUtil, event MappingNotifyEvent)
 
-func (callback MappingNotifyFun) Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {
-    xu.AttachCallback(evtype, win, callback)
+func (callback MappingNotifyFun) Connect(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.AttachCallback(MappingNotify, win, callback)
 }
 
 func (callback MappingNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {

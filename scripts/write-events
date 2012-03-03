@@ -98,8 +98,8 @@ elif sys.argv[1] == 'callbacks':
         print 'type %sFun func(xu *xgbutil.XUtil, event %sEvent)' % (e, e)
         print
         print 'func (callback %sFun) '\
-                'Connect(xu *xgbutil.XUtil, evtype int, win xgb.Id) {' % e
-        print '    xu.AttachCallback(evtype, win, callback)'
+                'Connect(xu *xgbutil.XUtil, win xgb.Id) {' % e
+        print '    xu.AttachCallback(%s, win, callback)' % e
         print '}'
         print
         print 'func (callback %sFun) ' \
