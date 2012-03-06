@@ -10,7 +10,7 @@ package xgbutil
 import (
     "fmt"
     "log"
-    "code.google.com/p/x-go-binding/xgb"
+    "code.google.com/p/jamslam-x-go-binding/xgb"
 )
 
 // An XUtil represents the state of xgbutil. It keeps track of the current 

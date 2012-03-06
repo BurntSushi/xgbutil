@@ -6,7 +6,7 @@ import (
     "math/rand"
     // "os" 
     "time"
-    "code.google.com/p/x-go-binding/xgb"
+    "code.google.com/p/jamslam-x-go-binding/xgb"
 )
 
 import (

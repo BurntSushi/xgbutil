@@ -53,7 +53,7 @@ if sys.argv[1] == 'evtypes':
     print 'package xevent'
     print
     print 'import "fmt"'
-    print 'import "code.google.com/p/x-go-binding/xgb"'
+    print 'import "code.google.com/p/jamslam-x-go-binding/xgb"'
     print
 
     for e in events:
@@ -83,7 +83,7 @@ elif sys.argv[1] == 'callbacks':
 */'''
     print 'package xevent'
     print
-    print 'import "code.google.com/p/x-go-binding/xgb"'
+    print 'import "code.google.com/p/jamslam-x-go-binding/xgb"'
     print 'import "github.com/BurntSushi/xgbutil"'
     print
 

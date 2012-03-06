@@ -8,7 +8,7 @@
 package xevent
 
 import "log"
-import "code.google.com/p/x-go-binding/xgb"
+import "code.google.com/p/jamslam-x-go-binding/xgb"
 import "github.com/BurntSushi/xgbutil"
 
 // Connect associates a (window id, event type) with a callback function.

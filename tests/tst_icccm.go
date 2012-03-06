@@ -1,7 +1,7 @@
 package main
 
 import "fmt"
-import "code.google.com/p/x-go-binding/xgb"
+import "code.google.com/p/jamslam-x-go-binding/xgb"
 
 import (
     "github.com/BurntSushi/xgbutil"

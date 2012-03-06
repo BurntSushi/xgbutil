@@ -24,7 +24,7 @@
 */
 package xwindow
 
-import "code.google.com/p/x-go-binding/xgb"
+import "code.google.com/p/jamslam-x-go-binding/xgb"
 import "github.com/BurntSushi/xgbutil"
 import "github.com/BurntSushi/xgbutil/ewmh"
 

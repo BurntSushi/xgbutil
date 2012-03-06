@@ -10,7 +10,7 @@ package xprop
 import (
     // "fmt" 
 
-    "code.google.com/p/x-go-binding/xgb"
+    "code.google.com/p/jamslam-x-go-binding/xgb"
     "github.com/BurntSushi/xgbutil"
 )
 

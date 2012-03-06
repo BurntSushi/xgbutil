@@ -19,8 +19,9 @@ import (
     "io/ioutil"
     "code.google.com/p/freetype-go/freetype"
 
-    "code.google.com/p/x-go-binding/xgb"
+    "code.google.com/p/jamslam-x-go-binding/xgb"
     "github.com/BurntSushi/xgbutil"
+    "github.com/BurntSushi/xgbutil/ewmh"
 )
 
 // If we want to save the image as png output,
@@ -93,8 +94,8 @@ func main() {
         panic(Xerr)
     }
 
-    active := X.EwmhActiveWindow()
-    icons := X.EwmhWmIcon(active)
+    active, _ := ewmh.ActiveWindowGet(X)
+    icons, _ := ewmh.WmIconGet(X, active)
     fmt.Printf("Active window's (%x) icon data: (length: %v)\n", 
                active, len(icons))
     for _, icon := range icons {
@@ -130,8 +131,8 @@ func main() {
         }
     }
 
-    blendMask := image.NewUniform(color.Alpha{127})
-    draw.DrawMask(mask, mask.Bounds(), mask, image.ZP, blendMask, image.ZP, draw.Src)
+    // blendMask := image.NewUniform(color.Alpha{127}) 
+    // draw.DrawMask(mask, mask.Bounds(), mask, image.ZP, blendMask, image.ZP, draw.Src) 
 
     dest := image.NewRGBA(image.Rect(0, 0, width, height))
     allBlue := image.NewUniform(color.RGBA{127, 127, 127, 255})
@@ -158,7 +159,7 @@ func main() {
     winMask := uint32(xgb.CWBackPixmap | xgb.CWOverrideRedirect |
                       xgb.CWBackPixel)
     winVals := []uint32{xgb.BackPixmapParentRelative, scrn.BlackPixel, 1}
-    X.Conn().CreateWindow(scrn.RootDepth, win, X.RootWin(), 100, 100,
+    X.Conn().CreateWindow(scrn.RootDepth, win, X.RootWin(), 100, 400,
                           uint16(width), uint16(height),
                           0, xgb.WindowClassInputOutput, scrn.RootVisual,
                           winMask, winVals)
