@@ -22,6 +22,7 @@ import (
     "code.google.com/p/jamslam-x-go-binding/xgb"
     "github.com/BurntSushi/xgbutil"
     "github.com/BurntSushi/xgbutil/ewmh"
+    "github.com/BurntSushi/xgbutil/xcursor"
 )
 
 // If we want to save the image as png output,
@@ -156,9 +157,12 @@ func main() {
     gc := X.Conn().NewId()
     scrn := X.Conn().DefaultScreen()
 
+    cursor := xcursor.CreateCursor(X, xcursor.Fleur)
+
     winMask := uint32(xgb.CWBackPixmap | xgb.CWOverrideRedirect |
-                      xgb.CWBackPixel)
-    winVals := []uint32{xgb.BackPixmapParentRelative, scrn.BlackPixel, 1}
+                      xgb.CWBackPixel | xgb.CWCursor)
+    winVals := []uint32{xgb.BackPixmapParentRelative, scrn.BlackPixel,
+                        1, uint32(cursor)}
     X.Conn().CreateWindow(scrn.RootDepth, win, X.RootWin(), 100, 400,
                           uint16(width), uint16(height),
                           0, xgb.WindowClassInputOutput, scrn.RootVisual,
