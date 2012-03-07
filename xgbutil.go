@@ -21,6 +21,9 @@ type XUtil struct {
     atoms map[string]xgb.Id
     atomNames map[xgb.Id]string
     callbacks map[int]map[xgb.Id][]Callback // ev code -> win -> callbacks
+
+    keybinds map[KeyBindKey][]KeyBindCallback // key bind key -> callbacks
+    keygrabs map[KeyBindKey]int
 }
 
 // Callback is an interface that should be implemented by event callback 
@@ -37,17 +40,34 @@ type Callback interface {
     Run(xu *XUtil, ev interface{})
 }
 
+type KeyBindCallback interface {
+    Connect(xu *XUtil, win xgb.Id, mods uint16, keycode byte)
+    Run(xu *XUtil, ev interface{})
+}
+
+// KeyBindKey is the type of the key in the map of keybindings.
+// It essentially represents the tuple
+// (event type, window id, modifier, keycode).
+type KeyBindKey struct {
+    evtype int
+    win xgb.Id
+    mod uint16
+    code byte
+}
+
 // Sometimes we need to specify NO WINDOW when a window is typically
 // expected. (Like connecting to MappingNotify or KeymapNotify events.)
 // Use this value to do that.
 var NoWindow xgb.Id = 0
 
+// XError encapsulates any error returned by xgbutil.
 type XError struct {
     funcName string // some identifier so we know where the error comes from
     err string // free form string explaining the error
     XGBError *xgb.Error // error struct from XGB - to get the raw X error
 }
 
+// Error turns values of type *XError into a nice string.
 func (xe *XError) Error() string {
     return fmt.Sprintf("%s: %s", xe.funcName, xe.err)
 }
@@ -76,6 +96,16 @@ func Xuerr(funcName string, err string, params ...interface{}) *XError {
     }
 }
 
+// IgnoreMods is a list of X modifiers that we don't want interfering
+// with our keybindings. In particular, for each keybinding issued, there
+// is a seperate keybinding made for each of the following modifiers.
+var IgnoreMods []uint16 = []uint16{
+    0,
+    xgb.ModMaskLock, // Num lock
+    xgb.ModMask2, // Caps lock
+    xgb.ModMaskLock | xgb.ModMask2, // Caps and Num lock
+}
+
 // Dial connects to the X server and creates a new XUtil.
 func Dial(display string) (*XUtil, error) {
     c, err := xgb.Dial(display)
@@ -91,6 +121,8 @@ func Dial(display string) (*XUtil, error) {
         atoms: make(map[string]xgb.Id, 50), // start with a nice size
         atomNames: make(map[xgb.Id]string, 50),
         callbacks: make(map[int]map[xgb.Id][]Callback, 33),
+        keybinds: make(map[KeyBindKey][]KeyBindCallback, 10),
+        keygrabs: make(map[KeyBindKey]int, 10),
     }
 
     // Register the Xinerama extension... because it doesn't cost much.
@@ -137,10 +169,38 @@ func (xu *XUtil) AttachCallback(evtype int, win xgb.Id, fun Callback) {
     xu.callbacks[evtype][win] = append(xu.callbacks[evtype][win], fun)
 }
 
+// AttackKeyBindCallback associates an (event, window, mods, keycode)
+// with a callback.
+func (xu *XUtil) AttachKeyBindCallback(evtype int, win xgb.Id,
+                                       mods uint16, keycode byte,
+                                       fun KeyBindCallback) {
+    // Create key
+    key := KeyBindKey{evtype, win, mods, keycode}
+
+    // Do we need to allocate?
+    if _, ok := xu.keybinds[key]; !ok {
+        xu.keybinds[key] = make([]KeyBindCallback, 0)
+    }
+
+    xu.keybinds[key] = append(xu.keybinds[key], fun)
+}
+
 // RunCallbacks executes every callback corresponding to a
 // particular event/window tuple.
 func (xu *XUtil) RunCallbacks(event interface{}, evtype int, win xgb.Id) {
     for _, cb := range xu.callbacks[evtype][win] {
+        cb.Run(xu, event)
+    }
+}
+
+// RunKeyBindCallbacks executes every callback corresponding to a
+// particular event/window/mod/key tuple.
+func (xu *XUtil) RunKeyBindCallbacks(event interface{}, evtype int,
+                                     win xgb.Id, mods uint16, keycode byte) {
+    // Create key
+    key := KeyBindKey{evtype, win, mods, keycode}
+
+    for _, cb := range xu.keybinds[key] {
         cb.Run(xu, event)
     }
 }

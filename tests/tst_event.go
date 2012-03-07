@@ -9,6 +9,8 @@ import (
     "code.google.com/p/jamslam-x-go-binding/xgb"
 
     "github.com/BurntSushi/xgbutil"
+    // "github.com/BurntSushi/xgbutil/ewmh" 
+    "github.com/BurntSushi/xgbutil/keybind"
     "github.com/BurntSushi/xgbutil/xevent"
     "github.com/BurntSushi/xgbutil/xprop"
     "github.com/BurntSushi/xgbutil/xwindow"
@@ -28,17 +30,27 @@ func MyCallback2(X *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
                e.Request, e.FirstKeycode, e.Count)
 }
 
+func KeyCallback(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+    fmt.Printf("Key press callback!\n")
+}
+
 func main() {
     fmt.Printf("Starting...\n")
     X, _ := xgbutil.Dial("")
 
+    // _, _ := ewmh.ActiveWindowGet(X) 
+
     xwindow.Listen(X, X.RootWin(), xgb.EventMaskPropertyChange)
+    // xwindow.Listen(X, active, xgb 
 
     cb := xevent.PropertyNotifyFun(MyCallback)
     cb.Connect(X, X.RootWin())
 
     cb2 := xevent.MappingNotifyFun(MyCallback2)
     cb2.Connect(X, xgbutil.NoWindow)
+
+    keycb := keybind.KeyPressFun(KeyCallback)
+    keycb.Connect(X, X.RootWin(), 64, 44) // Mod4-j
 
     xevent.Main(X)
 

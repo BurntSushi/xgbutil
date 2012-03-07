@@ -25,6 +25,15 @@ import "github.com/BurntSushi/xgbutil"
 // func Connect(xu *xgbutil.XUtil, win xgb.Id, evtype int, interface{}) error { 
 // } 
 
+func RunKeyPressCallbacks(xu *xgbutil.XUtil, ev KeyPressEvent) {
+    kc, mods := ev.Detail, ev.State
+    for _, m := range xgbutil.IgnoreMods {
+        mods &= ^m
+    }
+
+    xu.RunKeyBindCallbacks(ev, KeyPress, ev.Event, mods, kc)
+}
+
 // Main starts the main X event loop. It will read events and call appropriate
 // callback functions. Note that xgbutil builds in a few callbacks of its own,
 // particularly the MappingNotify event so that the key mapping and
@@ -39,7 +48,7 @@ func Main(xu *xgbutil.XUtil) error {
         reply, err := xu.Conn().WaitForEvent()
         if err != nil {
             log.Printf("ERROR: %v\n", err)
-            return err
+            continue
         }
 
         // We have to look for xgb events here. But we re-wrap them in our
@@ -48,6 +57,9 @@ func Main(xu *xgbutil.XUtil) error {
         case xgb.KeyPressEvent:
             e := KeyPressEvent{&event}
             xu.RunCallbacks(e, KeyPress, e.Event)
+
+            // Also run any callbacks associated with grabs
+            RunKeyPressCallbacks(xu, e)
         case xgb.KeyReleaseEvent:
             e := KeyReleaseEvent{&event}
             xu.RunCallbacks(e, KeyRelease, e.Event)
