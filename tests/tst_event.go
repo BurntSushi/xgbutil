@@ -30,52 +30,35 @@ func MyCallback2(X *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
                e.Request, e.FirstKeycode, e.Count)
 }
 
-func KeyCallback(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+func KeyPressCallback(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
     fmt.Printf("Key press callback!\n")
+}
+
+func KeyReleaseCallback(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {
+    fmt.Printf("Key release callback!\n")
 }
 
 func main() {
     fmt.Printf("Starting...\n")
     X, _ := xgbutil.Dial("")
 
-    // _, _ := ewmh.ActiveWindowGet(X) 
+    // active, _ := ewmh.ActiveWindowGet(X) 
 
     xwindow.Listen(X, X.RootWin(), xgb.EventMaskPropertyChange)
-    // xwindow.Listen(X, active, xgb 
 
     cb := xevent.PropertyNotifyFun(MyCallback)
     cb.Connect(X, X.RootWin())
 
-    cb2 := xevent.MappingNotifyFun(MyCallback2)
-    cb2.Connect(X, xgbutil.NoWindow)
+    keybind.Initialize(X)
 
-    keycb := keybind.KeyPressFun(KeyCallback)
-    keycb.Connect(X, X.RootWin(), 64, 44) // Mod4-j
+    keycbPress := keybind.KeyPressFun(KeyPressCallback)
+    keycbPress.Connect(X, X.RootWin(), "control-F11") // Mod4-j
+
+    // keycbRelease := keybind.KeyReleaseFun(KeyReleaseCallback) 
+    // keycbRelease.Connect(X, X.RootWin(), "Mod4-j") // Mod4-j 
+
+    // fmt.Println(keybind.ParseString(X, "F1")) 
 
     xevent.Main(X)
-
-    // testEvent := xevent.PropertyNotifyEvent{ 
-        // &xgb.PropertyNotifyEvent{1, 6, 0, 1}} 
-//  
-    // cb := xevent.PropertyNotifyFun(MyCallback) 
-    // cb.Run(X, testEvent) 
-
-    // for { 
-        // reply, err := X.Conn().WaitForEvent() 
-        // if err != nil { 
-            // fmt.Printf("ERROR: %v\n", err) 
-            // os.Exit(1) 
-        // } 
-//  
-        // fmt.Printf("EVENT: %T - ", reply) 
-        // switch event := reply.(type) { 
-        // case xgb.PropertyNotifyEvent: 
-            // xuEvent := xevent.PropertyNotifyEvent{&event} 
-            // cb.Run(X, xuEvent) 
-        // default: 
-            // fmt.Printf("ERROR: UNSUPPORTED EVENT TYPE") 
-            // os.Exit(1) 
-        // } 
-    // } 
 }
 

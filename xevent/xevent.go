@@ -11,29 +11,6 @@ import "log"
 import "code.google.com/p/jamslam-x-go-binding/xgb"
 import "github.com/BurntSushi/xgbutil"
 
-// Connect associates a (window id, event type) with a callback function.
-// Multiple callbacks can be associated with an (window id, event type) tuple.
-// They will be executed in the order they are added (FIFO).
-// It is imperative that the callback function be the correct type, or else
-// you will get a (possibly unhelpful) compile error. The callback function
-// type should look something like:
-//      func(X *xgbutil.XUtil, event xevent.|EventName|Event)
-// Where 'EventName' should match the name of an event. So a concrete type
-// for responding to KeyPress events would look like:
-//      func(X *xgbutil.XUtil, event xevent.KeyPressEvent)
-// That's it! All the type assertions/conversions are taken care of for you.
-// func Connect(xu *xgbutil.XUtil, win xgb.Id, evtype int, interface{}) error { 
-// } 
-
-func RunKeyPressCallbacks(xu *xgbutil.XUtil, ev KeyPressEvent) {
-    kc, mods := ev.Detail, ev.State
-    for _, m := range xgbutil.IgnoreMods {
-        mods &= ^m
-    }
-
-    xu.RunKeyBindCallbacks(ev, KeyPress, ev.Event, mods, kc)
-}
-
 // Main starts the main X event loop. It will read events and call appropriate
 // callback functions. Note that xgbutil builds in a few callbacks of its own,
 // particularly the MappingNotify event so that the key mapping and
@@ -57,9 +34,6 @@ func Main(xu *xgbutil.XUtil) error {
         case xgb.KeyPressEvent:
             e := KeyPressEvent{&event}
             xu.RunCallbacks(e, KeyPress, e.Event)
-
-            // Also run any callbacks associated with grabs
-            RunKeyPressCallbacks(xu, e)
         case xgb.KeyReleaseEvent:
             e := KeyReleaseEvent{&event}
             xu.RunCallbacks(e, KeyRelease, e.Event)

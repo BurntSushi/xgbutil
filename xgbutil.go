@@ -22,6 +22,9 @@ type XUtil struct {
     atomNames map[xgb.Id]string
     callbacks map[int]map[xgb.Id][]Callback // ev code -> win -> callbacks
 
+    keymap *KeyboardMapping
+    modmap *ModifierMapping
+
     keybinds map[KeyBindKey][]KeyBindCallback // key bind key -> callbacks
     keygrabs map[KeyBindKey]int
 }
@@ -40,8 +43,16 @@ type Callback interface {
     Run(xu *XUtil, ev interface{})
 }
 
+type KeyboardMapping struct {
+    *xgb.GetKeyboardMappingReply
+}
+
+type ModifierMapping struct {
+    *xgb.GetModifierMappingReply
+}
+
 type KeyBindCallback interface {
-    Connect(xu *XUtil, win xgb.Id, mods uint16, keycode byte)
+    Connect(xu *XUtil, win xgb.Id, keyStr string)
     Run(xu *XUtil, ev interface{})
 }
 
@@ -121,6 +132,8 @@ func Dial(display string) (*XUtil, error) {
         atoms: make(map[string]xgb.Id, 50), // start with a nice size
         atomNames: make(map[xgb.Id]string, 50),
         callbacks: make(map[int]map[xgb.Id][]Callback, 33),
+        keymap: nil,
+        modmap: nil,
         keybinds: make(map[KeyBindKey][]KeyBindCallback, 10),
         keygrabs: make(map[KeyBindKey]int, 10),
     }
@@ -169,6 +182,32 @@ func (xu *XUtil) AttachCallback(evtype int, win xgb.Id, fun Callback) {
     xu.callbacks[evtype][win] = append(xu.callbacks[evtype][win], fun)
 }
 
+// RunCallbacks executes every callback corresponding to a
+// particular event/window tuple.
+func (xu *XUtil) RunCallbacks(event interface{}, evtype int, win xgb.Id) {
+    for _, cb := range xu.callbacks[evtype][win] {
+        cb.Run(xu, event)
+    }
+}
+
+// Connected tests whether a particular callback is found to an event/window
+// combination.
+func (xu *XUtil) Connected(evtype int, win xgb.Id, fun Callback) bool {
+    for _, cb := range xu.callbacks[evtype][win] {
+        if cb == fun {
+            return true
+        }
+    }
+    return false
+}
+
+// DetachWindow removes all callbacks associated with a particular window.
+func (xu *XUtil) DetachWindow(win xgb.Id) {
+    for evtype, _ := range xu.callbacks {
+        delete(xu.callbacks[evtype], win)
+    }
+}
+
 // AttackKeyBindCallback associates an (event, window, mods, keycode)
 // with a callback.
 func (xu *XUtil) AttachKeyBindCallback(evtype int, win xgb.Id,
@@ -183,14 +222,7 @@ func (xu *XUtil) AttachKeyBindCallback(evtype int, win xgb.Id,
     }
 
     xu.keybinds[key] = append(xu.keybinds[key], fun)
-}
-
-// RunCallbacks executes every callback corresponding to a
-// particular event/window tuple.
-func (xu *XUtil) RunCallbacks(event interface{}, evtype int, win xgb.Id) {
-    for _, cb := range xu.callbacks[evtype][win] {
-        cb.Run(xu, event)
-    }
+    xu.keygrabs[key] += 1
 }
 
 // RunKeyBindCallbacks executes every callback corresponding to a
@@ -205,11 +237,46 @@ func (xu *XUtil) RunKeyBindCallbacks(event interface{}, evtype int,
     }
 }
 
-// DetachWindow removes all callbacks associated with a particular window.
-func (xu *XUtil) DetachWindow(win xgb.Id) {
-    for evtype, _ := range xu.callbacks {
-        delete(xu.callbacks[evtype], win)
+// DetachKeyBindWindow removes all callbacks associated with a particular
+// window and event type (either KeyPress or KeyRelease)
+func (xu *XUtil) DetachKeyBindWindow(evtype int, win xgb.Id) {
+    // Since we can't create a full key, loop through all key binds
+    // and check if evtype and window match.
+    for key, _ := range xu.keybinds {
+        if key.evtype == evtype && key.win == win {
+            delete(xu.keybinds, key)
+            xu.keygrabs[key] -= 1
+        }
     }
+}
+
+// KeyBindGrabs returns the number of grabs on a particular
+// event/window/mods/keycode combination. Namely, this combination
+// uniquely identifies a grab. If it's repeated, we get BadAccess.
+func (xu *XUtil) KeyBindGrabs(evtype int, win xgb.Id, mods uint16,
+                              keycode byte) int {
+    key := KeyBindKey{evtype, win, mods, keycode}
+    return xu.keygrabs[key] // returns 0 if key does not exist
+}
+
+// KeyMapGet accessor
+func (xu *XUtil) KeyMapGet() *KeyboardMapping {
+    return xu.keymap
+}
+
+// KeyMapSet simply updates XUtil.keymap
+func (xu *XUtil) KeyMapSet(keyMapReply *xgb.GetKeyboardMappingReply) {
+    xu.keymap = &KeyboardMapping{keyMapReply}
+}
+
+// ModMapGet accessor
+func (xu *XUtil) ModMapGet() *ModifierMapping {
+    return xu.modmap
+}
+
+// ModMapSet simply updates XUtil.modmap
+func (xu *XUtil) ModMapSet(modMapReply *xgb.GetModifierMappingReply) {
+    xu.modmap = &ModifierMapping{modMapReply}
 }
 
 // GetAtom retrieves an atom identifier from a cache if it exists.
