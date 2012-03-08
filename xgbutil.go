@@ -239,13 +239,15 @@ func (xu *XUtil) RunKeyBindCallbacks(event interface{}, evtype int,
 
 // DetachKeyBindWindow removes all callbacks associated with a particular
 // window and event type (either KeyPress or KeyRelease)
+// Also decrements the counter in the corresponding 'keygrabs' map
+// appropriately.
 func (xu *XUtil) DetachKeyBindWindow(evtype int, win xgb.Id) {
     // Since we can't create a full key, loop through all key binds
     // and check if evtype and window match.
     for key, _ := range xu.keybinds {
         if key.evtype == evtype && key.win == win {
+            xu.keygrabs[key] -= len(xu.keybinds[key])
             delete(xu.keybinds, key)
-            xu.keygrabs[key] -= 1
         }
     }
 }
