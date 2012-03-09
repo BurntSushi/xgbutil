@@ -52,7 +52,9 @@ func main() {
     keybind.Initialize(X)
 
     keycbPress := keybind.KeyPressFun(KeyPressCallback)
-    keycbPress.Connect(X, X.RootWin(), "control-F11") // Mod4-j
+    keycbPress.Connect(X, X.RootWin(), "XF86Sleep") // Mod4-j
+
+    keybind.XModMap(X)
 
     // keycbRelease := keybind.KeyReleaseFun(KeyReleaseCallback) 
     // keycbRelease.Connect(X, X.RootWin(), "Mod4-j") // Mod4-j 
