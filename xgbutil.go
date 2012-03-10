@@ -26,7 +26,10 @@ type XUtil struct {
     modmap *ModifierMapping
 
     keybinds map[KeyBindKey][]KeyBindCallback // key bind key -> callbacks
-    keygrabs map[KeyBindKey]int
+    keygrabs map[KeyBindKey]int // key bind key -> # of grabs
+
+    mousebinds map[MouseBindKey][]MouseBindCallback //mousebind key -> callbacks
+    mousegrabs map[MouseBindKey]int // mouse bind key -> # of grabs
 }
 
 // Callback is an interface that should be implemented by event callback 
@@ -41,29 +44,6 @@ type XUtil struct {
 type Callback interface {
     Connect(xu *XUtil, win xgb.Id)
     Run(xu *XUtil, ev interface{})
-}
-
-type KeyboardMapping struct {
-    *xgb.GetKeyboardMappingReply
-}
-
-type ModifierMapping struct {
-    *xgb.GetModifierMappingReply
-}
-
-type KeyBindCallback interface {
-    Connect(xu *XUtil, win xgb.Id, keyStr string)
-    Run(xu *XUtil, ev interface{})
-}
-
-// KeyBindKey is the type of the key in the map of keybindings.
-// It essentially represents the tuple
-// (event type, window id, modifier, keycode).
-type KeyBindKey struct {
-    evtype int
-    win xgb.Id
-    mod uint16
-    code byte
 }
 
 // Sometimes we need to specify NO WINDOW when a window is typically
@@ -108,8 +88,9 @@ func Xuerr(funcName string, err string, params ...interface{}) *XError {
 }
 
 // IgnoreMods is a list of X modifiers that we don't want interfering
-// with our keybindings. In particular, for each keybinding issued, there
-// is a seperate keybinding made for each of the following modifiers.
+// with our mouse or key bindings. In particular, for each mouse or key binding 
+// issued, there is a seperate mouse or key binding made for each of the 
+// following modifiers.
 var IgnoreMods []uint16 = []uint16{
     0,
     xgb.ModMaskLock, // Num lock
@@ -132,10 +113,12 @@ func Dial(display string) (*XUtil, error) {
         atoms: make(map[string]xgb.Id, 50), // start with a nice size
         atomNames: make(map[xgb.Id]string, 50),
         callbacks: make(map[int]map[xgb.Id][]Callback, 33),
-        keymap: nil,
+        keymap: nil, // we don't have anything yet
         modmap: nil,
         keybinds: make(map[KeyBindKey][]KeyBindCallback, 10),
         keygrabs: make(map[KeyBindKey]int, 10),
+        mousebinds: make(map[MouseBindKey][]MouseBindCallback, 10),
+        mousegrabs: make(map[MouseBindKey]int, 10),
     }
 
     // Register the Xinerama extension... because it doesn't cost much.
@@ -192,6 +175,11 @@ func (xu *XUtil) RunCallbacks(event interface{}, evtype int, win xgb.Id) {
 
 // Connected tests whether a particular callback is found to an event/window
 // combination.
+// This doesn't work because Go doesn't currently allow function comparison.
+// Not even on pointer equality.
+// We couldn't use 'reflect', but I'm not sure what performance costs that
+// entails?
+// See: http://stackoverflow.com/questions/9643205/how-do-i-compare-two-functions-for-pointer-equality-in-the-latest-go-weekly
 func (xu *XUtil) Connected(evtype int, win xgb.Id, fun Callback) bool {
     for _, cb := range xu.callbacks[evtype][win] {
         if cb == fun {
@@ -206,79 +194,6 @@ func (xu *XUtil) DetachWindow(win xgb.Id) {
     for evtype, _ := range xu.callbacks {
         delete(xu.callbacks[evtype], win)
     }
-}
-
-// AttackKeyBindCallback associates an (event, window, mods, keycode)
-// with a callback.
-func (xu *XUtil) AttachKeyBindCallback(evtype int, win xgb.Id,
-                                       mods uint16, keycode byte,
-                                       fun KeyBindCallback) {
-    // Create key
-    key := KeyBindKey{evtype, win, mods, keycode}
-
-    // Do we need to allocate?
-    if _, ok := xu.keybinds[key]; !ok {
-        xu.keybinds[key] = make([]KeyBindCallback, 0)
-    }
-
-    xu.keybinds[key] = append(xu.keybinds[key], fun)
-    xu.keygrabs[key] += 1
-}
-
-// RunKeyBindCallbacks executes every callback corresponding to a
-// particular event/window/mod/key tuple.
-func (xu *XUtil) RunKeyBindCallbacks(event interface{}, evtype int,
-                                     win xgb.Id, mods uint16, keycode byte) {
-    // Create key
-    key := KeyBindKey{evtype, win, mods, keycode}
-
-    for _, cb := range xu.keybinds[key] {
-        cb.Run(xu, event)
-    }
-}
-
-// DetachKeyBindWindow removes all callbacks associated with a particular
-// window and event type (either KeyPress or KeyRelease)
-// Also decrements the counter in the corresponding 'keygrabs' map
-// appropriately.
-func (xu *XUtil) DetachKeyBindWindow(evtype int, win xgb.Id) {
-    // Since we can't create a full key, loop through all key binds
-    // and check if evtype and window match.
-    for key, _ := range xu.keybinds {
-        if key.evtype == evtype && key.win == win {
-            xu.keygrabs[key] -= len(xu.keybinds[key])
-            delete(xu.keybinds, key)
-        }
-    }
-}
-
-// KeyBindGrabs returns the number of grabs on a particular
-// event/window/mods/keycode combination. Namely, this combination
-// uniquely identifies a grab. If it's repeated, we get BadAccess.
-func (xu *XUtil) KeyBindGrabs(evtype int, win xgb.Id, mods uint16,
-                              keycode byte) int {
-    key := KeyBindKey{evtype, win, mods, keycode}
-    return xu.keygrabs[key] // returns 0 if key does not exist
-}
-
-// KeyMapGet accessor
-func (xu *XUtil) KeyMapGet() *KeyboardMapping {
-    return xu.keymap
-}
-
-// KeyMapSet simply updates XUtil.keymap
-func (xu *XUtil) KeyMapSet(keyMapReply *xgb.GetKeyboardMappingReply) {
-    xu.keymap = &KeyboardMapping{keyMapReply}
-}
-
-// ModMapGet accessor
-func (xu *XUtil) ModMapGet() *ModifierMapping {
-    return xu.modmap
-}
-
-// ModMapSet simply updates XUtil.modmap
-func (xu *XUtil) ModMapSet(modMapReply *xgb.GetModifierMappingReply) {
-    xu.modmap = &ModifierMapping{modMapReply}
 }
 
 // GetAtom retrieves an atom identifier from a cache if it exists.
@@ -300,7 +215,8 @@ func (xu *XUtil) CacheAtom(name string, aid xgb.Id) {
 }
 
 
-// True utility/misc functions. Could be factored out at some point.
+// True utility/misc functions. Could be factored out to another package at 
+// some point.
 
 // BeSafe will recover from any panic produced by xgb or xgbutil and transform
 // it into an idiomatic Go error as a second return value.

@@ -11,6 +11,7 @@ import (
     "github.com/BurntSushi/xgbutil"
     // "github.com/BurntSushi/xgbutil/ewmh" 
     "github.com/BurntSushi/xgbutil/keybind"
+    "github.com/BurntSushi/xgbutil/mousebind"
     "github.com/BurntSushi/xgbutil/xevent"
     "github.com/BurntSushi/xgbutil/xprop"
     "github.com/BurntSushi/xgbutil/xwindow"
@@ -30,6 +31,15 @@ func MyCallback2(X *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
                e.Request, e.FirstKeycode, e.Count)
 }
 
+func BPressCB(X *xgbutil.XUtil, e xevent.ButtonPressEvent) {
+    fmt.Printf("Button press callback!\n")
+    // xevent.ReplayPointer(X) 
+}
+
+func BReleaseCB(X *xgbutil.XUtil, e xevent.ButtonReleaseEvent) {
+    fmt.Printf("Button release callback!\n")
+}
+
 func KeyPressCallback(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
     fmt.Printf("Key press callback!\n")
 }
@@ -46,15 +56,23 @@ func main() {
 
     xwindow.Listen(X, X.RootWin(), xgb.EventMaskPropertyChange)
 
-    cb := xevent.PropertyNotifyFun(MyCallback)
-    cb.Connect(X, X.RootWin())
+    // cb := xevent.PropertyNotifyFun(MyCallback) 
+    // cb.Connect(X, X.RootWin()) 
 
     keybind.Initialize(X)
 
     keycbPress := keybind.KeyPressFun(KeyPressCallback)
-    keycbPress.Connect(X, X.RootWin(), "XF86Sleep") // Mod4-j
+    keycbPress.Connect(X, X.RootWin(), "Shift-delete") // Mod4-j
 
     keybind.XModMap(X)
+
+    keybind.KeyPressFun(
+        func(X *xgbutil.XUtil, ev xevent.KeyPressEvent) {
+            keybind.XModMap(X)
+    }).Connect(X, X.RootWin(), "Mod4-z")
+
+    mousebind.ButtonPressFun(BPressCB).Connect(X, X.RootWin(), "Mod4-8", false)
+    mousebind.ButtonReleaseFun(BReleaseCB).Connect(X, X.RootWin(), "Mod4-9", false)
 
     // keycbRelease := keybind.KeyReleaseFun(KeyReleaseCallback) 
     // keycbRelease.Connect(X, X.RootWin(), "Mod4-j") // Mod4-j 

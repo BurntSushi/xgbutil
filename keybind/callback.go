@@ -21,9 +21,6 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
         Grab(xu, win, mods, keycode)
     }
 
-    // Always attach the callback.
-    xu.AttachKeyBindCallback(evtype, win, mods, keycode, callback)
-
     // If we've never grabbed anything on this window before, we need to
     // make sure we can respond to it in the main event loop.
     var allCb xgbutil.Callback
@@ -32,9 +29,15 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
     } else {
         allCb = xevent.KeyReleaseFun(RunKeyReleaseCallbacks)
     }
-    if !xu.Connected(evtype, win, allCb) {
+
+    // If this is the first Key{Press|Release}Event on this window,
+    // then we need to listen to Key{Press|Release} events in the main loop.
+    if !xu.ConnectedKeyBind(evtype, win) {
         allCb.Connect(xu, win)
     }
+
+    // Finally, attach the callback.
+    xu.AttachKeyBindCallback(evtype, win, mods, keycode, callback)
 }
 
 func deduceKeyInfo(state uint16, detail byte) (uint16, byte) {

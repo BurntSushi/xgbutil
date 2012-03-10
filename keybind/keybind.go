@@ -30,16 +30,98 @@ func Initialize(xu *xgbutil.XUtil) {
     xu.ModMapSet(modMap)
 }
 
+// updateMaps runs in response to MappingNotify events.
+// It is responsible for making sure our view of the world's keyboard
+// and modifier maps is correct. (Pointer mappings should be handled in
+// a similar callback in the mousebind package.)
 func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
     keyMap, modMap := mapsGet(xu)
+
+    // Hold up... If this is MappingKeyboard, then we may have some keycode
+    // changes. This is GROSS. We basically need to go through each keycode
+    // in the map, look up the keysym using the new map and use that keysym
+    // to look up the keycode in our current map. If the current keycode
+    // does not equal the old keycode, then we log the change in a map of
+    // old keycode -> new keycode.
+    // Once the map is constructed, we look through all of our keybindings
+    // and updated appropriately. *puke*
+    // I am only somewhat confident that this is correct.
+    if e.Request == xgb.MappingKeyboard {
+        changes := make(map[byte]byte, 0)
+        xuKeyMap := &xgbutil.KeyboardMapping{keyMap}
+
+        min, max := minMaxKeycodeGet(xu)
+
+        // let's not do too much allocation in our loop, shall we?
+        var newSym, oldSym xgb.Keysym
+        var column, oldKc byte
+
+        // wrap 'int(..)' around bytes min and max to avoid overflow. Hideous.
+        for newKc := int(min); newKc <= int(max); newKc++ {
+            for column = 0; column < keyMap.KeysymsPerKeycode; column++ {
+                // use new key map
+                newSym = keysymGetWithMap(xu, xuKeyMap, byte(newKc), column)
+
+                // uses old key map
+                oldKc = keycodeGet(xu, newSym)
+                oldSym = keysymGet(xu, byte(newKc), column)
+
+                // If the old and new keysyms are the same, ignore!
+                // Also ignore if either keysym is VoidSymbol
+                if oldSym == newSym || oldSym == 0 || newSym == 0 {
+                    continue
+                }
+
+                // these should match if there are NO changes
+                if oldKc != byte(newKc) {
+                    changes[oldKc] = byte(newKc)
+                }
+            }
+        }
+
+        // Now use 'changes' to do some regrabbing
+        // Loop through all key bindings and check if we have any affected
+        // key codes. (Note that each key binding may be associated with
+        // multiple callbacks.)
+        // We must ungrab everything first, in case two keys are being swapped.
+        for _, key := range xu.KeyBindKeys() {
+            if _, ok := changes[key.Code]; ok {
+                Ungrab(xu, key.Win, key.Mod, key.Code)
+            }
+        }
+        // Okay, now grab.
+        for _, key := range xu.KeyBindKeys() {
+            if newKc, ok := changes[key.Code]; ok {
+                Grab(xu, key.Win, key.Mod, newKc)
+                xu.UpdateKeyBindKey(key, newKc)
+            }
+        }
+    }
+
+    // We don't have to do something with MappingModifier like we do with
+    // MappingKeyboard. This is due to us requiring that key strings use
+    // modifier names built into X. (i.e., the names seen in the output of
+    // `xmodmap`.) This means that the modifier mappings happen on the X server
+    // side, so we don't *typically* have to care what key is actually being
+    // pressed to trigger a modifier. (There are some exceptional cases, and
+    // when that happens, we simply query on-demand which keys are modifiers.
+    // See the RunKey{Press,Release}Callbacks functions in keybind/callback.go
+    // for the deets.)
+
+    // Finally update our view of the mappings.
     xu.KeyMapSet(keyMap)
     xu.ModMapSet(modMap)
 }
 
+// minMaxKeycodeGet a simple accessor to the X setup info to return the
+// minimum and maximum keycodes. They are typically 8 and 255, respectively.
 func minMaxKeycodeGet(xu *xgbutil.XUtil) (byte, byte) {
     return xu.Conn().Setup.MinKeycode, xu.Conn().Setup.MaxKeycode
 }
 
+// A convenience function to grab the KeyboardMapping and ModifierMapping
+// from X. We need to do this on startup (see Initialize) and whenever we
+// get a MappingNotify event.
 func mapsGet(xu *xgbutil.XUtil) (*xgb.GetKeyboardMappingReply,
                                  *xgb.GetModifierMappingReply) {
     min, max := minMaxKeycodeGet(xu)
@@ -144,12 +226,18 @@ func keycodeGet(xu *xgbutil.XUtil, keysym xgb.Keysym) byte {
     return 0
 }
 
-// Given a keycode and a column, find the keysym associated with it in
-// the current X environment.
+// keysymGet is a shortcut alias for 'keysymGetWithMap' using the current
+// keymap stored in XUtil.
 // keybind.Initialize MUST have been called before using this function.
 func keysymGet(xu *xgbutil.XUtil, keycode byte, column byte) xgb.Keysym {
+    return keysymGetWithMap(xu, xu.KeyMapGet(), keycode, column)
+}
+
+// keysymGetWithMap uses the given key map and finds a keysym associated
+// with the given keycode in the current X environment.
+func keysymGetWithMap(xu *xgbutil.XUtil, keyMap *xgbutil.KeyboardMapping,
+                      keycode byte, column byte) xgb.Keysym {
     min, _ := minMaxKeycodeGet(xu)
-    keyMap := xu.KeyMapGet()
     i := (int(keycode) - int(min)) * int(keyMap.KeysymsPerKeycode) + int(column)
 
     return keyMap.Keysyms[i]
@@ -218,5 +306,35 @@ func Grab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key byte) {
         xu.Conn().GrabKey(true, win, mods | m, key,
                           xgb.GrabModeAsync, xgb.GrabModeAsync)
     }
+}
+
+// Ungrab undoes Grab. It will handle all combinations od modifiers found
+// in xgbutil.IgnoreMods.
+func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key byte) {
+    for _, m := range xgbutil.IgnoreMods {
+        xu.Conn().UngrabKey(key, win, mods | m)
+    }
+}
+
+// GrabKeyboard grabs the entire keyboard.
+// Returns whether GrabStatus is successful and an error if one is reported by 
+// XGB. It is possible to not get an error and the grab to be unsuccessful.
+// The purpose of 'win' is that after a grab is successful, ALL Key*Events will
+// be sent to that window. Make sure you have a callback attached :-)
+func GrabKeyboard(xu *xgbutil.XUtil, win xgb.Id) (bool, error) {
+    reply, err := xu.Conn().GrabKeyboard(false, win, 0,
+                                         xgb.GrabModeAsync, xgb.GrabModeAsync)
+    if err != nil {
+        return false, xgbutil.Xerr(err, "GrabKeyboard",
+                                   "Error grabbing keyboard on window '%x'",
+                                   win)
+    }
+
+    return reply.Status == xgb.GrabStatusSuccess, nil
+}
+
+// UngrabKeyboard undoes GrabKeyboard.
+func UngrabKeyboard(xu *xgbutil.XUtil) {
+    xu.Conn().UngrabKeyboard(0)
 }
 
