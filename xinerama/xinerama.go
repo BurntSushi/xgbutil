@@ -12,15 +12,10 @@ package xinerama
 import "sort"
 
 import "github.com/BurntSushi/xgbutil"
-
-// Head is a struct representing an X head rectangle
-// (the top left corner is the origin).
-type Head struct {
-    X, Y, Width, Height uint32
-}
+import "github.com/BurntSushi/xgbutil/xrect"
 
 // Alias so we use it as a receiver to satisfy sort.Interface
-type Heads []Head
+type Heads []xrect.Rect
 
 // Len satisfies 'Len' in sort.Interface.
 func (hds Heads) Len() int {
@@ -29,8 +24,8 @@ func (hds Heads) Len() int {
 
 // Less satisfies 'Less' in sort.Interface.
 func (hds Heads) Less(i int, j int) bool {
-    return hds[i].X < hds[j].X || (
-            hds[i].X == hds[j].X && hds[i].Y < hds[j].Y)
+    return hds[i].X() < hds[j].X() || (hds[i].X() == hds[j].X() &&
+                                       hds[i].Y() < hds[j].Y())
 }
 
 // Swap does just that. Nothing to see here...
@@ -48,12 +43,7 @@ func PhysicalHeads(xu *xgbutil.XUtil) (Heads, error) {
 
     hds := make(Heads, len(xinfo.ScreenInfo))
     for i, info := range xinfo.ScreenInfo {
-        hds[i] = Head{
-            X: uint32(info.XOrg),
-            Y: uint32(info.YOrg),
-            Width: uint32(info.Width),
-            Height: uint32(info.Height),
-        }
+        hds[i] = xrect.Make(info.XOrg, info.YOrg, info.Width, info.Height)
     }
 
     sort.Sort(hds)
