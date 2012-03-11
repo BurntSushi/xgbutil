@@ -12,7 +12,7 @@
 */
 package xrect
 
-// import "github.com/BurntSushi/xgbutil" 
+import "fmt"
 
 // Define a base and simple Rect interface.
 type Rect interface {
@@ -20,11 +20,21 @@ type Rect interface {
     Y() int16
     Width() uint16
     Height() uint16
+    XSet(x int16)
+    YSet(y int16)
+    WidthSet(width uint16)
+    HeightSet(height uint16)
 }
 
 // Turn all elements of a Rect interface into integers
 func Intify(xr Rect) (int, int, int, int) {
     return int(xr.X()), int(xr.Y()), int(xr.Width()), int(xr.Height())
+}
+
+// Turn all elements of a Rect interface into unsigned 32 bit integers
+func Uintify(xr Rect) (uint32, uint32, uint32, uint32) {
+    return uint32(xr.X()), uint32(xr.Y()),
+           uint32(xr.Width()), uint32(xr.Height())
 }
 
 // Provide a simple implementation of a rect.
@@ -37,6 +47,10 @@ type XRect struct {
 // Provide the ability to construct an XRect.
 func Make(x, y int16, w, h uint16) *XRect {
     return &XRect{x, y, w, h}
+}
+
+func (r *XRect) String() string {
+    return fmt.Sprintf("[(%d, %d) %dx%d]", r.x, r.y, r.width, r.height)
 }
 
 // Satisfy the Rect interface
@@ -54,6 +68,22 @@ func (r *XRect) Width() uint16 {
 
 func (r *XRect) Height() uint16 {
     return r.height
+}
+
+func (r *XRect) XSet(x int16) {
+    r.x = x
+}
+
+func (r *XRect) YSet(y int16) {
+    r.y = y
+}
+
+func (r *XRect) WidthSet(width uint16) {
+    r.width = width
+}
+
+func (r *XRect) HeightSet(height uint16) {
+    r.height = height
 }
 
 // IntersectArea takes two rectangles satisfying the Rect interface and
@@ -87,6 +117,99 @@ func LargestOverlap(needle Rect, haystack []Rect) (result Rect) {
         }
     }
     return
+}
+
+// ApplyStrut takes a list of Rects (typically the rectangles that represent
+// each physical head in this case) and a set of parameters representing a
+// strut, and modifies the list of Rects to account for struts.
+// That is, it shrinks each rect.
+// Note that if struts overlap, the *most restrictive* one is used. This seems
+// like the most sensible response to a weird scenario.
+// (If you don't have a partial strut, just use '0' for the extra fields.)
+// See tests/tst_rect.go for an example of how to use this to get accurate
+// workarea for each physical head.
+func ApplyStrut(rects []Rect, rootWidth, rootHeight uint16,
+                left, right, top, bottom,
+                left_start_y, left_end_y, right_start_y, right_end_y,
+                top_start_x, top_end_x, bottom_start_x, bottom_end_x uint32) {
+    var nx, ny int16 // 'n*' are new values that may or may not be used
+    var nw, nh uint16
+    var x, y, w, h uint32
+    var bt, tp, lt, rt bool
+    rWidth, rHeight := uint32(rootWidth), uint32(rootHeight)
+
+    // The essential idea of struts, and particularly partial struts, is that
+    // one piece of a border of the screen can be "reserved" for some
+    // special windows like docks, panels, taskbars and system trays.
+    // Since we assume that one window can only reserve one piece of a border
+    // (either top, left, right or bottom), we iterate through each rect
+    // in our list and check if that rect is affected by the given strut.
+    // If it is, we modify the current rect appropriately.
+    // TODO: Fix this so old school _NET_WM_STRUT can work too. It actually
+    // should be pretty simple: change conditions like 'if tp' to
+    // 'if tp || (top_start_x == 0 && top_end_x == 0 && top != 0)'.
+    // Thus, we would end up changing every rect, which is what old school
+    // struts should do. We may also make a conscious choice to ignore them
+    // when 'rects' has more than one rect, since the old school struts will
+    // typically result in undesirable behavior.
+    for _, rect := range rects {
+        x, y, w, h = Uintify(rect)
+
+        bt = bottom_start_x != bottom_end_x &&
+               (xInRect(bottom_start_x, rect) || xInRect(bottom_end_x, rect))
+        tp = top_start_x != top_end_x &&
+               (xInRect(top_start_x, rect) || xInRect(top_end_x, rect))
+        lt = left_start_y != left_end_y &&
+               (yInRect(left_start_y, rect) || yInRect(left_end_y, rect))
+        rt = right_start_y != right_end_y &&
+                (yInRect(right_start_y, rect) || yInRect(right_end_y, rect))
+
+        if bt {
+            nh = uint16(h - (bottom - ((rHeight - h) - y)))
+            if nh < rect.Height() {
+                rect.HeightSet(nh)
+            }
+        } else if tp {
+            nh = uint16(h - (top - y))
+            if nh < rect.Height() {
+                rect.HeightSet(nh)
+            }
+
+            ny = int16(top)
+            if ny > rect.Y() {
+                rect.YSet(ny)
+            }
+        } else if rt {
+            nw = uint16(w - (right - ((rWidth - w) - x)))
+            if nw < rect.Width() {
+                rect.WidthSet(nw)
+            }
+        } else if lt {
+            nw = uint16(w - (left - x))
+            if nw < rect.Width() {
+                rect.WidthSet(nw)
+            }
+
+            nx = int16(left)
+            if nx > rect.X() {
+                rect.XSet(nx)
+            }
+        }
+    }
+}
+
+// xInRect is whether a particular x-coordinate is vertically constrained by
+// a rectangle.
+func xInRect(xtest uint32, rect Rect) bool {
+    x, _, w, _ := Uintify(rect)
+    return xtest >= x && xtest < (x + w)
+}
+
+// yInRect is whether a particular y-coordinate is horizontally constrained by
+// a rectangle.
+func yInRect(ytest uint32, rect Rect) bool {
+    _, y, _, h := Uintify(rect)
+    return ytest >= y && ytest < (y + h)
 }
 
 // Min should be in Go's standard library... but not for floats.

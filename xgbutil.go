@@ -153,6 +153,10 @@ func (xu *XUtil) SetRootWin(root xgb.Id) {
     xu.root = root
 }
 
+// RootWidth gets the width of the root window
+func (xu *XUtil) RootWidth() {
+}
+
 // AttachCallback associates a (event, window) tuple with an event.
 func (xu *XUtil) AttachCallback(evtype int, win xgb.Id, fun Callback) {
     // Do we need to allocate?

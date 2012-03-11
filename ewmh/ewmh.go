@@ -339,19 +339,20 @@ func FrameExtentsSet(xu *xgbutil.XUtil, win xgb.Id, extents FrameExtents) error 
 // If 'w' or 'h' are 0, then they are not sent.
 // If you need to resize a window without moving it, use the ReqExtra variant,
 // or Resize.
-func MoveresizeWindow(xu *xgbutil.XUtil, win xgb.Id, x, y, w, h uint32) error {
+func MoveresizeWindow(xu *xgbutil.XUtil, win xgb.Id, x, y int16,
+                      w, h uint16) error {
     return MoveresizeWindowExtra(xu, win, x, y, w, h, xgb.GravityBitForget,
                                  2, true, true)
 }
 
 // _NET_MOVERESIZE_WINDOW req resize only
-func ResizeWindow(xu *xgbutil.XUtil, win xgb.Id, w, h uint32) error {
+func ResizeWindow(xu *xgbutil.XUtil, win xgb.Id, w, h uint16) error {
     return MoveresizeWindowExtra(xu, win, 0, 0, w, h, xgb.GravityBitForget,
                                  2, false, false)
 }
 
 // _NET_MOVERESIZE_WINDOW req move only
-func MoveWindow(xu *xgbutil.XUtil, win xgb.Id, x, y uint32) error {
+func MoveWindow(xu *xgbutil.XUtil, win xgb.Id, x, y int16) error {
     return MoveresizeWindowExtra(xu, win, x, y, 0, 0, xgb.GravityBitForget,
                                  2, true, true)
 }
@@ -359,8 +360,9 @@ func MoveWindow(xu *xgbutil.XUtil, win xgb.Id, x, y uint32) error {
 // _NET_MOVERESIZE_WINDOW req extra
 // If 'w' or 'h' are 0, then they are not sent.
 // To not set 'x' or 'y', 'usex' or 'usey' need to be set to false.
-func MoveresizeWindowExtra(xu *xgbutil.XUtil, win xgb.Id, x, y, w, h,
-                           gravity, source uint32, usex, usey bool) error {
+func MoveresizeWindowExtra(xu *xgbutil.XUtil, win xgb.Id, x, y int16,
+                           w, h uint16, gravity, source uint32,
+                           usex, usey bool) error {
     flags := gravity
     flags |= source << 12
     if usex {
@@ -376,7 +378,8 @@ func MoveresizeWindowExtra(xu *xgbutil.XUtil, win xgb.Id, x, y, w, h,
         flags |= 1 << 11
     }
 
-    return ClientEvent(xu, win, "_NET_MOVERESIZE_WINDOW", flags, x, y, w, h)
+    return ClientEvent(xu, win, "_NET_MOVERESIZE_WINDOW", flags,
+                       uint32(x), uint32(y), uint32(w), uint32(h))
 }
 
 // _NET_NUMBER_OF_DESKTOPS get
