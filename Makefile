@@ -10,5 +10,5 @@ tags:
 	find ./ \( -name '*.go' -and -not -wholename './tests/*' \) -print0 | xargs -0 gotags > TAGS
 
 loc:
-	find ./ -name '*.go' -and -not -wholename './tests*' -and -not -name '*keysymdef.go' -print0 | xargs -0 wc -l
+	find ./ -name '*.go' -and -not -wholename './tests*' -and -not -name '*keysymdef.go' -print | sort | xargs wc -l
 
