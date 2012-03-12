@@ -145,9 +145,8 @@ func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
     }
 
     // The hard part is over, boiler-plate time!
-    screen := xu.Conn().DefaultScreen()
     pix := xu.Conn().NewId()
-    xu.Conn().CreatePixmap(screen.RootDepth, pix, xu.RootWin(),
+    xu.Conn().CreatePixmap(xu.Screen().RootDepth, pix, xu.RootWin(),
                            uint16(width), uint16(height))
     xu.Conn().PutImage(xgb.ImageFormatZPixmap, pix, xu.GC(),
                        uint16(width), uint16(height), 0, 0, 0, 24, imgData)
