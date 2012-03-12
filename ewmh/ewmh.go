@@ -643,19 +643,19 @@ type WmIcon struct {
 }
 
 // _NET_WM_ICON get
-func WmIconGet(xu *xgbutil.XUtil, win xgb.Id) ([]WmIcon, error) {
+func WmIconGet(xu *xgbutil.XUtil, win xgb.Id) ([]*WmIcon, error) {
     icon, err := xprop.PropValNums(xprop.GetProperty(xu, win, "_NET_WM_ICON"))
     if err != nil {
         return nil, err
     }
 
-    wmicons := make([]WmIcon, 0)
+    wmicons := make([]*WmIcon, 0)
     start := uint32(0)
     for int(start) < len(icon) {
         w, h := icon[start], icon[start + 1]
         upto := w * h
 
-        wmicon := WmIcon{
+        wmicon := &WmIcon{
             Width: w,
             Height: h,
             Data: icon[(start + 2):(start + upto + 2)],
@@ -669,7 +669,7 @@ func WmIconGet(xu *xgbutil.XUtil, win xgb.Id) ([]WmIcon, error) {
 }
 
 // _NET_WM_ICON set
-func WmIconSet(xu *xgbutil.XUtil, win xgb.Id, icons []WmIcon) error {
+func WmIconSet(xu *xgbutil.XUtil, win xgb.Id, icons []*WmIcon) error {
     raw := make([]uint32, 0, 10000) // start big
     for _, icon := range icons {
         raw = append(raw, icon.Width, icon.Height)
