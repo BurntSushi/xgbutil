@@ -11,13 +11,16 @@ package main
 
 import (
     "fmt"
-    // "image" 
+    "image"
     "image/color"
-    // "image/draw" 
+    "image/png"
+    "image/draw"
+    "os"
     "time"
 
+    "code.google.com/p/graphics-go/graphics"
+
     "github.com/BurntSushi/xgbutil"
-    "github.com/BurntSushi/xgbutil/ewmh"
     "github.com/BurntSushi/xgbutil/xgraphics"
 )
 
@@ -41,29 +44,32 @@ func main() {
         panic(Xerr)
     }
 
-    active, _ := ewmh.ActiveWindowGet(X)
-    icons, _ := ewmh.WmIconGet(X, active)
-    fmt.Printf("Active window's (%x) icon data: (length: %v)\n", 
-               active, len(icons))
-    for _, icon := range icons {
-        fmt.Printf("\t(%d, %d)", icon.Width, icon.Height)
-        fmt.Printf(" :: %d == %d\n", icon.Width * icon.Height, len(icon.Data))
+    srcReader, err := os.Open("close.png")
+    if err != nil {
+        fmt.Println("%s is not readable.", "old.png")
     }
 
-    work := icons[2]
-    fmt.Printf("Working with (%d, %d)\n", work.Width, work.Height)
+    simg, err := png.Decode(srcReader)
+    if err != nil {
+        fmt.Println("Could not decode %s.", "old.png")
+    }
 
+    img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+    graphics.Scale(img, simg)
 
-    img, mask := xgraphics.EwmhIconToImage(work)
-
-    dest := xgraphics.BlendBg(img, mask, 70, color.RGBA{0, 0, 255, 255})
+    dimg := image.NewRGBA(img.Bounds())
+    draw.Draw(dimg, dimg.Bounds(), img, image.ZP, draw.Src)
+    dmask := image.NewRGBA(img.Bounds())
+    draw.Draw(dmask, img.Bounds(), image.NewUniform(color.Alpha{255}),
+              image.ZP, draw.Src)
+    dest := xgraphics.BlendBg(img, dmask, 100, color.RGBA{255, 255, 255, 255})
 
     // Let's try to write some text...
-    xgraphics.DrawText(dest, 5, 5, color.RGBA{255, 255, 255, 255}, 10,
-                       fontFile, "Hello, world!")
-
-    tw, th, err := xgraphics.TextExtents(fontFile, 11, "Hiya")
-    fmt.Println(tw, th, err)
+    // xgraphics.DrawText(dest, 5, 5, color.RGBA{255, 255, 255, 255}, 10, 
+                       // fontFile, "Hello, world!") 
+//  
+    // tw, th, err := xgraphics.TextExtents(fontFile, 11, "Hiya") 
+    // fmt.Println(tw, th, err) 
 
     win := xgraphics.CreateImageWindow(X, dest, 3940, 400)
     X.Conn().MapWindow(win)
