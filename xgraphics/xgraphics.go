@@ -13,8 +13,12 @@ import (
     "image"
     "image/color"
     "image/draw"
+    "image/png"
     "io/ioutil"
+    "os"
 )
+
+import "code.google.com/p/graphics-go/graphics"
 
 import "code.google.com/p/freetype-go/freetype"
 import "code.google.com/p/freetype-go/freetype/truetype"
@@ -127,8 +131,8 @@ func CreateImageWindow(xu *xgbutil.XUtil, img image.Image,
 // requests from being bigger than (2^16 * 4) bytes. (This is caused by silly
 // X nonsense.) To fix this, XGB needs to work around it, but it isn't quite
 // clear how that should be done yet.
-// Therefore, try to keep images less than 250x250, otherwise X will stomp
-// on you. And it will hurt.
+// Therefore, try to keep images less than 256x256, otherwise X will stomp
+// on you. And it will hurt. And you won't even know it. :-(
 func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
     // gather up image data in the form X wants it... so picky
     width, height := getDim(img)
@@ -137,10 +141,10 @@ func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
         for y := 0; y < height; y++ {
             r, g, b, a := img.At(x, y).RGBA()
             i := 4 * (x + (y * height))
-            imgData[i + 0] = byte(b)
-            imgData[i + 1] = byte(g)
-            imgData[i + 2] = byte(r)
-            imgData[i + 3] = byte(a)
+            imgData[i + 0] = byte(b >> 8)
+            imgData[i + 1] = byte(g >> 8)
+            imgData[i + 2] = byte(r >> 8)
+            imgData[i + 3] = byte(a >> 8)
         }
     }
 
@@ -162,6 +166,21 @@ func getDim(img image.Image) (int, int) {
     return bounds.Max.X - bounds.Min.X, bounds.Max.Y - bounds.Min.Y
 }
 
+// LoadPngFromFile takes a file name for a png and loads it as an image.Image.
+func LoadPngFromFile(file string) (image.Image, error) {
+    srcReader, err := os.Open(file)
+    if err != nil {
+        return nil, err
+    }
+
+    img, err := png.Decode(srcReader)
+    if err != nil {
+        return nil, err
+    }
+
+    return img, nil
+}
+
 // BlendBg "blends" img with mask into a background with color clr with
 // transparency, where transparency is a number 0-100 where 0 is completely
 // transparent and 100 is completely opaque.
@@ -171,14 +190,99 @@ func BlendBg(img image.Image, mask draw.Image, transparency int,
              clr color.RGBA) (dest *image.RGBA) {
     transClr := uint8((float64(transparency) / 100.0) * 255.0)
     blendMask := image.NewUniform(color.Alpha{transClr})
-    draw.DrawMask(mask, mask.Bounds(), mask, image.ZP, blendMask, image.ZP,
-                  draw.Src)
+
+    if mask != nil {
+        draw.DrawMask(mask, mask.Bounds(), mask, image.ZP, blendMask, image.ZP,
+                      draw.Src)
+    }
 
     dest = image.NewRGBA(img.Bounds())
     draw.Draw(dest, dest.Bounds(), image.NewUniform(clr), image.ZP, draw.Src)
-    draw.DrawMask(dest, dest.Bounds(), img, image.ZP, mask, image.ZP, draw.Over)
+
+    if mask != nil {
+        draw.DrawMask(dest, dest.Bounds(), img, image.ZP, mask, image.ZP,
+                      draw.Over)
+    } else {
+        draw.DrawMask(dest, dest.Bounds(), img, image.ZP, blendMask, image.ZP,
+                      draw.Over)
+    }
 
     return
+}
+
+// Scale is a simple wrapper around graphics.Scale. It will also scale a
+// mask appropriately.
+func Scale(img image.Image, mask image.Image,
+           width, height int) (dimg draw.Image, dmask draw.Image) {
+    dimg = image.NewRGBA(image.Rect(0, 0, width, height))
+    graphics.Scale(dimg, img)
+
+    if mask != nil {
+        dmask = image.NewRGBA(image.Rect(0, 0, width, height))
+        graphics.Scale(dmask, mask)
+    }
+
+    return
+}
+
+// FindBestIcon takes width/height dimensions and a slice of *ewmh.WmIcon
+// and finds the best matching icon of the bunch. We always prefer bigger.
+// If no icons are bigger than the preferred dimensions, use the biggest
+// available. Otherwise, use the smallest icon that is greater than or equal
+// to the preferred dimensions. The preferred dimensions is essentially
+// what you'll likely scale the resulting icon to.
+// XXX: It seems that Google's 'Scale' in the graphics package will only work
+// with proportional dimensions. Therefore, we enforce that constraint here.
+func FindBestIcon(width, height uint32, icons []*ewmh.WmIcon) *ewmh.WmIcon {
+    // nada nada limonada
+    if len(icons) == 0 {
+        return nil
+    }
+
+    parea := width * height // preferred size
+    var best *ewmh.WmIcon = nil // best matching icon
+
+    var bestArea, iconArea uint32
+
+    for _, icon := range icons {
+        // this icon isn't proportional to the requested dimensions,
+        // then we can't use it because graphics.Scale is buzz killington.
+        if !proportional(width, height, icon.Width, icon.Height) {
+            continue
+        }
+
+        // the first valid icon we've seen; use it!
+        if best == nil {
+            best = icon
+            continue
+        }
+
+        // load areas for comparison
+        bestArea, iconArea = best.Width * best.Height, icon.Width * icon.Height
+
+        // We don't always want to accept bigger icons if our best is
+        // already bigger. But we always want something bigger if our best
+        // is insufficient.
+        if (iconArea >= parea && iconArea <= bestArea) ||
+           (bestArea < parea && iconArea > bestArea) {
+            best = icon
+        }
+    }
+
+    if best != nil {
+        print("Found a good icon size: ", best.Width, "--", best.Height, "\n")
+    }
+
+    return best // this may be nil if we have no valid icons
+}
+
+// proportional takes a pair of dimensions and returns whether they are
+// proportional or not.
+func proportional(w1, h1, w2, h2 uint32) bool {
+    fw1, fh1 := float64(w1), float64(h1)
+    fw2, fh2 := float64(w2), float64(h2)
+
+    return fw1 / fh1 == fw2 / fh2
 }
 
 // EwmhIconToImage takes a ewmh.WmIcon and converts it to an image and

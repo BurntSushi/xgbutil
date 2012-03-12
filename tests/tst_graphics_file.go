@@ -13,9 +13,9 @@ import (
     "fmt"
     "image"
     "image/color"
-    "image/png"
-    "image/draw"
-    "os"
+    // "image/png" 
+    // "image/draw" 
+    // "os" 
     "time"
 
     "code.google.com/p/graphics-go/graphics"
@@ -44,32 +44,15 @@ func main() {
         panic(Xerr)
     }
 
-    srcReader, err := os.Open("close.png")
+    simg, err := xgraphics.LoadPngFromFile("openbox.png")
     if err != nil {
-        fmt.Println("%s is not readable.", "old.png")
-    }
-
-    simg, err := png.Decode(srcReader)
-    if err != nil {
-        fmt.Println("Could not decode %s.", "old.png")
+        fmt.Println(err)
     }
 
     img := image.NewRGBA(image.Rect(0, 0, 100, 100))
     graphics.Scale(img, simg)
 
-    dimg := image.NewRGBA(img.Bounds())
-    draw.Draw(dimg, dimg.Bounds(), img, image.ZP, draw.Src)
-    dmask := image.NewRGBA(img.Bounds())
-    draw.Draw(dmask, img.Bounds(), image.NewUniform(color.Alpha{255}),
-              image.ZP, draw.Src)
-    dest := xgraphics.BlendBg(img, dmask, 100, color.RGBA{255, 255, 255, 255})
-
-    // Let's try to write some text...
-    // xgraphics.DrawText(dest, 5, 5, color.RGBA{255, 255, 255, 255}, 10, 
-                       // fontFile, "Hello, world!") 
-//  
-    // tw, th, err := xgraphics.TextExtents(fontFile, 11, "Hiya") 
-    // fmt.Println(tw, th, err) 
+    dest := xgraphics.BlendBg(img, nil, 100, color.RGBA{255, 255, 255, 255})
 
     win := xgraphics.CreateImageWindow(X, dest, 3940, 400)
     X.Conn().MapWindow(win)

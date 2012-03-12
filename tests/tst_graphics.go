@@ -43,23 +43,23 @@ func main() {
 
     active, _ := ewmh.ActiveWindowGet(X)
     icons, _ := ewmh.WmIconGet(X, active)
-    fmt.Printf("Active window's (%x) icon data: (length: %v)\n", 
-               active, len(icons))
-    for _, icon := range icons {
-        fmt.Printf("\t(%d, %d)", icon.Width, icon.Height)
-        fmt.Printf(" :: %d == %d\n", icon.Width * icon.Height, len(icon.Data))
+
+    work := xgraphics.FindBestIcon(256, 256, icons)
+    if work != nil {
+        fmt.Printf("Working with icon (%d, %d)\n", work.Width, work.Height)
+    } else {
+        fmt.Println("No good icon... :-(")
+        return
     }
 
-    work := icons[2]
-    fmt.Printf("Working with (%d, %d)\n", work.Width, work.Height)
+    eimg, emask := xgraphics.EwmhIconToImage(work)
 
+    img, mask := xgraphics.Scale(eimg, emask, 255, 255)
 
-    img, mask := xgraphics.EwmhIconToImage(work)
-
-    dest := xgraphics.BlendBg(img, mask, 70, color.RGBA{0, 0, 255, 255})
+    dest := xgraphics.BlendBg(img, mask, 100, color.RGBA{0, 0, 255, 255})
 
     // Let's try to write some text...
-    xgraphics.DrawText(dest, 5, 5, color.RGBA{255, 255, 255, 255}, 10,
+    xgraphics.DrawText(dest, 50, 50, color.RGBA{255, 255, 255, 255}, 20,
                        fontFile, "Hello, world!")
 
     tw, th, err := xgraphics.TextExtents(fontFile, 11, "Hiya")
