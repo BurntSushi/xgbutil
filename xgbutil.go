@@ -17,6 +17,7 @@ import (
 // X connection, the root window, event callbacks, key/mouse bindings, etc.
 type XUtil struct {
     conn *xgb.Conn
+    screen *xgb.ScreenInfo
     root xgb.Id
     atoms map[string]xgb.Id
     atomNames map[xgb.Id]string
@@ -30,6 +31,8 @@ type XUtil struct {
 
     mousebinds map[MouseBindKey][]MouseBindCallback //mousebind key -> callbacks
     mousegrabs map[MouseBindKey]int // mouse bind key -> # of grabs
+
+    gc xgb.Id // a general purpose graphics context; used to paint images
 }
 
 // Callback is an interface that should be implemented by event callback 
@@ -109,6 +112,7 @@ func Dial(display string) (*XUtil, error) {
     // Initialize our central struct that stores everything.
     xu := &XUtil{
         conn: c,
+        screen: c.DefaultScreen(),
         root: c.DefaultScreen().Root,
         atoms: make(map[string]xgb.Id, 50), // start with a nice size
         atomNames: make(map[xgb.Id]string, 50),
@@ -120,6 +124,11 @@ func Dial(display string) (*XUtil, error) {
         mousebinds: make(map[MouseBindKey][]MouseBindCallback, 10),
         mousegrabs: make(map[MouseBindKey]int, 10),
     }
+
+    // Create a general purpose graphics context
+    xu.gc = xu.conn.NewId()
+    xu.conn.CreateGC(xu.gc, xu.root, xgb.GCForeground,
+                     []uint32{xu.screen.WhitePixel})
 
     // Register the Xinerama extension... because it doesn't cost much.
     err = xu.conn.RegisterExtension("XINERAMA")
@@ -140,6 +149,11 @@ func (xu *XUtil) Conn() (*xgb.Conn) {
     return xu.conn
 }
 
+// Screen returns the default screen
+func (xu *XUtil) Screen() *xgb.ScreenInfo {
+    return xu.screen
+}
+
 // RootWin returns the current root window.
 func (xu *XUtil) RootWin() (xgb.Id) {
     return xu.root
@@ -153,8 +167,10 @@ func (xu *XUtil) SetRootWin(root xgb.Id) {
     xu.root = root
 }
 
-// RootWidth gets the width of the root window
-func (xu *XUtil) RootWidth() {
+// GC gets a general purpose graphics context that is typically used to simply
+// paint images.
+func (xu *XUtil) GC() xgb.Id {
+    return xu.gc
 }
 
 // AttachCallback associates a (event, window) tuple with an event.
