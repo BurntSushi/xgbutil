@@ -169,6 +169,8 @@ func getDim(img image.Image) (int, int) {
 // LoadPngFromFile takes a file name for a png and loads it as an image.Image.
 func LoadPngFromFile(file string) (image.Image, error) {
     srcReader, err := os.Open(file)
+    defer srcReader.Close()
+
     if err != nil {
         return nil, err
     }
