@@ -11,12 +11,14 @@ import "github.com/BurntSushi/xgbutil/xevent"
 // connect is essentially 'Connect' for either ButtonPress or
 // ButtonRelease events.
 func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback,
-             evtype int, win xgb.Id, buttonStr string, propagate bool) {
+             evtype int, win xgb.Id, buttonStr string,
+             propagate bool, grab bool) {
     // Get the mods/button first
     mods, button := ParseString(xu, buttonStr)
 
     // Only do the grab if we haven't yet on this window.
-    if xu.MouseBindGrabs(evtype, win, mods, button) == 0 {
+    // And if we WANT a grab...
+    if grab && xu.MouseBindGrabs(evtype, win, mods, button) == 0 {
         Grab(xu, win, mods, button, propagate)
     }
 
@@ -67,8 +69,9 @@ func deduceButtonInfo(state uint16, detail byte) (uint16, byte) {
 type ButtonPressFun xevent.ButtonPressFun
 
 func (callback ButtonPressFun) Connect(xu *xgbutil.XUtil, win xgb.Id,
-                                       buttonStr string, propagate bool) {
-    connect(xu, callback, xevent.ButtonPress, win, buttonStr, propagate)
+                                       buttonStr string, propagate bool
+                                       grab bool) {
+    connect(xu, callback, xevent.ButtonPress, win, buttonStr, propagate, grab)
 }
 
 func (callback ButtonPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -78,8 +81,9 @@ func (callback ButtonPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 type ButtonReleaseFun xevent.ButtonReleaseFun
 
 func (callback ButtonReleaseFun) Connect(xu *xgbutil.XUtil, win xgb.Id,
-                                         buttonStr string, propagate bool) {
-    connect(xu, callback, xevent.ButtonRelease, win, buttonStr, propagate)
+                                         buttonStr string, propagate bool,
+                                         grab bool) {
+    connect(xu, callback, xevent.ButtonRelease, win, buttonStr, propagate, grab)
 }
 
 func (callback ButtonReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
