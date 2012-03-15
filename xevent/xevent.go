@@ -7,6 +7,7 @@
 */
 package xevent
 
+import "io"
 import "log"
 import "code.google.com/p/jamslam-x-go-binding/xgb"
 import "github.com/BurntSushi/xgbutil"
@@ -24,8 +25,13 @@ func Main(xu *xgbutil.XUtil) error {
         // XXX: Use PollForEvent to gobble up lots of events.
         reply, err := xu.Conn().WaitForEvent()
         if err != nil {
-            log.Printf("ERROR: %v\n", err)
-            continue
+            if err == io.EOF {
+                log.Println("EOF. Stopping main event loop...")
+                break
+            } else {
+                log.Printf("ERROR: %v\n", err)
+                continue
+            }
         }
 
         // We have to look for xgb events here. But we re-wrap them in our
@@ -33,24 +39,31 @@ func Main(xu *xgbutil.XUtil) error {
         switch event := reply.(type) {
         case xgb.KeyPressEvent:
             e := KeyPressEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, KeyPress, e.Event)
         case xgb.KeyReleaseEvent:
             e := KeyReleaseEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, KeyRelease, e.Event)
         case xgb.ButtonPressEvent:
             e := ButtonPressEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, ButtonPress, e.Event)
         case xgb.ButtonReleaseEvent:
             e := ButtonReleaseEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, ButtonRelease, e.Event)
         case xgb.MotionNotifyEvent:
             e := MotionNotifyEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, MotionNotify, e.Event)
         case xgb.EnterNotifyEvent:
             e := EnterNotifyEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, EnterNotify, e.Event)
         case xgb.LeaveNotifyEvent:
             e := LeaveNotifyEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, LeaveNotify, e.Event)
         case xgb.FocusInEvent:
             e := FocusInEvent{&event}
@@ -88,6 +101,7 @@ func Main(xu *xgbutil.XUtil) error {
         case xgb.MapRequestEvent:
             e := MapRequestEvent{&event}
             xu.RunCallbacks(e, MapRequest, e.Window)
+            xu.RunCallbacks(e, MapRequest, e.Parent)
         case xgb.ReparentNotifyEvent:
             e := ReparentNotifyEvent{&event}
             xu.RunCallbacks(e, ReparentNotify, e.Window)
@@ -97,6 +111,7 @@ func Main(xu *xgbutil.XUtil) error {
         case xgb.ConfigureRequestEvent:
             e := ConfigureRequestEvent{&event}
             xu.RunCallbacks(e, ConfigureRequest, e.Window)
+            xu.RunCallbacks(e, ConfigureRequest, e.Parent)
         case xgb.GravityNotifyEvent:
             e := GravityNotifyEvent{&event}
             xu.RunCallbacks(e, GravityNotify, e.Window)
@@ -111,15 +126,19 @@ func Main(xu *xgbutil.XUtil) error {
             xu.RunCallbacks(e, CirculateRequest, e.Window)
         case xgb.PropertyNotifyEvent:
             e := PropertyNotifyEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, PropertyNotify, e.Window)
         case xgb.SelectionClearEvent:
             e := SelectionClearEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, SelectionClear, e.Owner)
         case xgb.SelectionRequestEvent:
             e := SelectionRequestEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, SelectionRequest, e.Requestor)
         case xgb.SelectionNotifyEvent:
             e := SelectionNotifyEvent{&event}
+            xu.SetTime(e.Time)
             xu.RunCallbacks(e, SelectionNotify, e.Requestor)
         case xgb.ColormapNotifyEvent:
             e := ColormapNotifyEvent{&event}
@@ -148,5 +167,15 @@ func SendRootEvent(xu *xgbutil.XUtil, ev XEvent, evMask uint32) {
 // ReplayPointer is a quick alias to AllowEvents with 'ReplayPointer' mode.
 func ReplayPointer(xu *xgbutil.XUtil) {
     xu.Conn().AllowEvents(xgb.AllowReplayPointer, 0)
+}
+
+// Detach removes *everything* associated with a particular
+// window, including key and mouse bindings.
+func Detach(xu *xgbutil.XUtil, win xgb.Id) {
+    xu.DetachWindow(win)
+    xu.DetachKeyBindWindow(KeyPress, win)
+    xu.DetachKeyBindWindow(KeyRelease, win)
+    xu.DetachMouseBindWindow(ButtonPress, win)
+    xu.DetachMouseBindWindow(ButtonRelease, win)
 }
 

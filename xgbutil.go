@@ -19,6 +19,7 @@ type XUtil struct {
     conn *xgb.Conn
     screen *xgb.ScreenInfo
     root xgb.Id
+    eventTime xgb.Timestamp
     atoms map[string]xgb.Id
     atomNames map[xgb.Id]string
     callbacks map[int]map[xgb.Id][]Callback // ev code -> win -> callbacks
@@ -114,6 +115,7 @@ func Dial(display string) (*XUtil, error) {
         conn: c,
         screen: c.DefaultScreen(),
         root: c.DefaultScreen().Root,
+        eventTime: xgb.Timestamp(0), // the last time recorded by an event
         atoms: make(map[string]xgb.Id, 50), // start with a nice size
         atomNames: make(map[xgb.Id]string, 50),
         callbacks: make(map[int]map[xgb.Id][]Callback, 33),
@@ -165,6 +167,16 @@ func (xu *XUtil) RootWin() (xgb.Id) {
 // TwinView. All of those have a single root window.)
 func (xu *XUtil) SetRootWin(root xgb.Id) {
     xu.root = root
+}
+
+// GetTime gets the most recent time seen by an event.
+func (xu *XUtil) GetTime() xgb.Timestamp {
+    return xu.eventTime
+}
+
+// SetTime sets the most recent time seen by an event.
+func (xu *XUtil) SetTime(t xgb.Timestamp) {
+    xu.eventTime = t
 }
 
 // GC gets a general purpose graphics context that is typically used to simply
@@ -234,6 +246,15 @@ func (xu *XUtil) CacheAtom(name string, aid xgb.Id) {
     xu.atomNames[aid] = name
 }
 
+// Grabs the server. Everything becomes synchronous.
+func (xu *XUtil) Grab() {
+    xu.conn.GrabServer()
+}
+
+// Ungrabs the server.
+func (xu *XUtil) Ungrab() {
+    xu.conn.UngrabServer()
+}
 
 // True utility/misc functions. Could be factored out to another package at 
 // some point.
