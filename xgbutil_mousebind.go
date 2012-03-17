@@ -9,7 +9,7 @@ import "code.google.com/p/jamslam-x-go-binding/xgb"
 // MouseBindCallback operates in the spirit of Callback, except that it works
 // specifically on mouse bindings.
 type MouseBindCallback interface {
-    Connect(xu *XUtil, win xgb.Id, buttonStr string, propagate bool)
+    Connect(xu *XUtil, win xgb.Id, buttonStr string, propagate bool, grab bool)
     Run(xu *XUtil, ev interface{})
 }
 

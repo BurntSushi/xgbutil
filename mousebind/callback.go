@@ -69,7 +69,7 @@ func deduceButtonInfo(state uint16, detail byte) (uint16, byte) {
 type ButtonPressFun xevent.ButtonPressFun
 
 func (callback ButtonPressFun) Connect(xu *xgbutil.XUtil, win xgb.Id,
-                                       buttonStr string, propagate bool
+                                       buttonStr string, propagate bool,
                                        grab bool) {
     connect(xu, callback, xevent.ButtonPress, win, buttonStr, propagate, grab)
 }

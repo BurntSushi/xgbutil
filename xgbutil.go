@@ -17,6 +17,8 @@ import (
 // X connection, the root window, event callbacks, key/mouse bindings, etc.
 type XUtil struct {
     conn *xgb.Conn
+    quit bool // when true, the main event loop will stop gracefully
+    evqueue []xgb.Event
     screen *xgb.ScreenInfo
     root xgb.Id
     eventTime xgb.Timestamp
@@ -32,9 +34,16 @@ type XUtil struct {
 
     mousebinds map[MouseBindKey][]MouseBindCallback //mousebind key -> callbacks
     mousegrabs map[MouseBindKey]int // mouse bind key -> # of grabs
+    mouseDrag bool // whether a mouse drag is in progress
+    mouseDragStep MouseDragFun
+    mouseDragEnd MouseDragFun
 
     gc xgb.Id // a general purpose graphics context; used to paint images
+
+    dummy xgb.Id // a dummy window used for mouse/key GRABs
 }
+
+type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int16)
 
 // Callback is an interface that should be implemented by event callback 
 // functions. Namely, to assign a function to a particular event/window
@@ -113,6 +122,8 @@ func Dial(display string) (*XUtil, error) {
     // Initialize our central struct that stores everything.
     xu := &XUtil{
         conn: c,
+        quit: false,
+        evqueue: make([]xgb.Event, 0),
         screen: c.DefaultScreen(),
         root: c.DefaultScreen().Root,
         eventTime: xgb.Timestamp(0), // the last time recorded by an event
@@ -125,12 +136,24 @@ func Dial(display string) (*XUtil, error) {
         keygrabs: make(map[KeyBindKey]int, 10),
         mousebinds: make(map[MouseBindKey][]MouseBindCallback, 10),
         mousegrabs: make(map[MouseBindKey]int, 10),
+        mouseDrag: false,
+        mouseDragStep: nil,
+        mouseDragEnd: nil,
     }
 
     // Create a general purpose graphics context
     xu.gc = xu.conn.NewId()
     xu.conn.CreateGC(xu.gc, xu.root, xgb.GCForeground,
                      []uint32{xu.screen.WhitePixel})
+
+    // Create a dummy window
+    xu.dummy = xu.conn.NewId()
+    xu.conn.CreateWindow(xu.Screen().RootDepth, xu.dummy, xu.RootWin(),
+                         -1000, -1000, 1, 1, 0,
+                         xgb.WindowClassInputOutput, xu.Screen().RootVisual,
+                         xgb.CWEventMask | xgb.CWOverrideRedirect,
+                         []uint32{xgb.EventMaskPropertyChange, 1})
+    xu.conn.MapWindow(xu.dummy)
 
     // Register the Xinerama extension... because it doesn't cost much.
     err = xu.conn.RegisterExtension("XINERAMA")
@@ -149,6 +172,43 @@ func Dial(display string) (*XUtil, error) {
 // Conn returns the xgb connection object.
 func (xu *XUtil) Conn() (*xgb.Conn) {
     return xu.conn
+}
+
+// Quit elegantly exits out of the main event loop.
+func (xu *XUtil) Quit() {
+    xu.quit = true
+}
+
+// Quitting returns whether it's time to quit.
+func (xu *XUtil) Quitting() bool {
+    return xu.quit
+}
+
+// Forces XGB to catch up with all events and synchronize.
+func (xu *XUtil) Flush() {
+    xu.conn.GetInputFocus()
+}
+
+// Enqueue queues up an event read from X.
+func (xu *XUtil) Enqueue(ev xgb.Event) {
+    xu.evqueue = append(xu.evqueue, ev)
+}
+
+// Dequeue pops an event from the queue and returns it.
+func (xu *XUtil) Dequeue() xgb.Event {
+    ev := xu.evqueue[0]
+    xu.evqueue = xu.evqueue[1:]
+    return ev
+}
+
+// QueueEmpty returns whether the event queue is empty or not.
+func (xu *XUtil) QueueEmpty() bool {
+    return len(xu.evqueue) == 0
+}
+
+// QueuePeek returns the current queue so we can examine it
+func (xu *XUtil) QueuePeek() []xgb.Event {
+    return xu.evqueue
 }
 
 // Screen returns the default screen
@@ -183,6 +243,43 @@ func (xu *XUtil) SetTime(t xgb.Timestamp) {
 // paint images.
 func (xu *XUtil) GC() xgb.Id {
     return xu.gc
+}
+
+// Dummy gets the id of the dummy window.
+func (xu *XUtil) Dummy() xgb.Id {
+    return xu.dummy
+}
+
+// MouseDrag true when a mouse drag is in progress.
+func (xu *XUtil) MouseDrag() bool {
+    return xu.mouseDrag
+}
+
+// MouseDragSet sets whether a mouse drag is in progress.
+func (xu *XUtil) MouseDragSet(dragging bool) {
+    xu.mouseDrag = dragging
+}
+
+// MouseDragStep returns the function currently associated with each
+// step of a mouse drag.
+func (xu *XUtil) MouseDragStep() MouseDragFun {
+    return xu.mouseDragStep
+}
+
+// MouseDragStepSet sets the function associated with the step of a drag.
+func (xu *XUtil) MouseDragStepSet(f MouseDragFun) {
+    xu.mouseDragStep = f
+}
+
+// MouseDragEnd returns the function currently associated with the
+// end of a mouse drag.
+func (xu *XUtil) MouseDragEnd() MouseDragFun {
+    return xu.mouseDragEnd
+}
+
+// MouseDragEndSet sets the function associated with the end of a drag.
+func (xu *XUtil) MouseDragEndSet(f MouseDragFun) {
+    xu.mouseDragEnd = f
 }
 
 // AttachCallback associates a (event, window) tuple with an event.

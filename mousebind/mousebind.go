@@ -9,7 +9,11 @@ import "strconv"
 import "strings"
 
 import "code.google.com/p/jamslam-x-go-binding/xgb"
-import "github.com/BurntSushi/xgbutil"
+
+import (
+    "github.com/BurntSushi/xgbutil"
+    "github.com/BurntSushi/xgbutil/xevent"
+)
 
 var modifiers []uint16 = []uint16{ // order matters!
     xgb.ModMaskShift, xgb.ModMaskLock, xgb.ModMaskControl,
@@ -24,12 +28,10 @@ var pointerMasks uint16 = xgb.EventMaskPointerMotion |
                           xgb.EventMaskButtonPress
 
 // Initialize attaches the appropriate callbacks to make mouse bindings easier.
-// i.e., update state of the world on a MappingNotify.
+// i.e., prep the dummy window to handle mouse dragging events
 func Initialize(xu *xgbutil.XUtil) {
-    // Nothing here for now, maybe we'll get lucky.
-
-    // Listen to mapping notify events
-    // xevent.MappingNotifyFun(updateMap).Connect(xu, xgbutil.NoWindow) 
+    xevent.MotionNotifyFun(dragStep).Connect(xu, xu.Dummy())
+    xevent.ButtonReleaseFun(dragEnd).Connect(xu, xu.Dummy())
 }
 
 // ParseString takes a string of the format '[Mod[-Mod[...]]-]-KEY',
