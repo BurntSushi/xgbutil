@@ -13,7 +13,7 @@ import (
 // to register a drag event for three functions: the begin function, the 
 // step function and the end function.
 func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string,
-          begin xgbutil.MouseDragFun,
+          begin xgbutil.MouseDragBeginFun,
           step xgbutil.MouseDragFun,
           end xgbutil.MouseDragFun) {
     ButtonPressFun(
@@ -23,8 +23,8 @@ func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string,
 }
 
 // dragGrab is a shortcut for grabbing the pointer for a drag.
-func dragGrab(xu *xgbutil.XUtil) bool {
-    status, err := GrabPointer(xu, xu.Dummy(), xu.RootWin(), 0)
+func dragGrab(xu *xgbutil.XUtil, cursor xgb.Id) bool {
+    status, err := GrabPointer(xu, xu.Dummy(), xu.RootWin(), cursor)
     if err != nil {
         log.Println("Mouse dragging was unsuccessful because: %v", err)
         return false
@@ -48,7 +48,7 @@ func dragUngrab(xu *xgbutil.XUtil) {
 // dragStart executes the "begin" function registered for the current drag.
 // It also initiates the grab.
 func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
-               begin xgbutil.MouseDragFun,
+               begin xgbutil.MouseDragBeginFun,
                step xgbutil.MouseDragFun,
                end xgbutil.MouseDragFun) {
     // don't start a drag if one is already in progress
@@ -56,15 +56,19 @@ func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
         return
     }
 
+    // Run begin first. It may tell us to cancel the grab.
+    // It can also tell us which cursor to use when grabbing.
+    grab, cursor := begin(xu, ev.RootX, ev.RootY, ev.EventX, ev.EventY)
+
     // if we couldn't establish a grab, quit
-    if !dragGrab(xu) {
+    // Or quit if 'begin' tells us to.
+    if !grab || !dragGrab(xu, cursor) {
         return
     }
 
     // we're committed. set the drag state and start the 'begin' function
     xu.MouseDragStepSet(step)
     xu.MouseDragEndSet(end)
-    begin(xu, ev.RootX, ev.RootY, ev.EventX, ev.EventY)
 }
 
 // dragStep executes the "step" function registered for the current drag.

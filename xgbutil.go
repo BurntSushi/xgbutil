@@ -44,6 +44,8 @@ type XUtil struct {
 }
 
 type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int16)
+type MouseDragBeginFun func(xu *XUtil, rootX, rootY,
+                            eventX, eventY int16) (bool, xgb.Id)
 
 // Callback is an interface that should be implemented by event callback 
 // functions. Namely, to assign a function to a particular event/window

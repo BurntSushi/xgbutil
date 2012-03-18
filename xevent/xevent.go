@@ -209,7 +209,9 @@ func Main(xu *xgbutil.XUtil) error {
                 e := MappingNotifyEvent{&event}
                 xu.RunCallbacks(e, MappingNotify, xgbutil.NoWindow)
             default:
-                log.Printf("ERROR: UNSUPPORTED EVENT TYPE: %T\n", event)
+                if event != nil {
+                    log.Printf("ERROR: UNSUPPORTED EVENT TYPE: %T\n", event)
+                }
                 continue
             }
         }
