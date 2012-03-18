@@ -741,6 +741,7 @@ const (
     SizeKeyboard
     MoveKeyboard
     Cancel
+    Infer // special for Wingo. DO NOT USE.
 )
 
 // _NET_WM_MOVERESIZE req
