@@ -57,8 +57,9 @@ if sys.argv[1] == 'evtypes':
     print
 
     for e in events:
-        # Skip ClientMessageEvent
-        if e == 'ClientMessageEvent':
+        # Skip ClientMessageEvent and ConfigureNotifyEvent
+        # We define these manually in xevents/types_manual.go
+        if e in ('ClientMessageEvent', 'ConfigureNotifyEvent'):
             continue
 
         print 'type %s struct {' % e
