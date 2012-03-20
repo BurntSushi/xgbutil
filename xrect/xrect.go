@@ -37,6 +37,11 @@ func Uintify(xr Rect) (uint32, uint32, uint32, uint32) {
            uint32(xr.Width()), uint32(xr.Height())
 }
 
+// RectPieces just returns a four-tuple of x, y, width and height
+func RectPieces(xr Rect) (int16, int16, uint16, uint16) {
+    return xr.X(), xr.Y(), xr.Width(), xr.Height()
+}
+
 // Provide a simple implementation of a rect.
 // Maybe this will be all we need?
 type XRect struct {
