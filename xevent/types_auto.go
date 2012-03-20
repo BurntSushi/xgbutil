@@ -252,18 +252,6 @@ func (ev ReparentNotifyEvent) String() string {
     return fmt.Sprintf("%v", ev.ReparentNotifyEvent)
 }
 
-type ConfigureNotifyEvent struct {
-    *xgb.ConfigureNotifyEvent
-}
-
-const ConfigureNotify = xgb.ConfigureNotify
-
-func (ev *ConfigureNotifyEvent) Bytes() []byte { return nil }
-
-func (ev ConfigureNotifyEvent) String() string {
-    return fmt.Sprintf("%v", ev.ConfigureNotifyEvent)
-}
-
 type ConfigureRequestEvent struct {
     *xgb.ConfigureRequestEvent
 }

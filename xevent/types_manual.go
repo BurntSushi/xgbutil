@@ -34,7 +34,7 @@ type ClientMessageEvent struct {
 }
 
 // The unique code for a ClientMessage event.
-const ClientMessage = 33
+const ClientMessage = xgb.ClientMessage
 
 // NewClientMessage takes all arguments required to build a ClientMessageEvent 
 // struct and hides the messy details.
@@ -126,6 +126,57 @@ func (ev *ClientMessageEvent) Bytes() []byte {
 func (ev ClientMessageEvent) String() string {
     return fmt.Sprintf("%v", ev.ClientMessageEvent)
 }
+
+// ConfigureNotifyEvent embeds the struct by the same name in XGB.
+type ConfigureNotifyEvent struct {
+    *xgb.ConfigureNotifyEvent
+}
+
+// The unique code for a ConfigureNotify event.
+const ConfigureNotify = xgb.ConfigureNotify
+
+// NewConfigureNotify takes all arguments required to build a 
+// ConfigureNotifyEvent struct and hides the messy details.
+func NewConfigureNotify(Event, Window, AboveSibling xgb.Id,
+                        X, Y int16, Width, Height uint16,
+                        BorderWidth uint16,
+                        OverrideRedirect bool) *ConfigureNotifyEvent {
+    return &ConfigureNotifyEvent{&xgb.ConfigureNotifyEvent{
+        Event: Event, Window: Window, AboveSibling: AboveSibling,
+        X: X, Y: Y, Width: Width, Height: Height,
+        BorderWidth: BorderWidth, OverrideRedirect: OverrideRedirect,
+    }}
+}
+
+// Bytes transforms a ConfigureNotifyEvent into a byte buffer to be used
+// with SendEvent.
+func (ev *ConfigureNotifyEvent) Bytes() []byte {
+    buf := make([]byte, 32)
+
+    buf[0] = ConfigureNotify
+    xgbutil.Put32(buf[4:], uint32(ev.Event))
+    xgbutil.Put32(buf[8:], uint32(ev.Window))
+    xgbutil.Put32(buf[12:], uint32(ev.AboveSibling))
+    xgbutil.Put16(buf[16:], uint16(ev.X))
+    xgbutil.Put16(buf[18:], uint16(ev.Y))
+    xgbutil.Put16(buf[20:], ev.Width)
+    xgbutil.Put16(buf[22:], ev.Height)
+    xgbutil.Put16(buf[24:], ev.BorderWidth)
+
+    if ev.OverrideRedirect {
+        xgbutil.Put16(buf[26:], 1)
+    } else {
+        xgbutil.Put16(buf[26:], 0)
+    }
+
+    return buf
+}
+
+// A String representation of the event.
+func (ev ConfigureNotifyEvent) String() string {
+    return fmt.Sprintf("%v", ev.ConfigureNotifyEvent)
+}
+
 
 // The rest of the types don't implement 'Bytes' yet, but they should.
 // These are also exposed to the user when constructing event callbacks.
