@@ -32,6 +32,7 @@ const (
     SizeHintUSPosition = (1 << iota)
     SizeHintUSSize
     SizeHintPPosition
+    SizeHintPSize
     SizeHintPMinSize
     SizeHintPMaxSize
     SizeHintPResizeInc
