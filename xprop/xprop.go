@@ -72,11 +72,8 @@ func ChangeProp32(xu *xgbutil.XUtil, win xgb.Id, prop string, typ string,
 }
 
 // Atm is a short alias for Atom in the common case of interning an atom.
-// Namely, only_if_exists is set to true, so that if "name" is an atom that
-// does not exist, X will return "0" as an atom identifier. In which case,
-// we panic because that isn't what anyone wants.
 func Atm(xu *xgbutil.XUtil, name string) (xgb.Id, error) {
-    aid, err := Atom(xu, name, true)
+    aid, err := Atom(xu, name, false)
     if err != nil {
         return 0, err
     }
