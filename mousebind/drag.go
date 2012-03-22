@@ -26,7 +26,7 @@ func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string,
 func dragGrab(xu *xgbutil.XUtil, cursor xgb.Id) bool {
     status, err := GrabPointer(xu, xu.Dummy(), xu.RootWin(), cursor)
     if err != nil {
-        log.Println("Mouse dragging was unsuccessful because: %v", err)
+        log.Printf("Mouse dragging was unsuccessful because: %v", err)
         return false
     }
     if !status {
