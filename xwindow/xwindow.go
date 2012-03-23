@@ -125,16 +125,13 @@ func adjustSize(xu *xgbutil.XUtil, win xgb.Id, w, h uint16) (
 // Therefore, we're at a top-level window which should accurately reflect
 // the width/height.
 func GetGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
-    parent, err := ParentWindow(xu, win)
+    parent := win
     for {
         tempParent, err := ParentWindow(xu, parent)
         if err != nil || tempParent == xu.RootWin() {
             break
         }
         parent = tempParent
-    }
-    if err != nil {
-        return nil, err
     }
 
     return RawGeometry(xu, parent)
