@@ -134,13 +134,23 @@ func CreateImageWindow(xu *xgbutil.XUtil, img image.Image,
 // Therefore, try to keep images less than 256x256, otherwise X will stomp
 // on you. And it will hurt. And you won't even know it. :-(
 func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
-    // gather up image data in the form X wants it... so picky
+    pix := CreatePixmap(xu, img)
+    xu.Conn().ChangeWindowAttributes(win, uint32(xgb.CWBackPixmap),
+                                     []uint32{uint32(pix)})
+    xu.Conn().ClearArea(false, win, 0, 0, 0, 0)
+    FreePixmap(xu, pix)
+}
+
+// CreatePixmap creates a pixmap from an image.
+// Please remember to call FreePixmap when you're done!
+func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
     width, height := getDim(img)
     imgData := make([]byte, width * height * 4)
     for x := 0; x < width; x++ {
         for y := 0; y < height; y++ {
             r, g, b, a := img.At(x, y).RGBA()
-            i := 4 * (x + (y * height))
+            i := 4 * (x + (y * width))
+            println(x, y, width, height, i)
             imgData[i + 0] = byte(b >> 8)
             imgData[i + 1] = byte(g >> 8)
             imgData[i + 2] = byte(r >> 8)
@@ -148,15 +158,17 @@ func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
         }
     }
 
-    // The hard part is over, boiler-plate time!
     pix := xu.Conn().NewId()
     xu.Conn().CreatePixmap(xu.Screen().RootDepth, pix, xu.RootWin(),
                            uint16(width), uint16(height))
     xu.Conn().PutImage(xgb.ImageFormatZPixmap, pix, xu.GC(),
                        uint16(width), uint16(height), 0, 0, 0, 24, imgData)
-    xu.Conn().ChangeWindowAttributes(win, uint32(xgb.CWBackPixmap),
-                                     []uint32{uint32(pix)})
-    xu.Conn().ClearArea(false, win, 0, 0, 0, 0)
+
+    return pix
+}
+
+// FreePixmap frees the resources associated with pix.
+func FreePixmap(xu *xgbutil.XUtil, pix xgb.Id) {
     xu.Conn().FreePixmap(pix)
 }
 
