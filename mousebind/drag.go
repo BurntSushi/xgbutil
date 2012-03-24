@@ -18,13 +18,15 @@ func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string, grab bool,
           end xgbutil.MouseDragFun) {
     ButtonPressFun(
         func(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
-            dragBegin(xu, ev, begin, step, end)
+            dragBegin(xu, ev, win, begin, step, end)
     }).Connect(xu, win, buttonStr, false, grab)
+    xevent.MotionNotifyFun(dragStep).Connect(xu, win)
+    xevent.ButtonReleaseFun(dragEnd).Connect(xu, win)
 }
 
 // dragGrab is a shortcut for grabbing the pointer for a drag.
-func dragGrab(xu *xgbutil.XUtil, cursor xgb.Id) bool {
-    status, err := GrabPointer(xu, xu.Dummy(), xu.RootWin(), cursor)
+func dragGrab(xu *xgbutil.XUtil, win xgb.Id, cursor xgb.Id) bool {
+    status, err := GrabPointer(xu, win, xu.RootWin(), cursor)
     if err != nil {
         log.Printf("Mouse dragging was unsuccessful because: %v", err)
         return false
@@ -47,7 +49,7 @@ func dragUngrab(xu *xgbutil.XUtil) {
 
 // dragStart executes the "begin" function registered for the current drag.
 // It also initiates the grab.
-func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
+func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent, win xgb.Id,
                begin xgbutil.MouseDragBeginFun,
                step xgbutil.MouseDragFun,
                end xgbutil.MouseDragFun) {
@@ -62,7 +64,7 @@ func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
 
     // if we couldn't establish a grab, quit
     // Or quit if 'begin' tells us to.
-    if !grab || !dragGrab(xu, cursor) {
+    if !grab || !dragGrab(xu, win, cursor) {
         return
     }
 
