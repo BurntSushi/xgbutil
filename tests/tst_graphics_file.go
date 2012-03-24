@@ -49,7 +49,7 @@ func main() {
         fmt.Println(err)
     }
 
-    img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+    img := image.NewRGBA(image.Rect(0, 0, 50, 101))
     graphics.Scale(img, simg)
 
     dest := xgraphics.BlendBg(img, nil, 100, color.RGBA{255, 255, 255, 255})

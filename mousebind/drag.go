@@ -12,14 +12,14 @@ import (
 // Drag is the public interface that will make the appropriate connections
 // to register a drag event for three functions: the begin function, the 
 // step function and the end function.
-func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string,
+func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string, grab bool,
           begin xgbutil.MouseDragBeginFun,
           step xgbutil.MouseDragFun,
           end xgbutil.MouseDragFun) {
     ButtonPressFun(
         func(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
             dragBegin(xu, ev, begin, step, end)
-    }).Connect(xu, win, buttonStr, false, true)
+    }).Connect(xu, win, buttonStr, false, grab)
 }
 
 // dragGrab is a shortcut for grabbing the pointer for a drag.

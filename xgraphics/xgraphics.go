@@ -150,7 +150,6 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
         for y := 0; y < height; y++ {
             r, g, b, a := img.At(x, y).RGBA()
             i := 4 * (x + (y * width))
-            println(x, y, width, height, i)
             imgData[i + 0] = byte(b >> 8)
             imgData[i + 1] = byte(g >> 8)
             imgData[i + 2] = byte(r >> 8)
@@ -245,8 +244,6 @@ func Scale(img image.Image, mask image.Image,
 // available. Otherwise, use the smallest icon that is greater than or equal
 // to the preferred dimensions. The preferred dimensions is essentially
 // what you'll likely scale the resulting icon to.
-// XXX: It seems that Google's 'Scale' in the graphics package will only work
-// with proportional dimensions. Therefore, we enforce that constraint here.
 func FindBestIcon(width, height uint32, icons []*ewmh.WmIcon) *ewmh.WmIcon {
     // nada nada limonada
     if len(icons) == 0 {
@@ -259,12 +256,6 @@ func FindBestIcon(width, height uint32, icons []*ewmh.WmIcon) *ewmh.WmIcon {
     var bestArea, iconArea uint32
 
     for _, icon := range icons {
-        // this icon isn't proportional to the requested dimensions,
-        // then we can't use it because graphics.Scale is buzz killington.
-        if !proportional(width, height, icon.Width, icon.Height) {
-            continue
-        }
-
         // the first valid icon we've seen; use it!
         if best == nil {
             best = icon
@@ -292,6 +283,7 @@ func FindBestIcon(width, height uint32, icons []*ewmh.WmIcon) *ewmh.WmIcon {
 
 // proportional takes a pair of dimensions and returns whether they are
 // proportional or not.
+// XXX: Not currently used.
 func proportional(w1, h1, w2, h2 uint32) bool {
     fw1, fh1 := float64(w1), float64(h1)
     fw2, fh2 := float64(w2), float64(h2)

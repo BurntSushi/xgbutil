@@ -12,7 +12,7 @@ import (
 )
 
 const (
-    BorderTop = iota
+    BorderTop = 1 << iota
     BorderRight
     BorderBottom
     BorderLeft
@@ -33,18 +33,30 @@ func Border(borderType int, borderColor int, bgColor int,
     borderClr := ColorFromStr(borderColor)
 
     img := image.NewRGBA(image.Rect(0, 0, width, height))
+
+    var isBorder bool = false
     for x := 0; x < width; x++ {
         for y := 0; y < height; y++ {
-            switch {
-            case borderType == BorderTop && y == 0:
+            isBorder = false
+
+            if borderType & BorderTop > 0 && y == 0 {
                 img.SetRGBA(x, y, borderClr)
-            case borderType == BorderRight && x == width - 1:
+                isBorder = true
+            }
+            if borderType & BorderRight > 0 && x == width - 1 {
                 img.SetRGBA(x, y, borderClr)
-            case borderType == BorderBottom && y == height - 1:
+                isBorder = true
+            }
+            if borderType & BorderBottom > 0 && y == height - 1 {
                 img.SetRGBA(x, y, borderClr)
-            case borderType == BorderLeft && x == 0:
+                isBorder = true
+            }
+            if borderType & BorderLeft > 0 && x == 0 {
                 img.SetRGBA(x, y, borderClr)
-            default:
+                isBorder = true
+            }
+
+            if !isBorder {
                 img.SetRGBA(x, y, bgClr)
             }
         }

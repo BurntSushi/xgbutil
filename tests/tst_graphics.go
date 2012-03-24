@@ -44,7 +44,9 @@ func main() {
     active, _ := ewmh.ActiveWindowGet(X)
     icons, _ := ewmh.WmIconGet(X, active)
 
-    work := xgraphics.FindBestIcon(256, 256, icons)
+    var width, height uint32 = 100, 200
+
+    work := xgraphics.FindBestIcon(width, height, icons)
     if work != nil {
         fmt.Printf("Working with icon (%d, %d)\n", work.Width, work.Height)
     } else {
@@ -54,7 +56,7 @@ func main() {
 
     eimg, emask := xgraphics.EwmhIconToImage(work)
 
-    img, mask := xgraphics.Scale(eimg, emask, 255, 255)
+    img, mask := xgraphics.Scale(eimg, emask, int(width), int(height))
 
     dest := xgraphics.BlendBg(img, mask, 100, color.RGBA{0, 0, 255, 255})
 

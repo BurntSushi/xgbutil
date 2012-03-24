@@ -154,7 +154,7 @@ func Dial(display string) (*XUtil, error) {
                          -1000, -1000, 1, 1, 0,
                          xgb.WindowClassInputOutput, xu.Screen().RootVisual,
                          xgb.CWEventMask | xgb.CWOverrideRedirect,
-                         []uint32{xgb.EventMaskPropertyChange, 1})
+                         []uint32{1, xgb.EventMaskPropertyChange})
     xu.conn.MapWindow(xu.dummy)
 
     // Register the Xinerama extension... because it doesn't cost much.
