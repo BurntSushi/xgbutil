@@ -20,13 +20,17 @@ import (
 
 import "code.google.com/p/graphics-go/graphics"
 
-import "code.google.com/p/freetype-go/freetype"
-import "code.google.com/p/freetype-go/freetype/truetype"
+import (
+    "code.google.com/p/freetype-go/freetype"
+    "code.google.com/p/freetype-go/freetype/truetype"
+)
 
 import "code.google.com/p/jamslam-x-go-binding/xgb"
 
-import "github.com/BurntSushi/xgbutil"
-import "github.com/BurntSushi/xgbutil/ewmh"
+import (
+    "github.com/BurntSushi/xgbutil"
+    "github.com/BurntSushi/xgbutil/ewmh"
+)
 
 // DrawText takes an image and, using the freetype package, writes text in the
 // position specified on to the image. A color.Color, a font size and a font  
@@ -110,7 +114,7 @@ func parseFont(fontFile string) (*truetype.Font, error) {
 func CreateImageWindow(xu *xgbutil.XUtil, img image.Image, x, y int) xgb.Id {
     win := xu.Conn().NewId()
     scrn := xu.Screen()
-    width, height := getDim(img)
+    width, height := GetDim(img)
 
     winMask := uint32(xgb.CWBackPixmap | xgb.CWOverrideRedirect)
     winVals := []uint32{xgb.BackPixmapParentRelative, 1}
@@ -144,7 +148,7 @@ func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
 // CreatePixmap creates a pixmap from an image.
 // Please remember to call FreePixmap when you're done!
 func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
-    width, height := getDim(img)
+    width, height := GetDim(img)
     imgData := make([]byte, width * height * 4)
     for x := 0; x < width; x++ {
         for y := 0; y < height; y++ {
@@ -171,8 +175,8 @@ func FreePixmap(xu *xgbutil.XUtil, pix xgb.Id) {
     xu.Conn().FreePixmap(pix)
 }
 
-// getDim gets the width and height of an image
-func getDim(img image.Image) (int, int) {
+// GetDim gets the width and height of an image
+func GetDim(img image.Image) (int, int) {
     bounds := img.Bounds()
     return bounds.Max.X - bounds.Min.X, bounds.Max.Y - bounds.Min.Y
 }
