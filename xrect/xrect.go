@@ -16,41 +16,30 @@ import "fmt"
 
 // Define a base and simple Rect interface.
 type Rect interface {
-    X() int16
-    Y() int16
-    Width() uint16
-    Height() uint16
-    XSet(x int16)
-    YSet(y int16)
-    WidthSet(width uint16)
-    HeightSet(height uint16)
-}
-
-// Turn all elements of a Rect interface into integers
-func Intify(xr Rect) (int, int, int, int) {
-    return int(xr.X()), int(xr.Y()), int(xr.Width()), int(xr.Height())
-}
-
-// Turn all elements of a Rect interface into unsigned 32 bit integers
-func Uintify(xr Rect) (uint32, uint32, uint32, uint32) {
-    return uint32(xr.X()), uint32(xr.Y()),
-           uint32(xr.Width()), uint32(xr.Height())
+    X() int
+    Y() int
+    Width() int
+    Height() int
+    XSet(x int)
+    YSet(y int)
+    WidthSet(width int)
+    HeightSet(height int)
 }
 
 // RectPieces just returns a four-tuple of x, y, width and height
-func RectPieces(xr Rect) (int16, int16, uint16, uint16) {
+func RectPieces(xr Rect) (int, int, int, int) {
     return xr.X(), xr.Y(), xr.Width(), xr.Height()
 }
 
 // Provide a simple implementation of a rect.
 // Maybe this will be all we need?
 type XRect struct {
-    x, y int16
-    width, height uint16
+    x, y int
+    width, height int
 }
 
 // Provide the ability to construct an XRect.
-func Make(x, y int16, w, h uint16) *XRect {
+func Make(x, y, w, h int) *XRect {
     return &XRect{x, y, w, h}
 }
 
@@ -59,35 +48,35 @@ func (r *XRect) String() string {
 }
 
 // Satisfy the Rect interface
-func (r *XRect) X() int16 {
+func (r *XRect) X() int {
     return r.x
 }
 
-func (r *XRect) Y() int16 {
+func (r *XRect) Y() int {
     return r.y
 }
 
-func (r *XRect) Width() uint16 {
+func (r *XRect) Width() int {
     return r.width
 }
 
-func (r *XRect) Height() uint16 {
+func (r *XRect) Height() int {
     return r.height
 }
 
-func (r *XRect) XSet(x int16) {
+func (r *XRect) XSet(x int) {
     r.x = x
 }
 
-func (r *XRect) YSet(y int16) {
+func (r *XRect) YSet(y int) {
     r.y = y
 }
 
-func (r *XRect) WidthSet(width uint16) {
+func (r *XRect) WidthSet(width int) {
     r.width = width
 }
 
-func (r *XRect) HeightSet(height uint16) {
+func (r *XRect) HeightSet(height int) {
     r.height = height
 }
 
@@ -95,8 +84,8 @@ func (r *XRect) HeightSet(height uint16) {
 // returns the area of their intersection. If there is no intersection, return
 // 0 area.
 func IntersectArea(r1 Rect, r2 Rect) int {
-    x1, y1, w1, h1 := Intify(r1)
-    x2, y2, w2, h2 := Intify(r2)
+    x1, y1, w1, h1 := RectPieces(r1)
+    x2, y2, w2, h2 := RectPieces(r2)
     if x2 < x1 + w1 && x2 + w2 > x1 && y2 < y1 + h1 && y2 + h2 > y1 {
         iw := Min(x1 + w1 - 1, x2 + w2 - 1) - Max(x1, x2) + 1
         ih := Min(y1 + h1 - 1, y2 + h2 - 1) - Max(y1, y2) + 1
@@ -133,15 +122,15 @@ func LargestOverlap(needle Rect, haystack []Rect) (result Rect) {
 // (If you don't have a partial strut, just use '0' for the extra fields.)
 // See tests/tst_rect.go for an example of how to use this to get accurate
 // workarea for each physical head.
-func ApplyStrut(rects []Rect, rootWidth, rootHeight uint16,
+func ApplyStrut(rects []Rect, rootWidth, rootHeight int,
                 left, right, top, bottom,
                 left_start_y, left_end_y, right_start_y, right_end_y,
-                top_start_x, top_end_x, bottom_start_x, bottom_end_x uint32) {
-    var nx, ny int16 // 'n*' are new values that may or may not be used
-    var nw, nh uint16
-    var x, y, w, h uint32
+                top_start_x, top_end_x, bottom_start_x, bottom_end_x int) {
+    var nx, ny int // 'n*' are new values that may or may not be used
+    var nw, nh int
+    var x, y, w, h int
     var bt, tp, lt, rt bool
-    rWidth, rHeight := uint32(rootWidth), uint32(rootHeight)
+    rWidth, rHeight := rootWidth, rootHeight
 
     // The essential idea of struts, and particularly partial struts, is that
     // one piece of a border of the screen can be "reserved" for some
@@ -158,7 +147,7 @@ func ApplyStrut(rects []Rect, rootWidth, rootHeight uint16,
     // when 'rects' has more than one rect, since the old school struts will
     // typically result in undesirable behavior.
     for _, rect := range rects {
-        x, y, w, h = Uintify(rect)
+        x, y, w, h = RectPieces(rect)
 
         bt = bottom_start_x != bottom_end_x &&
                (xInRect(bottom_start_x, rect) || xInRect(bottom_end_x, rect))
@@ -170,32 +159,32 @@ func ApplyStrut(rects []Rect, rootWidth, rootHeight uint16,
                 (yInRect(right_start_y, rect) || yInRect(right_end_y, rect))
 
         if bt {
-            nh = uint16(h - (bottom - ((rHeight - h) - y)))
+            nh = h - (bottom - ((rHeight - h) - y))
             if nh < rect.Height() {
                 rect.HeightSet(nh)
             }
         } else if tp {
-            nh = uint16(h - (top - y))
+            nh = h - (top - y)
             if nh < rect.Height() {
                 rect.HeightSet(nh)
             }
 
-            ny = int16(top)
+            ny = top
             if ny > rect.Y() {
                 rect.YSet(ny)
             }
         } else if rt {
-            nw = uint16(w - (right - ((rWidth - w) - x)))
+            nw = w - (right - ((rWidth - w) - x))
             if nw < rect.Width() {
                 rect.WidthSet(nw)
             }
         } else if lt {
-            nw = uint16(w - (left - x))
+            nw = w - (left - x)
             if nw < rect.Width() {
                 rect.WidthSet(nw)
             }
 
-            nx = int16(left)
+            nx = left
             if nx > rect.X() {
                 rect.XSet(nx)
             }
@@ -205,15 +194,15 @@ func ApplyStrut(rects []Rect, rootWidth, rootHeight uint16,
 
 // xInRect is whether a particular x-coordinate is vertically constrained by
 // a rectangle.
-func xInRect(xtest uint32, rect Rect) bool {
-    x, _, w, _ := Uintify(rect)
+func xInRect(xtest int, rect Rect) bool {
+    x, _, w, _ := RectPieces(rect)
     return xtest >= x && xtest < (x + w)
 }
 
 // yInRect is whether a particular y-coordinate is horizontally constrained by
 // a rectangle.
-func yInRect(ytest uint32, rect Rect) bool {
-    _, y, _, h := Uintify(rect)
+func yInRect(ytest int, rect Rect) bool {
+    _, y, _, h := RectPieces(rect)
     return ytest >= y && ytest < (y + h)
 }
 

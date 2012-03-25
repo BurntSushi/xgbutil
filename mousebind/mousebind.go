@@ -12,7 +12,7 @@ import "code.google.com/p/jamslam-x-go-binding/xgb"
 
 import (
     "github.com/BurntSushi/xgbutil"
-    // "github.com/BurntSushi/xgbutil/xevent" 
+    "github.com/BurntSushi/xgbutil/xevent"
 )
 
 var modifiers []uint16 = []uint16{ // order matters!
@@ -30,8 +30,8 @@ var pointerMasks uint16 = xgb.EventMaskPointerMotion |
 // Initialize attaches the appropriate callbacks to make mouse bindings easier.
 // i.e., prep the dummy window to handle mouse dragging events
 func Initialize(xu *xgbutil.XUtil) {
-    // xevent.MotionNotifyFun(dragStep).Connect(xu, xu.Dummy()) 
-    // xevent.ButtonReleaseFun(dragEnd).Connect(xu, xu.Dummy()) 
+    xevent.MotionNotifyFun(dragStep).Connect(xu, xu.Dummy())
+    xevent.ButtonReleaseFun(dragEnd).Connect(xu, xu.Dummy())
 }
 
 // ParseString takes a string of the format '[Mod[-Mod[...]]-]-KEY',

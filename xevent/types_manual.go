@@ -73,7 +73,7 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
             if i >= len(data) {
                 clientData.Data32[i] = 0
             } else {
-                clientData.Data32[i] = data[i].(uint32)
+                clientData.Data32[i] = uint32(data[i].(int))
             }
         }
     default:
@@ -138,12 +138,12 @@ const ConfigureNotify = xgb.ConfigureNotify
 // NewConfigureNotify takes all arguments required to build a 
 // ConfigureNotifyEvent struct and hides the messy details.
 func NewConfigureNotify(Event, Window, AboveSibling xgb.Id,
-                        X, Y int16, Width, Height uint16,
+                        X, Y, Width, Height int,
                         BorderWidth uint16,
                         OverrideRedirect bool) *ConfigureNotifyEvent {
     return &ConfigureNotifyEvent{&xgb.ConfigureNotifyEvent{
         Event: Event, Window: Window, AboveSibling: AboveSibling,
-        X: X, Y: Y, Width: Width, Height: Height,
+        X: int16(X), Y: int16(Y), Width: uint16(Width), Height: uint16(Height),
         BorderWidth: BorderWidth, OverrideRedirect: OverrideRedirect,
     }}
 }

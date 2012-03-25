@@ -107,15 +107,15 @@ func parseFont(fontFile string) (*truetype.Font, error) {
 // with `X.Conn().MapWindow(window_id)`.
 // XXX: This will likely change to include the window masks and vals as
 // parameters.
-func CreateImageWindow(xu *xgbutil.XUtil, img image.Image,
-                       x int16, y int16) xgb.Id {
+func CreateImageWindow(xu *xgbutil.XUtil, img image.Image, x, y int) xgb.Id {
     win := xu.Conn().NewId()
     scrn := xu.Screen()
     width, height := getDim(img)
 
     winMask := uint32(xgb.CWBackPixmap | xgb.CWOverrideRedirect)
     winVals := []uint32{xgb.BackPixmapParentRelative, 1}
-    xu.Conn().CreateWindow(scrn.RootDepth, win, xu.RootWin(), x, y,
+    xu.Conn().CreateWindow(scrn.RootDepth, win, xu.RootWin(),
+                           int16(x), int16(y),
                            uint16(width), uint16(height),
                            0, xgb.WindowClassInputOutput, scrn.RootVisual,
                            winMask, winVals)
@@ -244,7 +244,7 @@ func Scale(img image.Image, mask image.Image,
 // available. Otherwise, use the smallest icon that is greater than or equal
 // to the preferred dimensions. The preferred dimensions is essentially
 // what you'll likely scale the resulting icon to.
-func FindBestIcon(width, height uint32, icons []*ewmh.WmIcon) *ewmh.WmIcon {
+func FindBestIcon(width, height int, icons []*ewmh.WmIcon) *ewmh.WmIcon {
     // nada nada limonada
     if len(icons) == 0 {
         return nil
@@ -253,7 +253,7 @@ func FindBestIcon(width, height uint32, icons []*ewmh.WmIcon) *ewmh.WmIcon {
     parea := width * height // preferred size
     var best *ewmh.WmIcon = nil // best matching icon
 
-    var bestArea, iconArea uint32
+    var bestArea, iconArea int
 
     for _, icon := range icons {
         // the first valid icon we've seen; use it!

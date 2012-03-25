@@ -20,13 +20,13 @@ func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string, grab bool,
         func(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
             dragBegin(xu, ev, win, begin, step, end)
     }).Connect(xu, win, buttonStr, false, grab)
-    xevent.MotionNotifyFun(dragStep).Connect(xu, win)
-    xevent.ButtonReleaseFun(dragEnd).Connect(xu, win)
+    xevent.MotionNotifyFun(dragStep).Connect(xu, xu.Dummy())
+    xevent.ButtonReleaseFun(dragEnd).Connect(xu, xu.Dummy())
 }
 
 // dragGrab is a shortcut for grabbing the pointer for a drag.
 func dragGrab(xu *xgbutil.XUtil, win xgb.Id, cursor xgb.Id) bool {
-    status, err := GrabPointer(xu, win, xu.RootWin(), cursor)
+    status, err := GrabPointer(xu, xu.Dummy(), xu.RootWin(), cursor)
     if err != nil {
         log.Printf("Mouse dragging was unsuccessful because: %v", err)
         return false
@@ -60,7 +60,8 @@ func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent, win xgb.Id,
 
     // Run begin first. It may tell us to cancel the grab.
     // It can also tell us which cursor to use when grabbing.
-    grab, cursor := begin(xu, ev.RootX, ev.RootY, ev.EventX, ev.EventY)
+    grab, cursor := begin(xu, int(ev.RootX), int(ev.RootY),
+                          int(ev.EventX), int(ev.EventY))
 
     // if we couldn't establish a grab, quit
     // Or quit if 'begin' tells us to.
@@ -86,13 +87,15 @@ func dragStep(xu *xgbutil.XUtil, ev xevent.MotionNotifyEvent) {
     }
 
     // now actually run the step
-    xu.MouseDragStep()(xu, ev.RootX, ev.RootY, ev.EventX, ev.EventY)
+    xu.MouseDragStep()(xu, int(ev.RootX), int(ev.RootY),
+                       int(ev.EventX), int(ev.EventY))
 }
 
 // dragEnd executes the "end" function registered for the current drag.
 func dragEnd(xu *xgbutil.XUtil, ev xevent.ButtonReleaseEvent) {
     if xu.MouseDragEnd() != nil {
-        xu.MouseDragEnd()(xu, ev.RootX, ev.RootY, ev.EventX, ev.EventY)
+        xu.MouseDragEnd()(xu, int(ev.RootX), int(ev.RootY),
+                          int(ev.EventX), int(ev.EventY))
     }
 
     dragUngrab(xu)

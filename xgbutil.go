@@ -43,9 +43,9 @@ type XUtil struct {
     dummy xgb.Id // a dummy window used for mouse/key GRABs
 }
 
-type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int16)
+type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int)
 type MouseDragBeginFun func(xu *XUtil, rootX, rootY,
-                            eventX, eventY int16) (bool, xgb.Id)
+                            eventX, eventY int) (bool, xgb.Id)
 
 // Callback is an interface that should be implemented by event callback 
 // functions. Namely, to assign a function to a particular event/window
@@ -201,6 +201,11 @@ func (xu *XUtil) Dequeue() xgb.Event {
     ev := xu.evqueue[0]
     xu.evqueue = xu.evqueue[1:]
     return ev
+}
+
+// DequeueAt removes a particular item from the queue
+func (xu *XUtil) DequeueAt(i int) {
+    xu.evqueue = append(xu.evqueue[:i], xu.evqueue[i + 1:]...)
 }
 
 // QueueEmpty returns whether the event queue is empty or not.

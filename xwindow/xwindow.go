@@ -57,7 +57,7 @@ func ParentWindow(xu *xgbutil.XUtil, win xgb.Id) (xgb.Id, error) {
 // MoveResize is an accurate means of resizing a window, accounting for
 // decorations. Usually, the x,y coordinates are fine---we just need to
 // adjust the width and height.
-func MoveResize(xu *xgbutil.XUtil, win xgb.Id, x, y int16, w, h uint16) error {
+func MoveResize(xu *xgbutil.XUtil, win xgb.Id, x, y, w, h int) error {
     neww, newh, err := adjustSize(xu, win, w, h)
     if err != nil {
         return err
@@ -68,12 +68,12 @@ func MoveResize(xu *xgbutil.XUtil, win xgb.Id, x, y int16, w, h uint16) error {
 }
 
 // Move changes the position of a window without touching the size.
-func Move(xu *xgbutil.XUtil, win xgb.Id, x, y int16) error {
+func Move(xu *xgbutil.XUtil, win xgb.Id, x, y int) error {
     return ewmh.MoveWindow(xu, win, x, y)
 }
 
 // Resize changes the size of a window without touching the position.
-func Resize(xu *xgbutil.XUtil, win xgb.Id, w, h uint16) error {
+func Resize(xu *xgbutil.XUtil, win xgb.Id, w, h int) error {
     neww, newh, err := adjustSize(xu, win, w, h)
     if err != nil {
         return err
@@ -91,8 +91,7 @@ func Resize(xu *xgbutil.XUtil, win xgb.Id, w, h uint16) error {
 // not what you want. Therefore, transform 200 into
 // 200 - decoration window width - client window width.
 // Similarly for height.
-func adjustSize(xu *xgbutil.XUtil, win xgb.Id, w, h uint16) (
-     uint16, uint16, error) {
+func adjustSize(xu *xgbutil.XUtil, win xgb.Id, w, h int) (int, int, error) {
     cGeom, err := RawGeometry(xu, win) // raw client geometry
     if err != nil {
         return 0, 0, err
@@ -144,6 +143,7 @@ func RawGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
         return nil, err
     }
 
-    return xrect.Make(xgeom.X, xgeom.Y, xgeom.Width, xgeom.Height), nil
+    return xrect.Make(int(xgeom.X), int(xgeom.Y),
+                      int(xgeom.Width), int(xgeom.Height)), nil
 }
 

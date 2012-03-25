@@ -62,10 +62,10 @@ func ChangeProp(xu *xgbutil.XUtil, win xgb.Id, format byte, prop string,
 // ChangeProperty32 makes changing 32 bit formatted properties easier
 // by constructing the raw X data for you.
 func ChangeProp32(xu *xgbutil.XUtil, win xgb.Id, prop string, typ string,
-                      data ...uint32) error {
+                      data ...int) error {
     buf := make([]byte, len(data) * 4)
     for i, datum := range data {
-        xgbutil.Put32(buf[(i * 4):], datum)
+        xgbutil.Put32(buf[(i * 4):], uint32(datum))
     }
 
     return ChangeProp(xu, win, 32, prop, typ, buf)
@@ -124,10 +124,10 @@ func AtomName(xu *xgbutil.XUtil, aid xgb.Id) (string, error) {
 }
 
 // IdTo32 is a covenience function for converting []xgb.Id to []uint32.
-func IdTo32(ids []xgb.Id) (ids32 []uint32) {
-    ids32 = make([]uint32, len(ids))
+func IdToInt(ids []xgb.Id) (ids32 []int) {
+    ids32 = make([]int, len(ids))
     for i, v := range ids {
-        ids32[i] = uint32(v)
+        ids32[i] = int(v)
     }
     return
 }
@@ -135,16 +135,16 @@ func IdTo32(ids []xgb.Id) (ids32 []uint32) {
 // StrToAtoms is a convenience function for converting
 // []string to []uint32 atoms.
 // NOTE: If an atom name in the list doesn't exist, it will be created.
-func StrToAtoms(xu *xgbutil.XUtil, atomNames []string) (
-     atoms []uint32, err error) {
-    atoms = make([]uint32, len(atomNames))
+func StrToAtoms(xu *xgbutil.XUtil, atomNames []string) (atoms []int,
+                                                        err error) {
+    atoms = make([]int, len(atomNames))
     for i, atomName := range atomNames {
         a, err := Atom(xu, atomName, false)
         if err != nil {
             return nil, err
         }
 
-        atoms[i] = uint32(a)
+        atoms[i] = int(a)
     }
     return
 }
@@ -152,8 +152,8 @@ func StrToAtoms(xu *xgbutil.XUtil, atomNames []string) (
 // PropValAtom transforms a GetPropertyReply struct into an ATOM name.
 // The property reply must be in 32 bit format.
 // This is a method of an XUtil struct, unlike the other 'PropVal...' functions.
-func PropValAtom(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply, err error) (
-     string, error) {
+func PropValAtom(xu *xgbutil.XUtil,
+                 reply *xgb.GetPropertyReply, err error) (string, error) {
     if err != nil {
         return "", err
     }
@@ -168,8 +168,8 @@ func PropValAtom(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply, err error) (
 // PropValAtoms is the same as PropValAtom, except that it returns a slice
 // of atom names. Also must be 32 bit format.
 // This is a method of an XUtil struct, unlike the other 'PropVal...' functions.
-func PropValAtoms(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply, err error) (
-     []string, error) {
+func PropValAtoms(xu *xgbutil.XUtil,
+                  reply *xgb.GetPropertyReply, err error) ([]string, error) {
     if err != nil {
         return nil, err
     }
@@ -230,7 +230,7 @@ func PropValIds(reply *xgb.GetPropertyReply, err error) ([]xgb.Id, error) {
 
 // PropValNum transforms a GetPropertyReply struct into an unsigned
 // integer. Useful when the property value is a single integer.
-func PropValNum(reply *xgb.GetPropertyReply, err error) (uint32, error) {
+func PropValNum(reply *xgb.GetPropertyReply, err error) (int, error) {
     if err != nil {
         return 0, err
     }
@@ -239,12 +239,12 @@ func PropValNum(reply *xgb.GetPropertyReply, err error) (uint32, error) {
                                 reply.Format)
     }
 
-    return xgbutil.Get32(reply.Value), nil
+    return int(xgbutil.Get32(reply.Value)), nil
 }
 
 // PropValNums is the same as PropValNum, except that it returns a slice
 // of integers. Also must be 32 bit format.
-func PropValNums(reply *xgb.GetPropertyReply, err error) ([]uint32, error) {
+func PropValNums(reply *xgb.GetPropertyReply, err error) ([]int, error) {
     if err != nil {
         return nil, err
     }
@@ -253,10 +253,10 @@ func PropValNums(reply *xgb.GetPropertyReply, err error) ([]uint32, error) {
                                   reply.Format)
     }
 
-    nums := make([]uint32, reply.ValueLen)
+    nums := make([]int, reply.ValueLen)
     vals := reply.Value
     for i := 0; len(vals) >= 4; i++ {
-        nums[i] = xgbutil.Get32(vals)
+        nums[i] = int(xgbutil.Get32(vals))
         vals = vals[4:]
     }
 

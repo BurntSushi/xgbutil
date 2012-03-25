@@ -114,6 +114,46 @@ func Main(xu *xgbutil.XUtil) error {
                 xu.RunCallbacks(e, ButtonRelease, e.Event)
             case xgb.MotionNotifyEvent:
                 e := MotionNotifyEvent{&event}
+
+                // Peek at the next events, if it's just another
+                // MotionNotify, let's compress!
+                // This is actually pretty nasty. The key here is to flush
+                // the buffer so we have an updated list of events.
+                // Then we read those events into our queue, but don't block
+                // while we do. Finally, we look through the queue and start
+                // popping off motion notifies that match 'e'. If we pop one
+                // off, restart the process of finding a motion notify.
+                // Otherwise, we're done and we move on with the current
+                // motion notify.
+                var laste xgb.MotionNotifyEvent
+                for {
+                    xu.Flush()
+                    Read(xu, false)
+
+                    found := false
+                    for i, ev := range xu.QueuePeek() {
+                        if motNot, ok := ev.(xgb.MotionNotifyEvent); ok {
+                            if motNot.Event == e.Event {
+                                laste = motNot
+                                xu.DequeueAt(i)
+                                found = true
+                                break
+                            }
+                        }
+                    }
+                    if !found {
+                        break
+                    }
+                }
+
+                if laste.Root != 0 {
+                    e.Time = laste.Time
+                    e.RootX = laste.RootX
+                    e.RootY = laste.RootY
+                    e.EventX = laste.EventX
+                    e.EventY = laste.EventY
+                }
+
                 xu.SetTime(e.Time)
                 xu.RunCallbacks(e, MotionNotify, e.Event)
             case xgb.EnterNotifyEvent:
