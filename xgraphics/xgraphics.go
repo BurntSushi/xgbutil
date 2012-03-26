@@ -30,6 +30,7 @@ import "code.google.com/p/jamslam-x-go-binding/xgb"
 import (
     "github.com/BurntSushi/xgbutil"
     "github.com/BurntSushi/xgbutil/ewmh"
+    "github.com/BurntSushi/xgbutil/xwindow"
 )
 
 // DrawText takes an image and, using the freetype package, writes text in the
@@ -182,7 +183,7 @@ func GetDim(img image.Image) (int, int) {
 }
 
 // LoadPngFromFile takes a file name for a png and loads it as an image.Image.
-func LoadPngFromFile(file string) (image.Image, error) {
+func LoadPngFromFile(file string) (draw.Image, error) {
     srcReader, err := os.Open(file)
     defer srcReader.Close()
 
@@ -195,17 +196,26 @@ func LoadPngFromFile(file string) (image.Image, error) {
         return nil, err
     }
 
-    return img, nil
+    return img.(draw.Image), nil
 }
 
 // BlendBg "blends" img with mask into a background with color clr with
-// transparency, where transparency is a number 0-100 where 0 is completely
+// transparency, where alpha is a number 0-100 where 0 is completely
 // transparent and 100 is completely opaque.
 // It is very possible that I'm doing more than I need to here, but this
 // was the only way I could get it to work.
-func BlendBg(img image.Image, mask draw.Image, transparency int,
-             clr color.RGBA) (dest *image.RGBA) {
-    transClr := uint8((float64(transparency) / 100.0) * 255.0)
+func BlendBg(img image.Image, mask draw.Image, alpha int,
+             clr color.RGBA) *image.RGBA {
+    dest := image.NewRGBA(img.Bounds())
+    draw.Draw(dest, dest.Bounds(), image.NewUniform(clr), image.ZP, draw.Src)
+    Blend(dest, img, mask, alpha, 0, 0)
+    return dest
+}
+
+// Blend "blends" img with mask into dest at position (x, y) with
+// transparency alpha.
+func Blend(dest draw.Image, img image.Image, mask draw.Image, alpha, x, y int) {
+    transClr := uint8((float64(alpha) / 100.0) * 255.0)
     blendMask := image.NewUniform(color.Alpha{transClr})
 
     if mask != nil {
@@ -213,33 +223,22 @@ func BlendBg(img image.Image, mask draw.Image, transparency int,
                       draw.Src)
     }
 
-    dest = image.NewRGBA(img.Bounds())
-    draw.Draw(dest, dest.Bounds(), image.NewUniform(clr), image.ZP, draw.Src)
-
+    width, height := GetDim(img)
+    rect := image.Rect(x, y, width + x, height + y)
     if mask != nil {
-        draw.DrawMask(dest, dest.Bounds(), img, image.ZP, mask, image.ZP,
-                      draw.Over)
+        draw.DrawMask(dest, rect, img, image.ZP, mask, image.ZP, draw.Over)
     } else {
-        draw.DrawMask(dest, dest.Bounds(), img, image.ZP, blendMask, image.ZP,
-                      draw.Over)
+        draw.DrawMask(dest, rect, img, image.ZP, blendMask, image.ZP, draw.Over)
     }
-
-    return
 }
 
 // Scale is a simple wrapper around graphics.Scale. It will also scale a
 // mask appropriately.
-func Scale(img image.Image, mask image.Image,
-           width, height int) (dimg draw.Image, dmask draw.Image) {
-    dimg = image.NewRGBA(image.Rect(0, 0, width, height))
+func Scale(img image.Image, width, height int) draw.Image {
+    dimg := image.NewRGBA(image.Rect(0, 0, width, height))
     graphics.Scale(dimg, img)
 
-    if mask != nil {
-        dmask = image.NewRGBA(image.Rect(0, 0, width, height))
-        graphics.Scale(dmask, mask)
-    }
-
-    return
+    return dimg
 }
 
 // FindBestIcon takes width/height dimensions and a slice of *ewmh.WmIcon
@@ -278,10 +277,6 @@ func FindBestIcon(width, height int, icons []*ewmh.WmIcon) *ewmh.WmIcon {
         }
     }
 
-    if best != nil {
-        print("Found a good icon size: ", best.Width, "--", best.Height, "\n")
-    }
-
     return best // this may be nil if we have no valid icons
 }
 
@@ -295,6 +290,87 @@ func proportional(w1, h1, w2, h2 uint32) bool {
     return fw1 / fh1 == fw2 / fh2
 }
 
+// PixmapToImage takes a Pixmap ID and converts it to an image.
+// Pixmap data is in BGR order. Ew.
+func PixmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
+    geom, err := xwindow.RawGeometry(xu, pix)
+    if err != nil {
+        return nil, err
+    }
+
+    width, height := geom.Width(), geom.Height()
+    data, err := xu.Conn().GetImage(xgb.ImageFormatZPixmap, pix, 0, 0,
+                                    uint16(width), uint16(height),
+                                    (1 << 32) - 1)
+    if err != nil {
+        return nil, err
+    }
+
+    buf := make([]color.RGBA, width * height)
+    // bufa := make([]color.Alpha, width * height) 
+    for i, j := 0, 0; i < len(data.Data); i, j = i + 4, j + 1 {
+        blue := data.Data[i + 0]
+        green := data.Data[i + 1]
+        red := data.Data[i + 2]
+        // alpha := data.Data[i + 3] 
+
+        buf[j] = color.RGBA{uint8(red), uint8(green), uint8(blue), 255}
+        // bufa[j] = color.Alpha{uint8(alpha)} 
+    }
+
+    img := image.NewRGBA(image.Rect(0, 0, width, height))
+    // mask := image.NewRGBA(image.Rect(0, 0, width, height)) 
+    for x := 0; x < width; x++ {
+        for y := 0; y < height; y++ {
+            img.SetRGBA(x, y, buf[x + y * width])
+            // mask.Set(x, y, color.Alpha{uint8(128)}) 
+        }
+    }
+    return img, nil
+}
+
+// BitmapToImage takes a Pixmap ID and converts it to an image.
+func BitmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
+    geom, err := xwindow.RawGeometry(xu, pix)
+    if err != nil {
+        return nil, err
+    }
+
+    width, height := geom.Width(), geom.Height()
+    data, err := xu.Conn().GetImage(xgb.ImageFormatXYPixmap, pix, 0, 0,
+                                    uint16(width), uint16(height),
+                                    (1 << 32) - 1)
+    if err != nil {
+        return nil, err
+    }
+
+    whiteOrBlack := func(b uint8) color.Alpha {
+        if b & 1 > 0 {
+            return color.Alpha{255}
+        }
+        return color.Alpha{0}
+    }
+
+    // First load the bitmap into a buffer
+    buf := make([]color.Alpha, width * height)
+    var b uint8
+    for i := 0; i < len(data.Data); i++ {
+        b = data.Data[i]
+        for k := 0; k < 8; k++ {
+            buf[i * 8 + k] = whiteOrBlack(b)
+            b >>= 1
+        }
+    }
+
+    img := image.NewRGBA(image.Rect(0, 0, width, height))
+    for x := 0; x < width; x++ {
+        for y := 0; y < height; y++ {
+            img.Set(x, y, buf[x + (y * width)])
+        }
+    }
+    return img, nil
+}
+
 // EwmhIconToImage takes a ewmh.WmIcon and converts it to an image and
 // an alpha mask. A ewmh.WmIcon is in ARGB order, and the image package wants
 // things in RGBA order. (What makes things is worse is when it comes time
@@ -306,13 +382,13 @@ func EwmhIconToImage(icon *ewmh.WmIcon) (img *image.RGBA, mask *image.RGBA) {
 
     for x := 0; x < width; x++ {
         for y := 0; y < height; y++ {
-            argb := icon.Data[x + (y * height)]
+            argb := icon.Data[x + (y * width)]
             alpha := argb >> 24
             red := ((alpha << 24) ^ argb) >> 16
             green := (((alpha << 24) + (red << 16)) ^ argb) >> 8
             blue := (((alpha << 24) + (red << 16) + (green << 8)) ^ argb) >> 0
 
-            c := color.RGBA{uint8(red), uint8(green), uint8(blue), uint8(alpha)}
+            c := color.RGBA{uint8(red), uint8(green), uint8(blue), 255}
 
             img.SetRGBA(x, y, c)
             mask.Set(x, y, color.Alpha{uint8(alpha)})
