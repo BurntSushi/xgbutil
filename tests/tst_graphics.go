@@ -14,7 +14,7 @@ import (
     // "image" 
     "image/color"
     // "image/draw" 
-    "time"
+    // "time" 
 
     "github.com/BurntSushi/xgbutil"
     "github.com/BurntSushi/xgbutil/ewmh"
@@ -44,7 +44,7 @@ func main() {
     active, _ := ewmh.ActiveWindowGet(X)
     icons, _ := ewmh.WmIconGet(X, active)
 
-    var width, height uint32 = 100, 200
+    var width, height int = 200, 200
 
     work := xgraphics.FindBestIcon(width, height, icons)
     if work != nil {
@@ -61,8 +61,8 @@ func main() {
     dest := xgraphics.BlendBg(img, mask, 100, color.RGBA{0, 0, 255, 255})
 
     // Let's try to write some text...
-    xgraphics.DrawText(dest, 50, 50, color.RGBA{255, 255, 255, 255}, 20,
-                       fontFile, "Hello, world!")
+    // xgraphics.DrawText(dest, 50, 50, color.RGBA{255, 255, 255, 255}, 20, 
+                       // fontFile, "Hello, world!") 
 
     tw, th, err := xgraphics.TextExtents(fontFile, 11, "Hiya")
     fmt.Println(tw, th, err)
@@ -70,6 +70,7 @@ func main() {
     win := xgraphics.CreateImageWindow(X, dest, 3940, 400)
     X.Conn().MapWindow(win)
 
-    time.Sleep(20 * time.Second)
+    // time.Sleep(20 * time.Second) 
+    select {}
 }
 
