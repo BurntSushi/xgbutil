@@ -24,11 +24,15 @@ type Rect interface {
     YSet(y int)
     WidthSet(width int)
     HeightSet(height int)
+    Pieces() (int, int, int, int)
 }
 
 // RectPieces just returns a four-tuple of x, y, width and height
 func RectPieces(xr Rect) (int, int, int, int) {
     return xr.X(), xr.Y(), xr.Width(), xr.Height()
+}
+func Pieces(xr Rect) (int, int, int, int) {
+    return RectPieces(xr)
 }
 
 // Provide a simple implementation of a rect.
@@ -78,6 +82,11 @@ func (r *XRect) WidthSet(width int) {
 
 func (r *XRect) HeightSet(height int) {
     r.height = height
+}
+
+// Pieces just returns a four-tuple of x, y, width and height
+func (r *XRect) Pieces() (int, int, int, int) {
+    return r.X(), r.Y(), r.Width(), r.Height()
 }
 
 // IntersectArea takes two rectangles satisfying the Rect interface and
