@@ -10,11 +10,11 @@
 package xgraphics
 
 import (
+    "bytes"
     "image"
     "image/color"
     "image/draw"
     "image/png"
-    "io/ioutil"
     "os"
 )
 
@@ -37,13 +37,7 @@ import (
 // position specified on to the image. A color.Color, a font size and a font  
 // must also be specified. For example, /usr/share/fonts/TTF/DejaVuSans-Bold.ttf
 func DrawText(img draw.Image, x int, y int, clr color.Color, fontSize float64,
-              fontFile string, text string) error {
-    // get our truetype.Font
-    font, err := parseFont(fontFile)
-    if err != nil {
-        return err
-    }
-
+              font *truetype.Font, text string) error {
     // Create a solid color image
     textClr := image.NewUniform(clr)
 
@@ -55,7 +49,7 @@ func DrawText(img draw.Image, x int, y int, clr color.Color, fontSize float64,
 
     // Now let's actually draw the text...
     pt := freetype.Pt(x, y + c.FUnitToPixelRU(font.UnitsPerEm()))
-    _, err = c.DrawString(text, pt)
+    _, err := c.DrawString(text, pt)
     if err != nil {
         return err
     }
@@ -65,14 +59,8 @@ func DrawText(img draw.Image, x int, y int, clr color.Color, fontSize float64,
 
 // Returns the width and height extents of a string given a font.
 // TODO: This does not currently account for multiple lines. It may never do so.
-func TextExtents(fontFile string, fontSize float64,
+func TextExtents(font *truetype.Font, fontSize float64,
                  text string) (width int, height int, err error) {
-    // get our truetype.Font
-    font, err := parseFont(fontFile)
-    if err != nil {
-        return 0, 0, err
-    }
-
     // We need a context to calculate the extents
     c := ftContext(font, fontSize)
 
@@ -90,13 +78,8 @@ func ftContext(font *truetype.Font, fontSize float64) *freetype.Context {
     return c
 }
 
-// parseFont reads a font file and creates a freetype.Font type
-func parseFont(fontFile string) (*truetype.Font, error) {
-    fontBytes, err := ioutil.ReadFile(fontFile)
-    if err != nil {
-        return nil, err
-    }
-
+// ParseFont reads a font file and creates a freetype.Font type
+func ParseFont(fontBytes []byte) (*truetype.Font, error) {
     font, err := freetype.ParseFont(fontBytes)
     if err != nil {
         return nil, err
@@ -182,16 +165,25 @@ func GetDim(img image.Image) (int, int) {
     return bounds.Max.X - bounds.Min.X, bounds.Max.Y - bounds.Min.Y
 }
 
-// LoadPngFromFile takes a file name for a png and loads it as an image.Image.
+// LoadPngFromFile takes a file name for a png and loads it as an draw.Image.
 func LoadPngFromFile(file string) (draw.Image, error) {
     srcReader, err := os.Open(file)
+    if err != nil {
+        return nil, err
+    }
     defer srcReader.Close()
 
+    img, err := png.Decode(srcReader)
     if err != nil {
         return nil, err
     }
 
-    img, err := png.Decode(srcReader)
+    return img.(draw.Image), nil
+}
+
+// LoadPngFromBytes takes a slice of raw bytes and loads it as a draw.Image.
+func LoadPngFromBytes(bs []byte) (draw.Image, error) {
+    img, err := png.Decode(bytes.NewReader(bs))
     if err != nil {
         return nil, err
     }
@@ -239,6 +231,24 @@ func Scale(img image.Image, width, height int) draw.Image {
     graphics.Scale(dimg, img)
 
     return dimg
+}
+
+// ColorImage replaces all colors in 'img' with 'clr', but does not change
+// the alpha channel. (Useful for bitmap re-coloring.)
+func ColorImage(img draw.Image, clr color.Color) {
+    width, height := GetDim(img)
+    r32, g32, b32, _ := clr.RGBA()
+    r, g, b := uint8(r32), uint8(g32), uint8(b32)
+
+    var a uint32
+    for x := 0; x < width; x++ {
+        for y := 0; y < height; y++ {
+            _, _, _, a = img.At(x, y).RGBA()
+            if a > 0 { // only change visible colors
+                img.Set(x, y, color.RGBA{r, g, b, uint8(a)})
+            }
+        }
+    }
 }
 
 // FindBestIcon takes width/height dimensions and a slice of *ewmh.WmIcon
