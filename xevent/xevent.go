@@ -20,7 +20,7 @@ func Read(xu *xgbutil.XUtil, block bool) bool {
     if block {
         ev, err := xu.Conn().WaitForEvent()
         if err != nil {
-            if processEventError(err) {
+            if processEventError(xu, err) {
                 return false
             }
         }
@@ -38,7 +38,7 @@ func Read(xu *xgbutil.XUtil, block bool) bool {
 
         // Error!
         if err != nil {
-            if processEventError(err) {
+            if processEventError(xu, err) {
                 return false
             } else {
                 continue
@@ -58,16 +58,19 @@ func Read(xu *xgbutil.XUtil, block bool) bool {
 // need to crash. If it's something like a BadValue or a BadWindow, we can
 // live for another day...
 // The 'bool' return value is true when the caller needs to QUIT.
-func processEventError(err error) bool {
+func processEventError(xu *xgbutil.XUtil, err error) bool {
     if err == io.EOF {
         log.Println("EOF. Stopping everything. Sorry :-(")
         return true
-    } else {
-        log.Printf("ERROR: %v\n", err)
+    } else if xgbErr, ok := err.(*xgb.Error); ok {
+        if !xu.IgnoredWindow(xgbErr.Id) {
+            log.Printf("ERROR: %v\n", err)
+        }
         return false
     }
 
-    panic("unreachable")
+    log.Printf("UNKNOWN ERROR: %v\n", err)
+    return true
 }
 
 // Main starts the main X event loop. It will read events and call appropriate
