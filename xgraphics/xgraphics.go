@@ -115,12 +115,6 @@ func CreateImageWindow(xu *xgbutil.XUtil, img image.Image, x, y int) xgb.Id {
 
 // PaintImg will slap the given image as a background pixmap into the given
 // window.
-// TODO: There is currently a limitation in XGB (not xgbutil) that prevents
-// requests from being bigger than (2^16 * 4) bytes. (This is caused by silly
-// X nonsense.) To fix this, XGB needs to work around it, but it isn't quite
-// clear how that should be done yet.
-// Therefore, try to keep images less than 256x256, otherwise X will stomp
-// on you. And it will hurt. And you won't even know it. :-(
 func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
     pix := CreatePixmap(xu, img)
     xu.Conn().ChangeWindowAttributes(win, uint32(xgb.CWBackPixmap),
@@ -131,9 +125,12 @@ func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
 
 // CreatePixmap creates a pixmap from an image.
 // Please remember to call FreePixmap when you're done!
+// Note: This gets around the X maximum request size limitation by issuing
+// multiple PutImage requests when the image data is too big.
 func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
     width, height := GetDim(img)
     imgData := make([]byte, width * height * 4)
+    imgDataLen := len(imgData)
     for x := 0; x < width; x++ {
         for y := 0; y < height; y++ {
             r, g, b, a := img.At(x, y).RGBA()
@@ -148,8 +145,50 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
     pix := xu.Conn().NewId()
     xu.Conn().CreatePixmap(xu.Screen().RootDepth, pix, xu.RootWin(),
                            uint16(width), uint16(height))
-    xu.Conn().PutImage(xgb.ImageFormatZPixmap, pix, xu.GC(),
-                       uint16(width), uint16(height), 0, 0, 0, 24, imgData)
+
+    // This is where things get hairy. X's max request size is
+    // (2^16) * 4, that is, the number of bytes specifiable in 4-byte
+    // blocks by an unsigned 16 bit integer.
+    // We check if the imgData is bigger than this max size minus 28 bytes
+    // (accounting for the fixed size of a PutImage request). If it is,
+    // we need to split up the data into chunks and send it that way.
+    sends := imgDataLen / (xgbutil.MAX_REQ_SIZE - 28) + 1
+    rowsPer := (xgbutil.MAX_REQ_SIZE - 28) / (width * 4)
+
+    // The idea here is to send "sends" number of PutImage requests with
+    // "rowsPer" rows of the image each time. (If a single row of an image
+    // exceeds the max request limit, we're in real trouble, but I don't
+    // think that's possible anyway since it would also the size of a uint16.)
+    ypos, startBytes, endBytes := 0, 0, 0
+    var data []byte
+    var h int // the height of each PutImage request
+    for i := 0; i < sends; i++ {
+        // The number of bytes we need to consume for 'rowsPer' rows is
+        // the number of rows, times the width times 4. (Times 4 because the
+        // depth of our image is 4: each pixel is represented by 4 bytes.)
+        endBytes = startBytes + rowsPer * width * 4
+
+        // If this is the last send, it's quite likely that we don't
+        // have enough bytes left to accomodate 'endBytes'
+        if endBytes > len(imgData) {
+            endBytes = len(imgData)
+        }
+
+        // Use slicing to get the bytes we want.
+        data = imgData[startBytes:endBytes]
+
+        // Calculate the height. It's usually just 'rowsPer', but if this
+        // is the last send, we probably aren't sending 'rowsPer' rows.
+        h = len(data) / 4 / width
+
+        xu.Conn().PutImage(xgb.ImageFormatZPixmap, pix, xu.GC(),
+                           uint16(width), uint16(h), 0, int16(ypos),
+                           0, 24, data)
+
+        // Prep values for the next iteration
+        startBytes = endBytes
+        ypos += rowsPer
+    }
 
     return pix
 }

@@ -13,6 +13,8 @@ import (
     "code.google.com/p/jamslam-x-go-binding/xgb"
 )
 
+const MAX_REQ_SIZE = (1 << 16) * 4
+
 // An XUtil represents the state of xgbutil. It keeps track of the current 
 // X connection, the root window, event callbacks, key/mouse bindings, etc.
 type XUtil struct {
