@@ -64,20 +64,21 @@ type Hints struct {
 }
 
 // _MOTIF_WM_HINTS get
-func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (mh Hints, err error) {
+func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (mh *Hints, err error) {
     lenExpect := 5
     hints, err := xprop.PropValNums(xprop.GetProperty(xu, win,
                                                       "_MOTIF_WM_HINTS"))
     if err != nil {
-        return Hints{}, err
+        return &Hints{}, err
     }
     if len(hints) != lenExpect {
-        return Hints{},
+        return &Hints{},
                xgbutil.Xuerr("motif.WmHintsGet",
                              "There are %d fields in _MOTIF_WM_HINTS, " +
                              "but xgbutil expects %d.", len(hints), lenExpect)
     }
 
+    mh = &Hints{}
     mh.Flags = hints[0]
     mh.Function = hints[1]
     mh.Decoration = hints[2]
@@ -88,7 +89,7 @@ func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (mh Hints, err error) {
 }
 
 // _MOTIF_WM_HINTS set
-func WmHintsSet(xu *xgbutil.XUtil, win xgb.Id, mh Hints) error {
+func WmHintsSet(xu *xgbutil.XUtil, win xgb.Id, mh *Hints) error {
     raw := []uint32{mh.Flags, mh.Function, mh.Decoration, mh.Input, mh.Status}
     return xprop.ChangeProp32(xu, win, "_MOTIF_WM_HINTS", "_MOTIF_WM_HINTS",
                               raw...)

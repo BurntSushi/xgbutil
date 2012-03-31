@@ -180,24 +180,24 @@ type DesktopGeometry struct {
 }
 
 // _NET_DESKTOP_GEOMETRY get
-func DesktopGeometryGet(xu *xgbutil.XUtil) (DesktopGeometry, error) {
+func DesktopGeometryGet(xu *xgbutil.XUtil) (*DesktopGeometry, error) {
     geom, err := xprop.PropValNums(xprop.GetProperty(xu, xu.RootWin(),
                                                      "_NET_DESKTOP_GEOMETRY"))
     if err != nil {
-        return DesktopGeometry{}, err
+        return &DesktopGeometry{}, err
     }
 
-    return DesktopGeometry{Width: geom[0], Height: geom[1]}, nil
+    return &DesktopGeometry{Width: geom[0], Height: geom[1]}, nil
 }
 
 // _NET_DESKTOP_GEOMETRY set
-func DesktopGeometrySet(xu *xgbutil.XUtil, dg DesktopGeometry) error {
+func DesktopGeometrySet(xu *xgbutil.XUtil, dg *DesktopGeometry) error {
     return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_DESKTOP_GEOMETRY",
                               "CARDINAL", dg.Width, dg.Height)
 }
 
 // _NET_DESKTOP_GEOMETRY req
-func DesktopGeometryReq(xu *xgbutil.XUtil, dg DesktopGeometry) error {
+func DesktopGeometryReq(xu *xgbutil.XUtil, dg *DesktopGeometry) error {
     return ClientEvent(xu, xu.RootWin(), "_NET_DESKTOP_GEOMETRY", dg.Width,
                        dg.Height)
 }
@@ -227,13 +227,14 @@ const (
 )
 
 // _NET_DESKTOP_LAYOUT get
-func DesktopLayoutGet(xu *xgbutil.XUtil) (dl DesktopLayout, err error) {
+func DesktopLayoutGet(xu *xgbutil.XUtil) (dl *DesktopLayout, err error) {
     dlraw, err := xprop.PropValNums(xprop.GetProperty(xu, xu.RootWin(),
                                                       "_NET_DESKTOP_LAYOUT"))
     if err != nil {
-        return DesktopLayout{}, err
+        return &DesktopLayout{}, err
     }
 
+    dl = &DesktopLayout{}
     dl.Orientation = int(dlraw[0])
     dl.Columns = int(dlraw[1])
     dl.Rows = int(dlraw[2])
@@ -309,14 +310,14 @@ type FrameExtents struct {
 }
 
 // _NET_FRAME_EXTENTS get
-func FrameExtentsGet(xu *xgbutil.XUtil, win xgb.Id) (FrameExtents, error) {
+func FrameExtentsGet(xu *xgbutil.XUtil, win xgb.Id) (*FrameExtents, error) {
     raw, err := xprop.PropValNums(xprop.GetProperty(xu, win,
                                                     "_NET_FRAME_EXTENTS"))
     if err != nil {
-        return FrameExtents{}, nil
+        return &FrameExtents{}, nil
     }
 
-    return FrameExtents{
+    return &FrameExtents{
         Left: raw[0],
         Right: raw[1],
         Top: raw[2],
@@ -325,7 +326,8 @@ func FrameExtentsGet(xu *xgbutil.XUtil, win xgb.Id) (FrameExtents, error) {
 }
 
 // _NET_FRAME_EXTENTS set
-func FrameExtentsSet(xu *xgbutil.XUtil, win xgb.Id, extents FrameExtents) error {
+func FrameExtentsSet(xu *xgbutil.XUtil, win xgb.Id,
+                     extents *FrameExtents) error {
     raw := make([]int, 4)
     raw[0] = extents.Left
     raw[1] = extents.Right
@@ -560,15 +562,15 @@ type WmFullscreenMonitors struct {
 }
 
 // _NET_WM_FULLSCREEN_MONITORS get
-func WmFullscreenMonitorsGet(xu *xgbutil.XUtil, win xgb.Id) (
-     WmFullscreenMonitors, error) {
+func WmFullscreenMonitorsGet(xu *xgbutil.XUtil,
+                             win xgb.Id) (*WmFullscreenMonitors, error) {
     raw, err := xprop.PropValNums(
                     xprop.GetProperty(xu, win, "_NET_WM_FULLSCREEN_MONITORS"))
     if err != nil {
-        return WmFullscreenMonitors{}, err
+        return &WmFullscreenMonitors{}, err
     }
 
-    return WmFullscreenMonitors{
+    return &WmFullscreenMonitors{
         Top: raw[0],
         Bottom: raw[1],
         Left: raw[2],
@@ -578,7 +580,7 @@ func WmFullscreenMonitorsGet(xu *xgbutil.XUtil, win xgb.Id) (
 
 // _NET_WM_FULLSCREEN_MONITORS set
 func WmFullscreenMonitorsSet(xu *xgbutil.XUtil, win xgb.Id,
-                             edges WmFullscreenMonitors) error {
+                             edges *WmFullscreenMonitors) error {
     raw := make([]int, 4)
     raw[0] = edges.Top
     raw[1] = edges.Bottom
@@ -591,13 +593,13 @@ func WmFullscreenMonitorsSet(xu *xgbutil.XUtil, win xgb.Id,
 
 // _NET_WM_FULLSCREEN_MONITORS req
 func WmFullscreenMonitorsReq(xu *xgbutil.XUtil, win xgb.Id,
-                             edges WmFullscreenMonitors) error {
+                             edges *WmFullscreenMonitors) error {
     return WmFullscreenMonitorsReqExtra(xu, win, edges, 2)
 }
 
 // _NET_WM_FULLSCREEN_MONITORS req extra
 func WmFullscreenMonitorsReqExtra(xu *xgbutil.XUtil, win xgb.Id,
-                                  edges WmFullscreenMonitors,
+                                  edges *WmFullscreenMonitors,
                                   source int) error {
     return ClientEvent(xu, win, "_NET_WM_FULLSCREEN_MONITORS",
                        edges.Top, edges.Bottom, edges.Left, edges.Right, source)
@@ -640,19 +642,19 @@ type WmIcon struct {
 }
 
 // _NET_WM_ICON get
-func WmIconGet(xu *xgbutil.XUtil, win xgb.Id) ([]*WmIcon, error) {
+func WmIconGet(xu *xgbutil.XUtil, win xgb.Id) ([]WmIcon, error) {
     icon, err := xprop.PropValNums(xprop.GetProperty(xu, win, "_NET_WM_ICON"))
     if err != nil {
         return nil, err
     }
 
-    wmicons := make([]*WmIcon, 0)
+    wmicons := make([]WmIcon, 0)
     start := 0
     for int(start) < len(icon) {
         w, h := icon[start], icon[start + 1]
         upto := w * h
 
-        wmicon := &WmIcon{
+        wmicon := WmIcon{
             Width: w,
             Height: h,
             Data: icon[(start + 2):(start + upto + 2)],
@@ -666,7 +668,7 @@ func WmIconGet(xu *xgbutil.XUtil, win xgb.Id) ([]*WmIcon, error) {
 }
 
 // _NET_WM_ICON set
-func WmIconSet(xu *xgbutil.XUtil, win xgb.Id, icons []*WmIcon) error {
+func WmIconSet(xu *xgbutil.XUtil, win xgb.Id, icons []WmIcon) error {
     raw := make([]int, 0, 10000) // start big
     for _, icon := range icons {
         raw = append(raw, icon.Width, icon.Height)
@@ -686,14 +688,14 @@ type WmIconGeometry struct {
 }
 
 // _NET_WM_ICON_GEOMETRY get
-func WmIconGeometryGet(xu *xgbutil.XUtil, win xgb.Id) (WmIconGeometry, error) {
+func WmIconGeometryGet(xu *xgbutil.XUtil, win xgb.Id) (*WmIconGeometry, error) {
     geom, err := xprop.PropValNums(xprop.GetProperty(xu, win,
                                                      "_NET_WM_ICON_GEOMETRY"))
     if err != nil {
-        return WmIconGeometry{}, err
+        return &WmIconGeometry{}, err
     }
 
-    return WmIconGeometry{
+    return &WmIconGeometry{
         X: geom[0],
         Y: geom[1],
         Width: geom[2],
@@ -702,7 +704,8 @@ func WmIconGeometryGet(xu *xgbutil.XUtil, win xgb.Id) (WmIconGeometry, error) {
 }
 
 // _NET_WM_ICON_GEOMETRY set
-func WmIconGeometrySet(xu *xgbutil.XUtil, win xgb.Id, geom WmIconGeometry) error {
+func WmIconGeometrySet(xu *xgbutil.XUtil, win xgb.Id,
+                       geom *WmIconGeometry) error {
     rawGeom := make([]int, 4)
     rawGeom[0] = geom.X
     rawGeom[1] = geom.Y
@@ -906,14 +909,14 @@ type WmStrut struct {
 }
 
 // _NET_WM_STRUT get
-func WmStrutGet(xu *xgbutil.XUtil, win xgb.Id) (WmStrut, error) {
+func WmStrutGet(xu *xgbutil.XUtil, win xgb.Id) (*WmStrut, error) {
     struts, err := xprop.PropValNums(xprop.GetProperty(xu, win,
                                                        "_NET_WM_STRUT"))
     if err != nil {
-        return WmStrut{}, err
+        return &WmStrut{}, err
     }
 
-    return WmStrut {
+    return &WmStrut {
         Left: struts[0],
         Right: struts[1],
         Top: struts[2],
@@ -922,7 +925,7 @@ func WmStrutGet(xu *xgbutil.XUtil, win xgb.Id) (WmStrut, error) {
 }
 
 // _NET_WM_STRUT set
-func WmStrutSet(xu *xgbutil.XUtil, win xgb.Id, struts WmStrut) error {
+func WmStrutSet(xu *xgbutil.XUtil, win xgb.Id, struts *WmStrut) error {
     rawStruts := make([]int, 4)
     rawStruts[0] = struts.Left
     rawStruts[1] = struts.Right
@@ -944,14 +947,14 @@ type WmStrutPartial struct {
 }
 
 // _NET_WM_STRUT_PARTIAL get
-func WmStrutPartialGet(xu *xgbutil.XUtil, win xgb.Id) (WmStrutPartial, error) {
+func WmStrutPartialGet(xu *xgbutil.XUtil, win xgb.Id) (*WmStrutPartial, error) {
     struts, err := xprop.PropValNums(xprop.GetProperty(xu, win,
                                                        "_NET_WM_STRUT_PARTIAL"))
     if err != nil {
-        return WmStrutPartial{}, err
+        return &WmStrutPartial{}, err
     }
 
-    return WmStrutPartial {
+    return &WmStrutPartial {
         Left: struts[0], Right: struts[1], Top: struts[2], Bottom: struts[3],
         LeftStartY: struts[4], LeftEndY: struts[5],
         RightStartY: struts[6], RightEndY: struts[7],
@@ -962,7 +965,7 @@ func WmStrutPartialGet(xu *xgbutil.XUtil, win xgb.Id) (WmStrutPartial, error) {
 
 // _NET_WM_STRUT_PARTIAL set
 func WmStrutPartialSet(xu *xgbutil.XUtil, win xgb.Id,
-                       struts WmStrutPartial) error {
+                       struts *WmStrutPartial) error {
     rawStruts := make([]int, 4)
     rawStruts[0] = struts.Left
     rawStruts[1] = struts.Right

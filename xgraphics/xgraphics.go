@@ -296,37 +296,41 @@ func ColorImage(img draw.Image, clr color.Color) {
 // available. Otherwise, use the smallest icon that is greater than or equal
 // to the preferred dimensions. The preferred dimensions is essentially
 // what you'll likely scale the resulting icon to.
-func FindBestIcon(width, height int, icons []*ewmh.WmIcon) *ewmh.WmIcon {
+func FindBestIcon(width, height int, icons []ewmh.WmIcon) *ewmh.WmIcon {
     // nada nada limonada
     if len(icons) == 0 {
         return nil
     }
 
     parea := width * height // preferred size
-    var best *ewmh.WmIcon = nil // best matching icon
+    best := -1
 
     var bestArea, iconArea int
 
-    for _, icon := range icons {
+    for i, icon := range icons {
         // the first valid icon we've seen; use it!
-        if best == nil {
-            best = icon
+        if best == -1 {
+            best = i
             continue
         }
 
         // load areas for comparison
-        bestArea, iconArea = best.Width * best.Height, icon.Width * icon.Height
+        bestArea = icons[best].Width * icons[best].Height
+        iconArea = icon.Width * icon.Height
 
         // We don't always want to accept bigger icons if our best is
         // already bigger. But we always want something bigger if our best
         // is insufficient.
         if (iconArea >= parea && iconArea <= bestArea) ||
            (bestArea < parea && iconArea > bestArea) {
-            best = icon
+            best = i
         }
     }
 
-    return best // this may be nil if we have no valid icons
+    if best > -1 {
+        return &icons[best]
+    }
+    return nil
 }
 
 // proportional takes a pair of dimensions and returns whether they are

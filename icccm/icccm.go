@@ -81,22 +81,23 @@ type NormalHints struct {
 }
 
 // WM_NORMAL_HINTS get
-func WmNormalHintsGet(xu *xgbutil.XUtil, win xgb.Id) (
-     nh NormalHints, err error) {
+func WmNormalHintsGet(xu *xgbutil.XUtil,
+                      win xgb.Id) (nh *NormalHints, err error) {
     lenExpect := 18
     hints, err := xprop.PropValNums(xprop.GetProperty(xu, win,
                                                       "WM_NORMAL_HINTS"))
     if err != nil {
-        return NormalHints{}, err
+        return &NormalHints{}, err
     }
     if len(hints) != lenExpect {
-        return NormalHints{},
+        return &NormalHints{},
                xgbutil.Xuerr("WmNormalHint",
                              "There are %d fields in " +
                              "WM_NORMAL_HINTS, but xgbutil expects %d.",
                              len(hints), lenExpect)
     }
 
+    nh = &NormalHints{}
     nh.Flags = hints[0]
     nh.X = hints[1]
     nh.Y = hints[2]
@@ -125,7 +126,7 @@ func WmNormalHintsGet(xu *xgbutil.XUtil, win xgb.Id) (
 
 // WM_NORMAL_HINTS set
 // Make sure to set the flags in the NormalHints struct correctly!
-func WmNormalHintsSet(xu *xgbutil.XUtil, win xgb.Id, nh NormalHints) error {
+func WmNormalHintsSet(xu *xgbutil.XUtil, win xgb.Id, nh *NormalHints) error {
     raw := []int{
         nh.Flags,
         nh.X, nh.Y, nh.Width, nh.Height,
@@ -145,25 +146,26 @@ func WmNormalHintsSet(xu *xgbutil.XUtil, win xgb.Id, nh NormalHints) error {
 // property. Once again, I refer you to the ICCCM spec for documentation.
 type Hints struct {
     Flags int
-    Input, InitialState, IconX, IconY, WindowGroup int
-    IconPixmap, IconWindow, IconMask xgb.Id
+    Input, InitialState, IconX, IconY int
+    WindowGroup, IconPixmap, IconWindow, IconMask xgb.Id
 }
 
 // WM_HINTS get
-func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (hints Hints, err error) {
+func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (hints *Hints, err error) {
     lenExpect := 9
     raw, err := xprop.PropValNums(xprop.GetProperty(xu, win, "WM_HINTS"))
     if err != nil {
-        return Hints{}, err
+        return &Hints{}, err
     }
     if len(raw) != lenExpect {
-        return Hints{},
+        return &Hints{},
                xgbutil.Xuerr("WmHints",
                              "There are %d fields in " +
                              "WM_HINTS, but xgbutil expects %d.",
                              len(raw), lenExpect)
     }
 
+    hints = &Hints{}
     hints.Flags = raw[0]
     hints.Input = raw[1]
     hints.InitialState = raw[2]
@@ -172,20 +174,20 @@ func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (hints Hints, err error) {
     hints.IconX = raw[5]
     hints.IconY = raw[6]
     hints.IconMask = xgb.Id(raw[7])
-    hints.WindowGroup = raw[8]
+    hints.WindowGroup = xgb.Id(raw[8])
 
     return hints, nil
 }
 
 // WM_HINTS set
 // Make sure to set the flags in the Hints struct correctly!
-func WmHintsSet(xu *xgbutil.XUtil, win xgb.Id, hints Hints) error {
+func WmHintsSet(xu *xgbutil.XUtil, win xgb.Id, hints *Hints) error {
     raw := []int{
         hints.Flags, hints.Input, hints.InitialState,
         int(hints.IconPixmap), int(hints.IconWindow),
         hints.IconX, hints.IconY,
         int(hints.IconMask),
-        hints.WindowGroup,
+        int(hints.WindowGroup),
     }
     return xprop.ChangeProp32(xu, win, "WM_HINTS", "WM_HINTS", raw...)
 }
@@ -197,26 +199,26 @@ type WmClass struct {
 }
 
 // WM_CLASS get
-func WmClassGet(xu *xgbutil.XUtil, win xgb.Id) (WmClass, error) {
+func WmClassGet(xu *xgbutil.XUtil, win xgb.Id) (*WmClass, error) {
     raw, err := xprop.PropValStrs(xprop.GetProperty(xu, win, "WM_CLASS"))
     if err != nil {
-        return WmClass{}, err
+        return &WmClass{}, err
     }
     if len(raw) != 2 {
-        return WmClass{},
+        return &WmClass{},
                xgbutil.Xuerr("WmClass",
                              "Two string make up WM_CLASS, but " +
                              "xgbutil found %d in '%v'.", len(raw), raw)
     }
 
-    return WmClass {
+    return &WmClass {
         Instance: raw[0],
         Class: raw[1],
     }, nil
 }
 
 // WM_CLASS set
-func WmClassSet(xu *xgbutil.XUtil, win xgb.Id, class WmClass) error {
+func WmClassSet(xu *xgbutil.XUtil, win xgb.Id, class *WmClass) error {
     raw := make([]byte, len(class.Instance) + len(class.Class) + 2)
     copy(raw, class.Instance)
     copy(raw[(len(class.Instance) + 1):], class.Class)
@@ -283,26 +285,26 @@ type WmState struct {
 }
 
 // WM_STATE get
-func WmStateGet(xu *xgbutil.XUtil, win xgb.Id) (WmState, error) {
+func WmStateGet(xu *xgbutil.XUtil, win xgb.Id) (*WmState, error) {
     raw, err := xprop.PropValNums(xprop.GetProperty(xu, win, "WM_STATE"))
     if err != nil {
-        return WmState{}, err
+        return &WmState{}, err
     }
     if len(raw) != 2 {
-        return WmState{},
+        return &WmState{},
                xgbutil.Xuerr("WmState",
                              "Expected two integers in WM_STATE property " +
                              "but xgbutil found %d in '%v'.", len(raw), raw)
     }
 
-    return WmState{
+    return &WmState{
         State: raw[0],
         Icon: xgb.Id(raw[1]),
     }, nil
 }
 
 // WM_STATE set
-func WmStateSet(xu *xgbutil.XUtil, win xgb.Id, state WmState) error {
+func WmStateSet(xu *xgbutil.XUtil, win xgb.Id, state *WmState) error {
     raw := []int{
         state.State,
         int(state.Icon),
@@ -318,20 +320,20 @@ type IconSize struct {
 }
 
 // WM_ICON_SIZE get
-func WmIconSizeGet(xu *xgbutil.XUtil, win xgb.Id) (IconSize, error) {
+func WmIconSizeGet(xu *xgbutil.XUtil, win xgb.Id) (*IconSize, error) {
     raw, err := xprop.PropValNums(xprop.GetProperty(xu, win, "WM_ICON_SIZE"))
     if err != nil {
-        return IconSize{}, err
+        return &IconSize{}, err
     }
     if len(raw) != 6 {
-        return IconSize{},
+        return &IconSize{},
                xgbutil.Xuerr("WmIconSize",
                              "Expected six integers in WM_ICON_SIZE " +
                              "property, but xgbutil found " +
                              "%d in '%v'.", len(raw), raw)
     }
 
-    return IconSize{
+    return &IconSize{
         MinWidth: raw[0], MinHeight: raw[1],
         MaxWidth: raw[2], MaxHeight: raw[3],
         WidthInc: raw[4], HeightInc: raw[5],
@@ -339,7 +341,7 @@ func WmIconSizeGet(xu *xgbutil.XUtil, win xgb.Id) (IconSize, error) {
 }
 
 // WM_ICON_SIZE set
-func WmIconSizeSet(xu *xgbutil.XUtil, win xgb.Id, icondim IconSize) error {
+func WmIconSizeSet(xu *xgbutil.XUtil, win xgb.Id, icondim *IconSize) error {
     raw := []int{
         icondim.MinWidth, icondim.MinHeight,
         icondim.MaxWidth, icondim.MaxHeight,
