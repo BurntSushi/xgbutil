@@ -41,10 +41,23 @@ func PhysicalHeads(xu *xgbutil.XUtil) (Heads, error) {
         return nil, err
     }
 
-    hds := make(Heads, len(xinfo.ScreenInfo))
-    for i, info := range xinfo.ScreenInfo {
-        hds[i] = xrect.Make(int(info.XOrg), int(info.YOrg),
-                            int(info.Width), int(info.Height))
+    hds := make(Heads, 0)
+    for _, info := range xinfo.ScreenInfo {
+        head := xrect.Make(int(info.XOrg), int(info.YOrg),
+                           int(info.Width), int(info.Height))
+
+        // Maybe Xinerama is enabled, but we have cloned displays...
+        unique := true
+        for _, h := range hds {
+            if h.X() == head.X() && h.Y() == head.Y() {
+                unique = false
+                break
+            }
+        }
+
+        if unique {
+            hds = append(hds, head)
+        }
     }
 
     sort.Sort(hds)
