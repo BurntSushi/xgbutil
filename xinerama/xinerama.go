@@ -43,7 +43,8 @@ func PhysicalHeads(xu *xgbutil.XUtil) (Heads, error) {
 
     hds := make(Heads, len(xinfo.ScreenInfo))
     for i, info := range xinfo.ScreenInfo {
-        hds[i] = xrect.Make(info.XOrg, info.YOrg, info.Width, info.Height)
+        hds[i] = xrect.Make(int(info.XOrg), int(info.YOrg),
+                            int(info.Width), int(info.Height))
     }
 
     sort.Sort(hds)
