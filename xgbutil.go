@@ -34,10 +34,6 @@ type XUtil struct {
     keyRedirect xgb.Id
     keybinds map[KeyBindKey][]KeyBindCallback // key bind key -> callbacks
     keygrabs map[KeyBindKey]int // key bind key -> # of grabs
-    keyGrabber bool // whether a key grabber is in progress
-    keyGrabberMods uint16 // modifiers used for a key grabber
-    keyGrabberStep KeyGrabberFun
-    keyGrabberEnd KeyGrabberFun
 
     mousebinds map[MouseBindKey][]MouseBindCallback //mousebind key -> callbacks
     mousegrabs map[MouseBindKey]int // mouse bind key -> # of grabs
@@ -51,8 +47,6 @@ type XUtil struct {
 
     ignoreWindowErrors map[xgb.Id]bool // when true, errors don't go to stderr
 }
-
-type KeyGrabberFun func(xu *XUtil) bool
 
 type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int)
 type MouseDragBeginFun func(xu *XUtil, rootX, rootY,
@@ -148,10 +142,6 @@ func Dial(display string) (*XUtil, error) {
         keyRedirect: 0,
         keybinds: make(map[KeyBindKey][]KeyBindCallback, 10),
         keygrabs: make(map[KeyBindKey]int, 10),
-        keyGrabber: false,
-        keyGrabberMods: 0,
-        keyGrabberStep: nil,
-        keyGrabberEnd: nil,
         mousebinds: make(map[MouseBindKey][]MouseBindCallback, 10),
         mousegrabs: make(map[MouseBindKey]int, 10),
         mouseDrag: false,

@@ -40,7 +40,7 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
     xu.AttachKeyBindCallback(evtype, win, mods, keycode, callback)
 }
 
-func deduceKeyInfo(state uint16, detail byte) (uint16, byte) {
+func DeduceKeyInfo(state uint16, detail byte) (uint16, byte) {
     mods, kc := state, detail
     for _, m := range xgbutil.IgnoreMods {
         mods &= ^m
@@ -72,7 +72,7 @@ func (callback KeyReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
 // RunKeyPressCallbacks infers the window, keycode and modifiers from a
 // KeyPressEvent and runs the corresponding callbacks.
 func RunKeyPressCallbacks(xu *xgbutil.XUtil, ev xevent.KeyPressEvent) {
-    mods, kc := deduceKeyInfo(ev.State, ev.Detail)
+    mods, kc := DeduceKeyInfo(ev.State, ev.Detail)
 
     xu.RunKeyBindCallbacks(ev, xevent.KeyPress, ev.Event, mods, kc)
 }
@@ -80,7 +80,7 @@ func RunKeyPressCallbacks(xu *xgbutil.XUtil, ev xevent.KeyPressEvent) {
 // RunKeyReleaseCallbacks infers the window, keycode and modifiers from a
 // KeyPressEvent and runs the corresponding callbacks.
 func RunKeyReleaseCallbacks(xu *xgbutil.XUtil, ev xevent.KeyReleaseEvent) {
-    mods, kc := deduceKeyInfo(ev.State, ev.Detail)
+    mods, kc := DeduceKeyInfo(ev.State, ev.Detail)
 
     xu.RunKeyBindCallbacks(ev, xevent.KeyRelease, ev.Event, mods, kc)
 }

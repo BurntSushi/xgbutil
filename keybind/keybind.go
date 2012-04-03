@@ -338,3 +338,28 @@ func UngrabKeyboard(xu *xgbutil.XUtil) {
     xu.Conn().UngrabKeyboard(0)
 }
 
+// DummyGrab grabs the keyboard and sends all key event to the dummy window.
+func DummyGrab(xu *xgbutil.XUtil) error {
+    ok, err := GrabKeyboard(xu, xu.Dummy())
+    if err != nil {
+        return err
+    }
+    if !ok {
+        return xgbutil.Xuerr("DummyGrab",
+                             "Grabbing keyboard was not successful.")
+    }
+
+    // Now redirect all key events to the dummy window to prevent races
+    xu.RedirectKeyEvents(xu.Dummy())
+
+    return nil
+}
+
+// DummyUngrab ungrabs the keyboard from the dummy window.
+func DummyUngrab(xu *xgbutil.XUtil) {
+    UngrabKeyboard(xu)
+
+    // Stop redirecting all key events
+    xu.RedirectKeyEvents(0)
+}
+
