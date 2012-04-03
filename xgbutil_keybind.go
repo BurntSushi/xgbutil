@@ -31,6 +31,19 @@ type ModifierMapping struct {
     *xgb.GetModifierMappingReply
 }
 
+// RedirectKeyEvents, when set to a window id (greater than 0), will force
+// *all* Key{Press,Release} to callbacks attached to the specified window.
+// This close to emulating a Keyboard grab without the racing.
+func (xu *XUtil) RedirectKeyEvents(wid xgb.Id) {
+    xu.keyRedirect = wid
+}
+
+// RedirectKeyGet gets the window that key events are being redirected to.
+// If 0, then no redirection occurs.
+func (xu *XUtil) RedirectKeyGet() xgb.Id {
+    return xu.keyRedirect
+}
+
 // AttackKeyBindCallback associates an (event, window, mods, keycode)
 // with a callback.
 func (xu *XUtil) AttachKeyBindCallback(evtype int, win xgb.Id,
@@ -147,5 +160,48 @@ func (xu *XUtil) ModMapGet() *ModifierMapping {
 // ModMapSet simply updates XUtil.modmap
 func (xu *XUtil) ModMapSet(modMapReply *xgb.GetModifierMappingReply) {
     xu.modmap = &ModifierMapping{modMapReply}
+}
+
+// KeyGrabber true when a key grabber is in progress.
+func (xu *XUtil) KeyGrabber() bool {
+    return xu.keyGrabber
+}
+
+// KeyGrabberSet sets whether a key grabber is in progress.
+func (xu *XUtil) KeyGrabberSet(grabbering bool) {
+    xu.keyGrabber = grabbering
+}
+
+// KeyGrabberMods returns the modifiers being used in the current grab.
+func (xu *XUtil) KeyGrabberMods() uint16 {
+    return xu.keyGrabberMods
+}
+
+// KeyGrabberModsSet sets the current modifiers being used.
+func (xu *XUtil) KeyGrabberModsSet(mods uint16) {
+    xu.keyGrabberMods = mods
+}
+
+// KeyGrabberStep returns the function currently associated with each
+// step of a key grabber.
+func (xu *XUtil) KeyGrabberStep() KeyGrabberFun {
+    return xu.keyGrabberStep
+}
+
+// KeyGrabberStepSet sets the function associated with the step of a
+// key grabber.
+func (xu *XUtil) KeyGrabberStepSet(f KeyGrabberFun) {
+    xu.keyGrabberStep = f
+}
+
+// KeyGrabberEnd returns the function currently associated with the
+// end of a key grabber.
+func (xu *XUtil) KeyGrabberEnd() KeyGrabberFun {
+    return xu.keyGrabberEnd
+}
+
+// KeyGrabberEndSet sets the function associated with the end of a key grabber.
+func (xu *XUtil) KeyGrabberEndSet(f KeyGrabberFun) {
+    xu.keyGrabberEnd = f
 }
 

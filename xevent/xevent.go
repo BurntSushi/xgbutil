@@ -101,10 +101,22 @@ func Main(xu *xgbutil.XUtil) error {
             switch event := reply.(type) {
             case xgb.KeyPressEvent:
                 e := KeyPressEvent{&event}
+
+                // If we're redirecting key events, this is the place to do it!
+                if wid := xu.RedirectKeyGet(); wid > 0 {
+                    e.Event = wid
+                }
+
                 xu.SetTime(e.Time)
                 xu.RunCallbacks(e, KeyPress, e.Event)
             case xgb.KeyReleaseEvent:
                 e := KeyReleaseEvent{&event}
+
+                // If we're redirecting key events, this is the place to do it!
+                if wid := xu.RedirectKeyGet(); wid > 0 {
+                    e.Event = wid
+                }
+
                 xu.SetTime(e.Time)
                 xu.RunCallbacks(e, KeyRelease, e.Event)
             case xgb.ButtonPressEvent:

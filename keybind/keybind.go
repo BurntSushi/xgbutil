@@ -243,9 +243,9 @@ func keysymGetWithMap(xu *xgbutil.XUtil, keyMap *xgbutil.KeyboardMapping,
     return keyMap.Keysyms[i]
 }
 
-// modGet finds the modifier currently associated with a given keycode.
+// ModGet finds the modifier currently associated with a given keycode.
 // If a modifier doesn't exist for this keycode, then 0 is returned.
-func modGet(xu *xgbutil.XUtil, keycode byte) uint16 {
+func ModGet(xu *xgbutil.XUtil, keycode byte) uint16 {
     modMap := xu.ModMapGet()
 
     var i byte

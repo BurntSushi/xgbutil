@@ -31,8 +31,13 @@ type XUtil struct {
     keymap *KeyboardMapping
     modmap *ModifierMapping
 
+    keyRedirect xgb.Id
     keybinds map[KeyBindKey][]KeyBindCallback // key bind key -> callbacks
     keygrabs map[KeyBindKey]int // key bind key -> # of grabs
+    keyGrabber bool // whether a key grabber is in progress
+    keyGrabberMods uint16 // modifiers used for a key grabber
+    keyGrabberStep KeyGrabberFun
+    keyGrabberEnd KeyGrabberFun
 
     mousebinds map[MouseBindKey][]MouseBindCallback //mousebind key -> callbacks
     mousegrabs map[MouseBindKey]int // mouse bind key -> # of grabs
@@ -46,6 +51,8 @@ type XUtil struct {
 
     ignoreWindowErrors map[xgb.Id]bool // when true, errors don't go to stderr
 }
+
+type KeyGrabberFun func(xu *XUtil) bool
 
 type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int)
 type MouseDragBeginFun func(xu *XUtil, rootX, rootY,
@@ -138,8 +145,13 @@ func Dial(display string) (*XUtil, error) {
         callbacks: make(map[int]map[xgb.Id][]Callback, 33),
         keymap: nil, // we don't have anything yet
         modmap: nil,
+        keyRedirect: 0,
         keybinds: make(map[KeyBindKey][]KeyBindCallback, 10),
         keygrabs: make(map[KeyBindKey]int, 10),
+        keyGrabber: false,
+        keyGrabberMods: 0,
+        keyGrabberStep: nil,
+        keyGrabberEnd: nil,
         mousebinds: make(map[MouseBindKey][]MouseBindCallback, 10),
         mousegrabs: make(map[MouseBindKey]int, 10),
         mouseDrag: false,
@@ -260,38 +272,6 @@ func (xu *XUtil) GC() xgb.Id {
 // Dummy gets the id of the dummy window.
 func (xu *XUtil) Dummy() xgb.Id {
     return xu.dummy
-}
-
-// MouseDrag true when a mouse drag is in progress.
-func (xu *XUtil) MouseDrag() bool {
-    return xu.mouseDrag
-}
-
-// MouseDragSet sets whether a mouse drag is in progress.
-func (xu *XUtil) MouseDragSet(dragging bool) {
-    xu.mouseDrag = dragging
-}
-
-// MouseDragStep returns the function currently associated with each
-// step of a mouse drag.
-func (xu *XUtil) MouseDragStep() MouseDragFun {
-    return xu.mouseDragStep
-}
-
-// MouseDragStepSet sets the function associated with the step of a drag.
-func (xu *XUtil) MouseDragStepSet(f MouseDragFun) {
-    xu.mouseDragStep = f
-}
-
-// MouseDragEnd returns the function currently associated with the
-// end of a mouse drag.
-func (xu *XUtil) MouseDragEnd() MouseDragFun {
-    return xu.mouseDragEnd
-}
-
-// MouseDragEndSet sets the function associated with the end of a drag.
-func (xu *XUtil) MouseDragEndSet(f MouseDragFun) {
-    xu.mouseDragEnd = f
 }
 
 // AttachCallback associates a (event, window) tuple with an event.

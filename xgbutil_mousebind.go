@@ -102,3 +102,35 @@ func (xu *XUtil) MouseBindGrabs(evtype int, win xgb.Id, mods uint16,
     return xu.mousegrabs[key] // returns 0 if key does not exist
 }
 
+// MouseDrag true when a mouse drag is in progress.
+func (xu *XUtil) MouseDrag() bool {
+    return xu.mouseDrag
+}
+
+// MouseDragSet sets whether a mouse drag is in progress.
+func (xu *XUtil) MouseDragSet(dragging bool) {
+    xu.mouseDrag = dragging
+}
+
+// MouseDragStep returns the function currently associated with each
+// step of a mouse drag.
+func (xu *XUtil) MouseDragStep() MouseDragFun {
+    return xu.mouseDragStep
+}
+
+// MouseDragStepSet sets the function associated with the step of a drag.
+func (xu *XUtil) MouseDragStepSet(f MouseDragFun) {
+    xu.mouseDragStep = f
+}
+
+// MouseDragEnd returns the function currently associated with the
+// end of a mouse drag.
+func (xu *XUtil) MouseDragEnd() MouseDragFun {
+    return xu.mouseDragEnd
+}
+
+// MouseDragEndSet sets the function associated with the end of a drag.
+func (xu *XUtil) MouseDragEndSet(f MouseDragFun) {
+    xu.mouseDragEnd = f
+}
+
