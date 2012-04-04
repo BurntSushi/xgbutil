@@ -2,9 +2,9 @@ package main
 
 import "fmt"
 import "time"
-import "github.com/BurntSushi/xgbutil"
-import "github.com/BurntSushi/xgbutil/ewmh"
-import "github.com/BurntSushi/xgbutil/xwindow"
+import "burntsushi.net/go/xgbutil"
+import "burntsushi.net/go/xgbutil/ewmh"
+import "burntsushi.net/go/xgbutil/xwindow"
 
 func main() {
     X, _ := xgbutil.Dial("")

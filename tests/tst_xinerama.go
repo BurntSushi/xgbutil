@@ -1,9 +1,9 @@
 package main
 
 import "fmt"
-import "github.com/BurntSushi/xgbutil"
-import "github.com/BurntSushi/xgbutil/ewmh"
-import "github.com/BurntSushi/xgbutil/xinerama"
+import "burntsushi.net/go/xgbutil"
+import "burntsushi.net/go/xgbutil/ewmh"
+import "burntsushi.net/go/xgbutil/xinerama"
 
 func main() {
     X, _ := xgbutil.Dial("")

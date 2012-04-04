@@ -10,8 +10,8 @@ package xprop
 import (
     // "fmt" 
 
-    "code.google.com/p/jamslam-x-go-binding/xgb"
-    "github.com/BurntSushi/xgbutil"
+    "burntsushi.net/go/x-go-binding/xgb"
+    "burntsushi.net/go/xgbutil"
 )
 
 // GetProperty abstracts the messiness of calling xgb.GetProperty.

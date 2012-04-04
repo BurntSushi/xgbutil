@@ -10,7 +10,7 @@ package xgbutil
 import (
     "fmt"
     "log"
-    "code.google.com/p/jamslam-x-go-binding/xgb"
+    "burntsushi.net/go/x-go-binding/xgb"
 )
 
 const MAX_REQ_SIZE = (1 << 16) * 4

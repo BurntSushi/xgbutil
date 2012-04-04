@@ -18,8 +18,8 @@ package xevent
 import "fmt"
 
 import (
-    "code.google.com/p/jamslam-x-go-binding/xgb"
-    "github.com/BurntSushi/xgbutil"
+    "burntsushi.net/go/x-go-binding/xgb"
+    "burntsushi.net/go/xgbutil"
 )
 
 // XEvent is an interface whereby an event struct ought to be convertible into

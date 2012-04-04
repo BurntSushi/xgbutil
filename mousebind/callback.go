@@ -4,9 +4,9 @@
 */
 package mousebind
 
-import "code.google.com/p/jamslam-x-go-binding/xgb"
-import "github.com/BurntSushi/xgbutil"
-import "github.com/BurntSushi/xgbutil/xevent"
+import "burntsushi.net/go/x-go-binding/xgb"
+import "burntsushi.net/go/xgbutil"
+import "burntsushi.net/go/xgbutil/xevent"
 
 // connect is essentially 'Connect' for either ButtonPress or
 // ButtonRelease events.

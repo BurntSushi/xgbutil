@@ -6,13 +6,13 @@ import (
     "math/rand"
     // "os" 
     "time"
-    "code.google.com/p/jamslam-x-go-binding/xgb"
+    "burntsushi.net/go/x-go-binding/xgb"
 )
 
 import (
-    "github.com/BurntSushi/xgbutil"
-    "github.com/BurntSushi/xgbutil/ewmh"
-    "github.com/BurntSushi/xgbutil/xwindow"
+    "burntsushi.net/go/xgbutil"
+    "burntsushi.net/go/xgbutil/ewmh"
+    "burntsushi.net/go/xgbutil/xwindow"
 )
 
 var X *xgbutil.XUtil

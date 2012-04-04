@@ -1,12 +1,12 @@
 package main
 
 import "fmt"
-import "code.google.com/p/jamslam-x-go-binding/xgb"
+import "burntsushi.net/go/x-go-binding/xgb"
 
 import (
-    "github.com/BurntSushi/xgbutil"
-    "github.com/BurntSushi/xgbutil/ewmh"
-    "github.com/BurntSushi/xgbutil/icccm"
+    "burntsushi.net/go/xgbutil"
+    "burntsushi.net/go/xgbutil/ewmh"
+    "burntsushi.net/go/xgbutil/icccm"
 )
 
 func showTest(vals...interface{}) {

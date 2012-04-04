@@ -6,15 +6,15 @@ import (
 )
 
 import (
-    "code.google.com/p/jamslam-x-go-binding/xgb"
+    "burntsushi.net/go/x-go-binding/xgb"
 
-    "github.com/BurntSushi/xgbutil"
-    // "github.com/BurntSushi/xgbutil/ewmh" 
-    "github.com/BurntSushi/xgbutil/keybind"
-    "github.com/BurntSushi/xgbutil/mousebind"
-    "github.com/BurntSushi/xgbutil/xevent"
-    "github.com/BurntSushi/xgbutil/xprop"
-    "github.com/BurntSushi/xgbutil/xwindow"
+    "burntsushi.net/go/xgbutil"
+    // "burntsushi.net/go/xgbutil/ewmh" 
+    "burntsushi.net/go/xgbutil/keybind"
+    "burntsushi.net/go/xgbutil/mousebind"
+    "burntsushi.net/go/xgbutil/xevent"
+    "burntsushi.net/go/xgbutil/xprop"
+    "burntsushi.net/go/xgbutil/xwindow"
 )
 
 func MyCallback(X *xgbutil.XUtil, e xevent.PropertyNotifyEvent) {

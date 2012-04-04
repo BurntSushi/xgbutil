@@ -2,10 +2,10 @@ package main
 
 import "fmt"
 
-import "code.google.com/p/jamslam-x-go-binding/xgb"
-import "github.com/BurntSushi/xgbutil"
-import "github.com/BurntSushi/xgbutil/ewmh"
-import "github.com/BurntSushi/xgbutil/motif"
+import "burntsushi.net/go/x-go-binding/xgb"
+import "burntsushi.net/go/xgbutil"
+import "burntsushi.net/go/xgbutil/ewmh"
+import "burntsushi.net/go/xgbutil/motif"
 
 func DoDecor(mh motif.Hints) bool {
     if mh.Flags & motif.HintDecorations > 0 &&

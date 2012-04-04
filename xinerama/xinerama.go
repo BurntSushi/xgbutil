@@ -11,8 +11,8 @@ package xinerama
 
 import "sort"
 
-import "github.com/BurntSushi/xgbutil"
-import "github.com/BurntSushi/xgbutil/xrect"
+import "burntsushi.net/go/xgbutil"
+import "burntsushi.net/go/xgbutil/xrect"
 
 // Alias so we use it as a receiver to satisfy sort.Interface
 type Heads []xrect.Rect

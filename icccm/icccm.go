@@ -12,9 +12,9 @@
 */
 package icccm
 
-import "code.google.com/p/jamslam-x-go-binding/xgb"
-import "github.com/BurntSushi/xgbutil"
-import "github.com/BurntSushi/xgbutil/xprop"
+import "burntsushi.net/go/x-go-binding/xgb"
+import "burntsushi.net/go/xgbutil"
+import "burntsushi.net/go/xgbutil/xprop"
 
 const (
     HintInput = (1 << iota)
