@@ -7,3 +7,7 @@ etc.
 Much of the functionality found in this package is a very close port to my
 other project, xpybutil.
 
+To install:
+
+  go get burntsushi.net/go/xgbutil
+
