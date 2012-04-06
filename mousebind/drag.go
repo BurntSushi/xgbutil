@@ -20,8 +20,6 @@ func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string, grab bool,
         func(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
             dragBegin(xu, ev, win, begin, step, end)
     }).Connect(xu, win, buttonStr, false, grab)
-    xevent.MotionNotifyFun(dragStep).Connect(xu, xu.Dummy())
-    xevent.ButtonReleaseFun(dragEnd).Connect(xu, xu.Dummy())
 }
 
 // dragGrab is a shortcut for grabbing the pointer for a drag.
