@@ -35,9 +35,10 @@ import (
 
 // DrawText takes an image and, using the freetype package, writes text in the
 // position specified on to the image. A color.Color, a font size and a font  
-// must also be specified. For example, /usr/share/fonts/TTF/DejaVuSans-Bold.ttf
+// must also be specified.
+// Finally, the (x, y) coordinate advanced by the text extents is returned.
 func DrawText(img draw.Image, x int, y int, clr color.Color, fontSize float64,
-              font *truetype.Font, text string) error {
+              font *truetype.Font, text string) (int, int, error) {
     // Create a solid color image
     textClr := image.NewUniform(clr)
 
@@ -49,12 +50,12 @@ func DrawText(img draw.Image, x int, y int, clr color.Color, fontSize float64,
 
     // Now let's actually draw the text...
     pt := freetype.Pt(x, y + c.FUnitToPixelRU(font.UnitsPerEm()))
-    _, err := c.DrawString(text, pt)
+    newpt, err := c.DrawString(text, pt)
     if err != nil {
-        return err
+        return 0, 0, err
     }
 
-    return nil
+    return int(newpt.X / 256), int(newpt.Y / 256), nil
 }
 
 // Returns the width and height extents of a string given a font.
