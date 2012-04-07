@@ -284,22 +284,6 @@ func (xu *XUtil) RunCallbacks(event interface{}, evtype int, win xgb.Id) {
     }
 }
 
-// Connected tests whether a particular callback is found to an event/window
-// combination.
-// This doesn't work because Go doesn't currently allow function comparison.
-// Not even on pointer equality.
-// We couldn't use 'reflect', but I'm not sure what performance costs that
-// entails?
-// See: http://stackoverflow.com/questions/9643205/how-do-i-compare-two-functions-for-pointer-equality-in-the-latest-go-weekly
-func (xu *XUtil) Connected(evtype int, win xgb.Id, fun Callback) bool {
-    for _, cb := range xu.callbacks[evtype][win] {
-        if cb == fun {
-            return true
-        }
-    }
-    return false
-}
-
 // DetachWindow removes all callbacks associated with a particular window.
 func (xu *XUtil) DetachWindow(win xgb.Id) {
     for evtype, _ := range xu.callbacks {
