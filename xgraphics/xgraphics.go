@@ -55,13 +55,14 @@ func DrawText(img draw.Image, x int, y int, clr color.Color, fontSize float64,
         return 0, 0, err
     }
 
+    // i think this is right...
     return int(newpt.X / 256), int(newpt.Y / 256), nil
 }
 
 // Returns the width and height extents of a string given a font.
 // TODO: This does not currently account for multiple lines. It may never do so.
-func TextExtents(font *truetype.Font, fontSize float64,
-                 text string) (width int, height int, err error) {
+func TextMaxExtents(font *truetype.Font, fontSize float64,
+                    text string) (width int, height int, err error) {
     // We need a context to calculate the extents
     c := ftContext(font, fontSize)
 
