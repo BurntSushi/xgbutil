@@ -226,6 +226,18 @@ func keycodeGet(xu *xgbutil.XUtil, keysym xgb.Keysym) byte {
     return 0
 }
 
+// KeycodeString attempts to convert a keycode to an english string.
+func KeycodeString(xu *xgbutil.XUtil, keycode byte) string {
+    ksym := keysymGet(xu, keycode, 0)
+    if ksym == 0 {
+        ksym = keysymGet(xu, keycode, 1)
+    }
+    if skey, ok := strKeysyms[ksym]; ok {
+        return skey
+    }
+    return ""
+}
+
 // keysymGet is a shortcut alias for 'keysymGetWithMap' using the current
 // keymap stored in XUtil.
 // keybind.Initialize MUST have been called before using this function.
