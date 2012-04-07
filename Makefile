@@ -2,7 +2,7 @@ all: callback.go types_auto.go gofmt
 
 # DIE TABS DIE!
 gofmt:
-	gofmt -tabs=false -tabwidth=4 *.go */*.go
+	gofmt -w -tabs=false -tabwidth=4 *.go */*.go
 
 callback.go:
 	scripts/write-events callbacks > xevent/callback.go
