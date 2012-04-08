@@ -1,6 +1,5 @@
 all: callback.go types_auto.go gofmt
 
-# DIE TABS DIE!
 gofmt:
 	gofmt -w *.go */*.go
 
