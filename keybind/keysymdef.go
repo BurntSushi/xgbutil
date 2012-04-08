@@ -25,6 +25,59 @@ func init() {
 	}
 }
 
+// weirdKeysyms is a feeble attempt to map english words to single
+// characters. i.e., "bracketleft" -> [ and "exclam" to !
+var weirdKeysyms = map[string]rune{
+	"exclam":       '!',
+	"at":           '@',
+	"numbersign":   '#',
+	"dollar":       '$',
+	"percent":      '%',
+	"asciicircum":  '^',
+	"ampersand":    '&',
+	"asterisk":     '*',
+	"parenleft":    '(',
+	"parenright":   ')',
+	"bracketleft":  '[',
+	"bracketright": ']',
+	"braceleft":    '{',
+	"braceright":   '}',
+	"minus":        '-',
+	"underscore":   '_',
+	"equal":        '=',
+	"plus":         '+',
+	"backslash":    '\\',
+	"bar":          '|',
+	"semicolon":    ';',
+	"colon":        ':',
+	"apostrophe":   '\'',
+	"quotedbl":     '"',
+	"less":         '<',
+	"greater":      '>',
+	"comma":        ',',
+	"period":       '.',
+	"slash":        '/',
+	"question":     '?',
+	"grave":        '`',
+	"asciitilde":   '~',
+	"KP_Multiply":  '*',
+	"KP_Divide":    '/',
+	"KP_Subtract":  '-',
+	"KP_Add":       '+',
+	"KP_Decimal":   '.',
+	"KP_0":         '0',
+	"KP_1":         '1',
+	"KP_2":         '2',
+	"KP_3":         '3',
+	"KP_4":         '4',
+	"KP_5":         '5',
+	"KP_6":         '6',
+	"KP_7":         '7',
+	"KP_8":         '8',
+	"KP_9":         '9',
+}
+
+// strKeysyms is the reverse of keysyms
 var strKeysyms map[xgb.Keysym]string
 
 var keysyms map[string]xgb.Keysym = map[string]xgb.Keysym{

@@ -178,7 +178,7 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, byte) {
 			mods |= xgb.ModMaskAny
 		default: // a key code!
 			if kc == 0 { // only accept the first keycode we see
-				kc = lookupString(xu, part)
+				kc = strToKeycode(xu, part)
 			}
 		}
 	}
@@ -191,9 +191,9 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, byte) {
 	return mods, kc
 }
 
-// lookupString is a wrapper around keycodeGet meant to make our search
+// strToKeycode is a wrapper around keycodeGet meant to make our search
 // a bit more flexible if needed. (i.e., case-insensitive)
-func lookupString(xu *xgbutil.XUtil, str string) byte {
+func strToKeycode(xu *xgbutil.XUtil, str string) byte {
 	// Do some fancy case stuff before we give up.
 	sym, ok := keysyms[str]
 	if !ok {
@@ -215,6 +215,11 @@ func lookupString(xu *xgbutil.XUtil, str string) byte {
 	return keycodeGet(xu, sym)
 }
 
+// keysymsPer gets the number of keysyms per keycode for the current key map.
+func keysymsPer(xu *xgbutil.XUtil) int {
+	return int(xu.KeyMapGet().KeysymsPerKeycode)
+}
+
 // Given a keysym, find the keycode mapped to it in the current X environment.
 // keybind.Initialize MUST have been called before using this function.
 func keycodeGet(xu *xgbutil.XUtil, keysym xgb.Keysym) byte {
@@ -232,16 +237,21 @@ func keycodeGet(xu *xgbutil.XUtil, keysym xgb.Keysym) byte {
 	return 0
 }
 
-// KeycodeString attempts to convert a keycode to an english string.
-func KeycodeString(xu *xgbutil.XUtil, keycode byte) string {
-	ksym := keysymGet(xu, keycode, 0)
-	if ksym == 0 {
-		ksym = keysymGet(xu, keycode, 1)
+// keysymToRune converts a keysym to a single rune if one is available.
+// If no matching single rune is found, the empty string is returned.
+// (Since the idea of this function is to facilate in translating keys pressed
+// to characters on the screen.)
+func keysymToRune(keysym xgb.Keysym) rune {
+	symStr, ok := strKeysyms[keysym]
+	if !ok {
+		return 0
 	}
-	if skey, ok := strKeysyms[ksym]; ok {
-		return skey
+
+	shortSymStr, ok := weirdKeysyms[symStr]
+	if ok {
+		return shortSymStr
 	}
-	return ""
+	return rune(symStr[0])
 }
 
 // keysymGet is a shortcut alias for 'keysymGetWithMap' using the current
