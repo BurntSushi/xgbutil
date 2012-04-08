@@ -251,7 +251,12 @@ func keysymToRune(keysym xgb.Keysym) rune {
 	if ok {
 		return shortSymStr
 	}
-	return rune(symStr[0])
+
+	if len(symStr) == 1 {
+		return rune(symStr[0])
+	}
+
+	return 0
 }
 
 // keysymGet is a shortcut alias for 'keysymGetWithMap' using the current
