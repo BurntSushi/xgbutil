@@ -1,20 +1,19 @@
 package main
 
 import (
-    "fmt"
-    "log"
+	"fmt"
+	"log"
 )
 
 import (
-    "burntsushi.net/go/xgbutil"
+	"burntsushi.net/go/xgbutil"
 )
 
 func main() {
-    _, err := xgbutil.Dial("")
-    if err != nil {
-        log.Fatalf("Could not connect to X: %v", err)
-    }
+	_, err := xgbutil.Dial("")
+	if err != nil {
+		log.Fatalf("Could not connect to X: %v", err)
+	}
 
-    fmt.Println("Connected!")
+	fmt.Println("Connected!")
 }
-

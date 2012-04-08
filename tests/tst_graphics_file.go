@@ -10,53 +10,52 @@
 package main
 
 import (
-    "fmt"
-    "image"
-    "image/color"
-    // "image/png" 
-    // "image/draw" 
-    // "os" 
-    "time"
+	"fmt"
+	"image"
+	"image/color"
+	// "image/png" 
+	// "image/draw" 
+	// "os" 
+	"time"
 
-    "code.google.com/p/graphics-go/graphics"
+	"code.google.com/p/graphics-go/graphics"
 
-    "burntsushi.net/go/xgbutil"
-    "burntsushi.net/go/xgbutil/xgraphics"
+	"burntsushi.net/go/xgbutil"
+	"burntsushi.net/go/xgbutil/xgraphics"
 )
 
 var X *xgbutil.XUtil
 var Xerr error
 
 func Recovery() {
-    if r := recover(); r != nil {
-        fmt.Println("ERROR:", r)
-        // os.Exit(1) 
-    }
+	if r := recover(); r != nil {
+		fmt.Println("ERROR:", r)
+		// os.Exit(1) 
+	}
 }
 
 var fontFile string = "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"
 
 func main() {
-    defer Recovery()
+	defer Recovery()
 
-    X, Xerr = xgbutil.Dial("")
-    if Xerr != nil {
-        panic(Xerr)
-    }
+	X, Xerr = xgbutil.Dial("")
+	if Xerr != nil {
+		panic(Xerr)
+	}
 
-    simg, err := xgraphics.LoadPngFromFile("openbox.png")
-    if err != nil {
-        fmt.Println(err)
-    }
+	simg, err := xgraphics.LoadPngFromFile("openbox.png")
+	if err != nil {
+		fmt.Println(err)
+	}
 
-    img := image.NewRGBA(image.Rect(0, 0, 50, 101))
-    graphics.Scale(img, simg)
+	img := image.NewRGBA(image.Rect(0, 0, 50, 101))
+	graphics.Scale(img, simg)
 
-    dest := xgraphics.BlendBg(img, nil, 100, color.RGBA{255, 255, 255, 255})
+	dest := xgraphics.BlendBg(img, nil, 100, color.RGBA{255, 255, 255, 255})
 
-    win := xgraphics.CreateImageWindow(X, dest, 3940, 400)
-    X.Conn().MapWindow(win)
+	win := xgraphics.CreateImageWindow(X, dest, 3940, 400)
+	X.Conn().MapWindow(win)
 
-    time.Sleep(20 * time.Second)
+	time.Sleep(20 * time.Second)
 }
-

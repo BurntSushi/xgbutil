@@ -10,68 +10,67 @@
 package main
 
 import (
-    "fmt"
-    // "image" 
-    "image/color"
-    // "image/draw" 
-    // "time" 
+	"fmt"
+	// "image" 
+	"image/color"
+	// "image/draw" 
+	// "time" 
 
-    "burntsushi.net/go/xgbutil"
-    "burntsushi.net/go/xgbutil/ewmh"
-    "burntsushi.net/go/xgbutil/xgraphics"
+	"burntsushi.net/go/xgbutil"
+	"burntsushi.net/go/xgbutil/ewmh"
+	"burntsushi.net/go/xgbutil/xgraphics"
 )
 
 var X *xgbutil.XUtil
 var Xerr error
 
 func Recovery() {
-    if r := recover(); r != nil {
-        fmt.Println("ERROR:", r)
-        // os.Exit(1) 
-    }
+	if r := recover(); r != nil {
+		fmt.Println("ERROR:", r)
+		// os.Exit(1) 
+	}
 }
 
 var fontFile string = "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"
 
 func main() {
-    defer Recovery()
+	defer Recovery()
 
-    X, Xerr = xgbutil.Dial("")
-    if Xerr != nil {
-        panic(Xerr)
-    }
+	X, Xerr = xgbutil.Dial("")
+	if Xerr != nil {
+		panic(Xerr)
+	}
 
-    active, _ := ewmh.ActiveWindowGet(X)
-    icons, _ := ewmh.WmIconGet(X, active)
+	active, _ := ewmh.ActiveWindowGet(X)
+	icons, _ := ewmh.WmIconGet(X, active)
 
-    var width, height int = 300, 300
+	var width, height int = 300, 300
 
-    work := xgraphics.FindBestIcon(width, height, icons)
-    if work != nil {
-        fmt.Printf("Working with icon (%d, %d)\n", work.Width, work.Height)
-    } else {
-        fmt.Println("No good icon... :-(")
-        return
-    }
+	work := xgraphics.FindBestIcon(width, height, icons)
+	if work != nil {
+		fmt.Printf("Working with icon (%d, %d)\n", work.Width, work.Height)
+	} else {
+		fmt.Println("No good icon... :-(")
+		return
+	}
 
-    eimg, emask := xgraphics.EwmhIconToImage(work)
+	eimg, emask := xgraphics.EwmhIconToImage(work)
 
-    img := xgraphics.Scale(eimg, int(width), int(height))
-    mask := xgraphics.Scale(emask, int(width), int(height))
+	img := xgraphics.Scale(eimg, int(width), int(height))
+	mask := xgraphics.Scale(emask, int(width), int(height))
 
-    dest := xgraphics.BlendBg(img, mask, 100, color.RGBA{0, 0, 255, 255})
+	dest := xgraphics.BlendBg(img, mask, 100, color.RGBA{0, 0, 255, 255})
 
-    // Let's try to write some text...
-    // xgraphics.DrawText(dest, 50, 50, color.RGBA{255, 255, 255, 255}, 20, 
-                       // fontFile, "Hello, world!") 
+	// Let's try to write some text...
+	// xgraphics.DrawText(dest, 50, 50, color.RGBA{255, 255, 255, 255}, 20, 
+	// fontFile, "Hello, world!") 
 
-    // tw, th, err := xgraphics.TextExtents(fontFile, 11, "Hiya") 
-    // fmt.Println(tw, th, err) 
+	// tw, th, err := xgraphics.TextExtents(fontFile, 11, "Hiya") 
+	// fmt.Println(tw, th, err) 
 
-    win := xgraphics.CreateImageWindow(X, dest, 3940, 0)
-    X.Conn().MapWindow(win)
+	win := xgraphics.CreateImageWindow(X, dest, 3940, 0)
+	X.Conn().MapWindow(win)
 
-    // time.Sleep(20 * time.Second) 
-    select {}
+	// time.Sleep(20 * time.Second) 
+	select {}
 }
-

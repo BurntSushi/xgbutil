@@ -1,6 +1,6 @@
 /*
-    Package xcursor.go facilitates the use of different cursors with X.
-    Please see 'cursors.go' for a list of all available cursors.
+   Package xcursor.go facilitates the use of different cursors with X.
+   Please see 'cursors.go' for a list of all available cursors.
 */
 package xcursor
 
@@ -10,23 +10,22 @@ import "burntsushi.net/go/xgbutil"
 // CreateCursor sets some default colors for nice and easy cursor creation.
 // Just supply a cursor constant from 'xcursor/cursors.go'.
 func CreateCursor(xu *xgbutil.XUtil, cursor uint16) xgb.Id {
-    return CreateCursorExtra(xu, cursor, 0, 0, 0, 0xffff, 0xffff, 0xffff)
+	return CreateCursorExtra(xu, cursor, 0, 0, 0, 0xffff, 0xffff, 0xffff)
 }
 
 // CreateCursorExtra features all available parameters to creating a cursor.
 func CreateCursorExtra(xu *xgbutil.XUtil, cursor, foreRed, foreGreen,
-                       foreBlue, backRed, backGreen,
-                       backBlue uint16) xgb.Id {
-    fontId := xu.Conn().NewId()
-    cursorId := xu.Conn().NewId()
+	foreBlue, backRed, backGreen, backBlue uint16) xgb.Id {
 
-    xu.Conn().OpenFont(fontId, "cursor")
-    xu.Conn().CreateGlyphCursor(cursorId, fontId, fontId,
-                                cursor, cursor + 1,
-                                foreRed, foreGreen, foreBlue,
-                                backRed, backGreen, backBlue)
-    xu.Conn().CloseFont(fontId)
+	fontId := xu.Conn().NewId()
+	cursorId := xu.Conn().NewId()
 
-    return cursorId
+	xu.Conn().OpenFont(fontId, "cursor")
+	xu.Conn().CreateGlyphCursor(cursorId, fontId, fontId,
+		cursor, cursor+1,
+		foreRed, foreGreen, foreBlue,
+		backRed, backGreen, backBlue)
+	xu.Conn().CloseFont(fontId)
+
+	return cursorId
 }
-

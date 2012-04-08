@@ -1,87 +1,92 @@
 /*
-    Provides a callback interface, very similar to that found in
-    xevent/callback.go --- but only for key bindings.
+   Provides a callback interface, very similar to that found in
+   xevent/callback.go --- but only for key bindings.
 */
 package keybind
 
 import "burntsushi.net/go/x-go-binding/xgb"
-import "burntsushi.net/go/xgbutil"
-import "burntsushi.net/go/xgbutil/xevent"
+
+import (
+	"burntsushi.net/go/xgbutil"
+	"burntsushi.net/go/xgbutil/xevent"
+)
 
 type KeyPressFun xevent.KeyPressFun
 
 // connect is essentially 'Connect' for either KeyPress or KeyRelease events.
 func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
-             evtype int, win xgb.Id, keyStr string) {
-    // Get the mods/key first
-    mods, keycode := ParseString(xu, keyStr)
+	evtype int, win xgb.Id, keyStr string) {
 
-    // Only do the grab if we haven't yet on this window.
-    if xu.KeyBindGrabs(evtype, win, mods, keycode) == 0 {
-        Grab(xu, win, mods, keycode)
-    }
+	// Get the mods/key first
+	mods, keycode := ParseString(xu, keyStr)
 
-    // If we've never grabbed anything on this window before, we need to
-    // make sure we can respond to it in the main event loop.
-    var allCb xgbutil.Callback
-    if evtype == xevent.KeyPress {
-        allCb = xevent.KeyPressFun(RunKeyPressCallbacks)
-    } else {
-        allCb = xevent.KeyReleaseFun(RunKeyReleaseCallbacks)
-    }
+	// Only do the grab if we haven't yet on this window.
+	if xu.KeyBindGrabs(evtype, win, mods, keycode) == 0 {
+		Grab(xu, win, mods, keycode)
+	}
 
-    // If this is the first Key{Press|Release}Event on this window,
-    // then we need to listen to Key{Press|Release} events in the main loop.
-    if !xu.ConnectedKeyBind(evtype, win) {
-        allCb.Connect(xu, win)
-    }
+	// If we've never grabbed anything on this window before, we need to
+	// make sure we can respond to it in the main event loop.
+	var allCb xgbutil.Callback
+	if evtype == xevent.KeyPress {
+		allCb = xevent.KeyPressFun(RunKeyPressCallbacks)
+	} else {
+		allCb = xevent.KeyReleaseFun(RunKeyReleaseCallbacks)
+	}
 
-    // Finally, attach the callback.
-    xu.AttachKeyBindCallback(evtype, win, mods, keycode, callback)
+	// If this is the first Key{Press|Release}Event on this window,
+	// then we need to listen to Key{Press|Release} events in the main loop.
+	if !xu.ConnectedKeyBind(evtype, win) {
+		allCb.Connect(xu, win)
+	}
+
+	// Finally, attach the callback.
+	xu.AttachKeyBindCallback(evtype, win, mods, keycode, callback)
 }
 
 func DeduceKeyInfo(state uint16, detail byte) (uint16, byte) {
-    mods, kc := state, detail
-    for _, m := range xgbutil.IgnoreMods {
-        mods &= ^m
-    }
+	mods, kc := state, detail
+	for _, m := range xgbutil.IgnoreMods {
+		mods &= ^m
+	}
 
-    return mods, kc
+	return mods, kc
 }
 
 func (callback KeyPressFun) Connect(xu *xgbutil.XUtil, win xgb.Id,
-                                    keyStr string) {
-    connect(xu, callback, xevent.KeyPress, win, keyStr)
+	keyStr string) {
+
+	connect(xu, callback, xevent.KeyPress, win, keyStr)
 }
 
 func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
-    callback(xu, event.(xevent.KeyPressEvent))
+	callback(xu, event.(xevent.KeyPressEvent))
 }
 
 type KeyReleaseFun xevent.KeyReleaseFun
 
 func (callback KeyReleaseFun) Connect(xu *xgbutil.XUtil, win xgb.Id,
-                                      keyStr string) {
-    connect(xu, callback, xevent.KeyRelease, win, keyStr)
+	keyStr string) {
+
+	connect(xu, callback, xevent.KeyRelease, win, keyStr)
 }
 
 func (callback KeyReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
-    callback(xu, event.(xevent.KeyReleaseEvent))
+	callback(xu, event.(xevent.KeyReleaseEvent))
 }
 
 // RunKeyPressCallbacks infers the window, keycode and modifiers from a
 // KeyPressEvent and runs the corresponding callbacks.
 func RunKeyPressCallbacks(xu *xgbutil.XUtil, ev xevent.KeyPressEvent) {
-    mods, kc := DeduceKeyInfo(ev.State, ev.Detail)
+	mods, kc := DeduceKeyInfo(ev.State, ev.Detail)
 
-    xu.RunKeyBindCallbacks(ev, xevent.KeyPress, ev.Event, mods, kc)
+	xu.RunKeyBindCallbacks(ev, xevent.KeyPress, ev.Event, mods, kc)
 }
 
 // RunKeyReleaseCallbacks infers the window, keycode and modifiers from a
 // KeyPressEvent and runs the corresponding callbacks.
 func RunKeyReleaseCallbacks(xu *xgbutil.XUtil, ev xevent.KeyReleaseEvent) {
-    mods, kc := DeduceKeyInfo(ev.State, ev.Detail)
+	mods, kc := DeduceKeyInfo(ev.State, ev.Detail)
 
-    xu.RunKeyBindCallbacks(ev, xevent.KeyRelease, ev.Event, mods, kc)
+	xu.RunKeyBindCallbacks(ev, xevent.KeyRelease, ev.Event, mods, kc)
 }
-
