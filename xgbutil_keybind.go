@@ -4,7 +4,7 @@
 */
 package xgbutil
 
-import "burntsushi.net/go/x-go-binding/xgb"
+import "code.google.com/p/jamslam-x-go-binding/xgb"
 
 // KeyBindCallback operates in the spirit of Callback, except that it works
 // specifically on key bindings.

@@ -16,9 +16,9 @@ import (
 	// "image/draw" 
 	// "time" 
 
-	"burntsushi.net/go/xgbutil"
-	"burntsushi.net/go/xgbutil/ewmh"
-	"burntsushi.net/go/xgbutil/xgraphics"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/xgraphics"
 )
 
 var X *xgbutil.XUtil

@@ -6,7 +6,7 @@ import (
 )
 
 import (
-	"burntsushi.net/go/xgbutil"
+	"github.com/BurntSushi/xgbutil"
 )
 
 func main() {

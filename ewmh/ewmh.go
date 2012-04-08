@@ -48,10 +48,10 @@
 */
 package ewmh
 
-import "burntsushi.net/go/x-go-binding/xgb"
-import "burntsushi.net/go/xgbutil"
-import "burntsushi.net/go/xgbutil/xevent"
-import "burntsushi.net/go/xgbutil/xprop"
+import "code.google.com/p/jamslam-x-go-binding/xgb"
+import "github.com/BurntSushi/xgbutil"
+import "github.com/BurntSushi/xgbutil/xevent"
+import "github.com/BurntSushi/xgbutil/xprop"
 
 // ClientEvent is a convenience function that sends ClientMessage events
 // to the root window as specified by the EWMH spec.

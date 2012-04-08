@@ -8,7 +8,7 @@
 package xgbutil
 
 import (
-	"burntsushi.net/go/x-go-binding/xgb"
+	"code.google.com/p/jamslam-x-go-binding/xgb"
 	"fmt"
 	"log"
 )

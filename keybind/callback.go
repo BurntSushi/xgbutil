@@ -4,11 +4,11 @@
 */
 package keybind
 
-import "burntsushi.net/go/x-go-binding/xgb"
+import "code.google.com/p/jamslam-x-go-binding/xgb"
 
 import (
-	"burntsushi.net/go/xgbutil"
-	"burntsushi.net/go/xgbutil/xevent"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/xevent"
 )
 
 type KeyPressFun xevent.KeyPressFun

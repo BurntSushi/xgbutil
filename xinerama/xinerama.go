@@ -12,8 +12,8 @@ package xinerama
 import "sort"
 
 import (
-	"burntsushi.net/go/xgbutil"
-	"burntsushi.net/go/xgbutil/xrect"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/xrect"
 )
 
 // Alias so we use it as a receiver to satisfy sort.Interface

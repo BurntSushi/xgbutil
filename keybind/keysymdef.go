@@ -12,7 +12,7 @@
 */
 package keybind
 
-import "burntsushi.net/go/x-go-binding/xgb"
+import "code.google.com/p/jamslam-x-go-binding/xgb"
 
 func init() {
 	strKeysyms = make(map[xgb.Keysym]string, len(keysyms))

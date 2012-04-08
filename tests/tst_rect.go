@@ -1,11 +1,11 @@
 package main
 
 import "fmt"
-import "burntsushi.net/go/xgbutil"
-import "burntsushi.net/go/xgbutil/ewmh"
-import "burntsushi.net/go/xgbutil/xinerama"
-import "burntsushi.net/go/xgbutil/xrect"
-import "burntsushi.net/go/xgbutil/xwindow"
+import "github.com/BurntSushi/xgbutil"
+import "github.com/BurntSushi/xgbutil/ewmh"
+import "github.com/BurntSushi/xgbutil/xinerama"
+import "github.com/BurntSushi/xgbutil/xrect"
+import "github.com/BurntSushi/xgbutil/xwindow"
 
 func main() {
 	X, _ := xgbutil.Dial("")

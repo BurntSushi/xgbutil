@@ -4,7 +4,7 @@
 */
 package ewmh
 
-import "burntsushi.net/go/xgbutil"
+import "github.com/BurntSushi/xgbutil"
 
 // GetEwmhWM uses the EWMH spec to find if a conforming window manager
 // is currently running or not. If it is, then its name will be returned.

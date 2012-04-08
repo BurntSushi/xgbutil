@@ -20,8 +20,8 @@ import (
 
 	"code.google.com/p/graphics-go/graphics"
 
-	"burntsushi.net/go/xgbutil"
-	"burntsushi.net/go/xgbutil/xgraphics"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/xgraphics"
 )
 
 var X *xgbutil.XUtil

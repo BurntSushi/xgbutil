@@ -12,9 +12,9 @@ import (
 	"log"
 )
 
-import "burntsushi.net/go/x-go-binding/xgb"
+import "code.google.com/p/jamslam-x-go-binding/xgb"
 
-import "burntsushi.net/go/xgbutil"
+import "github.com/BurntSushi/xgbutil"
 
 // Read reads one or more events and queues them in XUtil.
 // If 'block' is True, then call 'WaitForEvent' before sucking up

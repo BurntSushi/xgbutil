@@ -5,14 +5,14 @@ import (
 	"log"
 	"math/rand"
 	// "os" 
-	"burntsushi.net/go/x-go-binding/xgb"
+	"code.google.com/p/jamslam-x-go-binding/xgb"
 	"time"
 )
 
 import (
-	"burntsushi.net/go/xgbutil"
-	"burntsushi.net/go/xgbutil/ewmh"
-	"burntsushi.net/go/xgbutil/xwindow"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
 var X *xgbutil.XUtil

@@ -19,10 +19,10 @@ import (
 	"code.google.com/p/freetype-go/freetype"
 	"io/ioutil"
 
-	"burntsushi.net/go/x-go-binding/xgb"
-	"burntsushi.net/go/xgbutil"
-	"burntsushi.net/go/xgbutil/ewmh"
-	"burntsushi.net/go/xgbutil/xcursor"
+	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/xcursor"
 )
 
 // If we want to save the image as png output,

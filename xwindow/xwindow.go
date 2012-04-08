@@ -24,12 +24,12 @@
 */
 package xwindow
 
-import "burntsushi.net/go/x-go-binding/xgb"
+import "code.google.com/p/jamslam-x-go-binding/xgb"
 
 import (
-	"burntsushi.net/go/xgbutil"
-	"burntsushi.net/go/xgbutil/ewmh"
-	"burntsushi.net/go/xgbutil/xrect"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/xrect"
 )
 
 // Listen will tell X to report events corresponding to the event masks
