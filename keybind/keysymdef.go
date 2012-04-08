@@ -28,6 +28,7 @@ func init() {
 // weirdKeysyms is a feeble attempt to map english words to single
 // characters. i.e., "bracketleft" -> [ and "exclam" to !
 var weirdKeysyms = map[string]rune{
+	"space":        ' ',
 	"exclam":       '!',
 	"at":           '@',
 	"numbersign":   '#',
