@@ -178,7 +178,7 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, byte) {
 			mods |= xgb.ModMaskAny
 		default: // a key code!
 			if kc == 0 { // only accept the first keycode we see
-				kc = strToKeycode(xu, part)
+				kc = StrToKeycode(xu, part)
 			}
 		}
 	}
@@ -191,9 +191,9 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, byte) {
 	return mods, kc
 }
 
-// strToKeycode is a wrapper around keycodeGet meant to make our search
+// StrToKeycode is a wrapper around keycodeGet meant to make our search
 // a bit more flexible if needed. (i.e., case-insensitive)
-func strToKeycode(xu *xgbutil.XUtil, str string) byte {
+func StrToKeycode(xu *xgbutil.XUtil, str string) byte {
 	// Do some fancy case stuff before we give up.
 	sym, ok := keysyms[str]
 	if !ok {
@@ -241,22 +241,18 @@ func keycodeGet(xu *xgbutil.XUtil, keysym xgb.Keysym) byte {
 // If no matching single rune is found, the empty string is returned.
 // (Since the idea of this function is to facilate in translating keys pressed
 // to characters on the screen.)
-func keysymToRune(keysym xgb.Keysym) rune {
+func keysymToStr(keysym xgb.Keysym) string {
 	symStr, ok := strKeysyms[keysym]
 	if !ok {
-		return 0
+		return ""
 	}
 
 	shortSymStr, ok := weirdKeysyms[symStr]
 	if ok {
-		return shortSymStr
+		return string(shortSymStr)
 	}
 
-	if len(symStr) == 1 {
-		return rune(symStr[0])
-	}
-
-	return 0
+	return symStr
 }
 
 // keysymGet is a shortcut alias for 'keysymGetWithMap' using the current

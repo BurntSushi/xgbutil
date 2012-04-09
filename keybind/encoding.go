@@ -21,7 +21,7 @@ import (
 // interpretSymList interprets the keysym list for a particular keycode as
 // described in the third and fourth paragraphs of http://goo.gl/qum9q
 func interpretSymList(xu *xgbutil.XUtil, keycode byte) (
-	k1 rune, k2 rune, k3 rune, k4 rune) {
+	k1 string, k2 string, k3 string, k4 string) {
 
 	ks1 := keysymGet(xu, keycode, 0)
 	ks2 := keysymGet(xu, keycode, 1)
@@ -39,25 +39,25 @@ func interpretSymList(xu *xgbutil.XUtil, keycode byte) (
 		ks4 = 0
 	}
 
-	// Now convert keysyms to runes, so we can do alphabetic shit.
-	k1 = keysymToRune(ks1)
-	k2 = keysymToRune(ks2)
-	k3 = keysymToRune(ks3)
-	k4 = keysymToRune(ks4)
+	// Now convert keysyms to strings, so we can do alphabetic shit.
+	k1 = keysymToStr(ks1)
+	k2 = keysymToStr(ks2)
+	k3 = keysymToStr(ks3)
+	k4 = keysymToStr(ks4)
 
 	// follow the rules, fourth paragraph
-	if k2 == 0 {
-		if unicode.IsLetter(k1) {
-			k1 = unicode.ToLower(k1)
-			k2 = unicode.ToUpper(k1)
+	if k2 == "" {
+		if len(k1) == 1 && unicode.IsLetter(rune(k1[0])) {
+			k1 = string(unicode.ToLower(rune(k1[0])))
+			k2 = string(unicode.ToUpper(rune(k1[0])))
 		} else {
 			k2 = k1
 		}
 	}
-	if k4 == 0 {
-		if unicode.IsLetter(k3) {
-			k3 = unicode.ToLower(k3)
-			k4 = unicode.ToUpper(k4)
+	if k4 == "" {
+		if len(k3) == 1 && unicode.IsLetter(rune(k3[0])) {
+			k3 = string(unicode.ToLower(rune(k3[0])))
+			k4 = string(unicode.ToUpper(rune(k4[0])))
 		} else {
 			k4 = k3
 		}
@@ -75,7 +75,7 @@ func interpretSymList(xu *xgbutil.XUtil, keycode byte) (
 // We just check if the modifiers are activated. That's good enough for me.
 // XXX: We ignore num lock stuff.
 // XXX: We ignore MODE SWITCH stuff. (i.e., we don't use group 2 key syms.)
-func LookupString(xu *xgbutil.XUtil, mods uint16, keycode byte) rune {
+func LookupString(xu *xgbutil.XUtil, mods uint16, keycode byte) string {
 	k1, k2, _, _ := interpretSymList(xu, keycode)
 
 	shift := mods&xgb.ModMaskShift > 0
@@ -84,14 +84,14 @@ func LookupString(xu *xgbutil.XUtil, mods uint16, keycode byte) rune {
 	case !shift && !lock:
 		return k1
 	case !shift && lock:
-		if unicode.IsLower(k1) {
+		if len(k1) == 1 && unicode.IsLower(rune(k1[0])) {
 			return k2
 		} else {
 			return k1
 		}
 	case shift && lock:
-		if unicode.IsLower(k2) {
-			return unicode.ToUpper(k2)
+		if len(k2) == 1 && unicode.IsLower(rune(k2[0])) {
+			return string(unicode.ToUpper(rune(k2[0])))
 		} else {
 			return k2
 		}
@@ -99,5 +99,5 @@ func LookupString(xu *xgbutil.XUtil, mods uint16, keycode byte) rune {
 		return k2
 	}
 
-	return 0
+	return ""
 }
