@@ -183,6 +183,11 @@ func (xu *XUtil) Conn() *xgb.Conn {
 	return xu.conn
 }
 
+// Die forcefully shuts everything down.
+func (xu *XUtil) Die() {
+	xu.Conn().Close()
+}
+
 // Quit elegantly exits out of the main event loop.
 func (xu *XUtil) Quit() {
 	xu.quit = true

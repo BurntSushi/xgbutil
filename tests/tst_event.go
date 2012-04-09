@@ -72,7 +72,8 @@ func main() {
 		}).Connect(X, X.RootWin(), "Mod4-z")
 
 	mousebind.ButtonPressFun(BPressCB).Connect(X, X.RootWin(), "Mod4-8", false)
-	mousebind.ButtonReleaseFun(BReleaseCB).Connect(X, X.RootWin(), "Mod4-9", false)
+	mousebind.ButtonReleaseFun(BReleaseCB).Connect(
+		X, X.RootWin(), "Mod4-9", false)
 
 	// keycbRelease := keybind.KeyReleaseFun(KeyReleaseCallback) 
 	// keycbRelease.Connect(X, X.RootWin(), "Mod4-j") // Mod4-j 

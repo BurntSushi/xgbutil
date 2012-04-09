@@ -186,7 +186,8 @@ func main() {
 
 	// fmt.Printf("Pager's state: %v\n", ewmh.WmState(X, 0x180001e)) 
 
-	// ewmh.WmStateReq(X, active, xgbutil.EwmhStateToggle, "_NET_WM_STATE_HIDDEN") 
+	// ewmh.WmStateReq(X, active, xgbutil.EwmhStateToggle,
+	// "_NET_WM_STATE_HIDDEN") 
 	// ewmh.WmStateReqExtra(X, active, xgbutil.EwmhStateToggle, 
 	// "_NET_WM_STATE_MAXIMIZED_VERT", 
 	// "_NET_WM_STATE_MAXIMIZED_HORZ", 2) 
