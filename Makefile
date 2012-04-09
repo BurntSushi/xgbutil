@@ -2,6 +2,7 @@ all: callback.go types_auto.go gofmt
 
 gofmt:
 	gofmt -w *.go */*.go
+	colcheck *.go */*.go
 
 callback.go:
 	scripts/write-events callbacks > xevent/callback.go
