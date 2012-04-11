@@ -91,10 +91,10 @@ func WmNormalHintsGet(xu *xgbutil.XUtil,
 	hints, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"WM_NORMAL_HINTS"))
 	if err != nil {
-		return &NormalHints{}, err
+		return nil, err
 	}
 	if len(hints) != lenExpect {
-		return &NormalHints{},
+		return nil,
 			xgbutil.Xuerr("WmNormalHint",
 				"There are %d fields in "+
 					"WM_NORMAL_HINTS, but xgbutil expects %d.",
@@ -159,10 +159,10 @@ func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (hints *Hints, err error) {
 	lenExpect := 9
 	raw, err := xprop.PropValNums(xprop.GetProperty(xu, win, "WM_HINTS"))
 	if err != nil {
-		return &Hints{}, err
+		return nil, err
 	}
 	if len(raw) != lenExpect {
-		return &Hints{},
+		return nil,
 			xgbutil.Xuerr("WmHints",
 				"There are %d fields in "+
 					"WM_HINTS, but xgbutil expects %d.",
@@ -206,10 +206,10 @@ type WmClass struct {
 func WmClassGet(xu *xgbutil.XUtil, win xgb.Id) (*WmClass, error) {
 	raw, err := xprop.PropValStrs(xprop.GetProperty(xu, win, "WM_CLASS"))
 	if err != nil {
-		return &WmClass{}, err
+		return nil, err
 	}
 	if len(raw) != 2 {
-		return &WmClass{},
+		return nil,
 			xgbutil.Xuerr("WmClass",
 				"Two string make up WM_CLASS, but "+
 					"xgbutil found %d in '%v'.", len(raw), raw)
@@ -293,10 +293,10 @@ type WmState struct {
 func WmStateGet(xu *xgbutil.XUtil, win xgb.Id) (*WmState, error) {
 	raw, err := xprop.PropValNums(xprop.GetProperty(xu, win, "WM_STATE"))
 	if err != nil {
-		return &WmState{}, err
+		return nil, err
 	}
 	if len(raw) != 2 {
-		return &WmState{},
+		return nil,
 			xgbutil.Xuerr("WmState",
 				"Expected two integers in WM_STATE property "+
 					"but xgbutil found %d in '%v'.", len(raw), raw)
@@ -328,10 +328,10 @@ type IconSize struct {
 func WmIconSizeGet(xu *xgbutil.XUtil, win xgb.Id) (*IconSize, error) {
 	raw, err := xprop.PropValNums(xprop.GetProperty(xu, win, "WM_ICON_SIZE"))
 	if err != nil {
-		return &IconSize{}, err
+		return nil, err
 	}
 	if len(raw) != 6 {
-		return &IconSize{},
+		return nil,
 			xgbutil.Xuerr("WmIconSize",
 				"Expected six integers in WM_ICON_SIZE "+
 					"property, but xgbutil found "+

@@ -191,7 +191,7 @@ func DesktopGeometryGet(xu *xgbutil.XUtil) (*DesktopGeometry, error) {
 	geom, err := xprop.PropValNums(xprop.GetProperty(xu, xu.RootWin(),
 		"_NET_DESKTOP_GEOMETRY"))
 	if err != nil {
-		return &DesktopGeometry{}, err
+		return nil, err
 	}
 
 	return &DesktopGeometry{Width: geom[0], Height: geom[1]}, nil
@@ -238,7 +238,7 @@ func DesktopLayoutGet(xu *xgbutil.XUtil) (dl *DesktopLayout, err error) {
 	dlraw, err := xprop.PropValNums(xprop.GetProperty(xu, xu.RootWin(),
 		"_NET_DESKTOP_LAYOUT"))
 	if err != nil {
-		return &DesktopLayout{}, err
+		return nil, err
 	}
 
 	dl = &DesktopLayout{}
@@ -322,7 +322,7 @@ func FrameExtentsGet(xu *xgbutil.XUtil, win xgb.Id) (*FrameExtents, error) {
 	raw, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_NET_FRAME_EXTENTS"))
 	if err != nil {
-		return &FrameExtents{}, nil
+		return nil, err
 	}
 
 	return &FrameExtents{
@@ -578,7 +578,7 @@ func WmFullscreenMonitorsGet(xu *xgbutil.XUtil,
 	raw, err := xprop.PropValNums(
 		xprop.GetProperty(xu, win, "_NET_WM_FULLSCREEN_MONITORS"))
 	if err != nil {
-		return &WmFullscreenMonitors{}, err
+		return nil, err
 	}
 
 	return &WmFullscreenMonitors{
@@ -705,7 +705,7 @@ func WmIconGeometryGet(xu *xgbutil.XUtil, win xgb.Id) (*WmIconGeometry, error) {
 	geom, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_NET_WM_ICON_GEOMETRY"))
 	if err != nil {
-		return &WmIconGeometry{}, err
+		return nil, err
 	}
 
 	return &WmIconGeometry{
@@ -933,7 +933,7 @@ func WmStrutGet(xu *xgbutil.XUtil, win xgb.Id) (*WmStrut, error) {
 	struts, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_NET_WM_STRUT"))
 	if err != nil {
-		return &WmStrut{}, err
+		return nil, err
 	}
 
 	return &WmStrut{
@@ -971,7 +971,7 @@ func WmStrutPartialGet(xu *xgbutil.XUtil, win xgb.Id) (*WmStrutPartial, error) {
 	struts, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_NET_WM_STRUT_PARTIAL"))
 	if err != nil {
-		return &WmStrutPartial{}, err
+		return nil, err
 	}
 
 	return &WmStrutPartial{

@@ -43,7 +43,7 @@ type XRect struct {
 }
 
 // Provide the ability to construct an XRect.
-func Make(x, y, w, h int) *XRect {
+func New(x, y, w, h int) *XRect {
 	return &XRect{x, y, w, h}
 }
 

@@ -72,10 +72,10 @@ func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (mh *Hints, err error) {
 	hints, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_MOTIF_WM_HINTS"))
 	if err != nil {
-		return &Hints{}, err
+		return nil, err
 	}
 	if len(hints) != lenExpect {
-		return &Hints{},
+		return nil,
 			xgbutil.Xuerr("motif.WmHintsGet",
 				"There are %d fields in _MOTIF_WM_HINTS, "+
 					"but xgbutil expects %d.", len(hints), lenExpect)

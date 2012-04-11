@@ -146,6 +146,6 @@ func RawGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
 		return nil, err
 	}
 
-	return xrect.Make(int(xgeom.X), int(xgeom.Y),
+	return xrect.New(int(xgeom.X), int(xgeom.Y),
 		int(xgeom.Width), int(xgeom.Height)), nil
 }

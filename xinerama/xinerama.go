@@ -45,7 +45,7 @@ func PhysicalHeads(xu *xgbutil.XUtil) (Heads, error) {
 
 	hds := make(Heads, 0)
 	for _, info := range xinfo.ScreenInfo {
-		head := xrect.Make(int(info.XOrg), int(info.YOrg),
+		head := xrect.New(int(info.XOrg), int(info.YOrg),
 			int(info.Width), int(info.Height))
 
 		// Maybe Xinerama is enabled, but we have cloned displays...
