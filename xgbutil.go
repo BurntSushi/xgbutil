@@ -93,9 +93,15 @@ func Xerr(xgberr interface{}, funcName string, err string,
 			err:      fmt.Sprintf("%s: %v", fmt.Sprintf(err, params...), e),
 			XGBError: e,
 		}
+	case error:
+		return &XError{
+			funcName: "",
+			err: e.Error(),
+			XGBError: nil,
+		}
 	}
 
-	panic(Xuerr("Xerr", "Unsupported error type: %T", err))
+	panic(Xuerr("Xerr", "Unsupported error type: %T: %s", xgberr, err))
 }
 
 // Constructs an error struct from an error inside xgbutil (i.e., user error)
