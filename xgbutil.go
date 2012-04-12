@@ -96,7 +96,7 @@ func Xerr(xgberr interface{}, funcName string, err string,
 	case error:
 		return &XError{
 			funcName: "",
-			err: e.Error(),
+			err:      e.Error(),
 			XGBError: nil,
 		}
 	}
