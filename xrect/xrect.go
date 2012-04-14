@@ -161,22 +161,25 @@ func IntersectArea(r1 Rect, r2 Rect) int {
 	return 0
 }
 
-// LargestOverlap returns the rectangle in 'haystack' that has the largest
-// overlap with the rectangle 'needle'. This is commonly used to find which
-// monitor a window should belong on. (Since it can technically be partially
-// displayed on more than one monitor at a time.)
-func LargestOverlap(needle Rect, haystack []Rect) (result Rect) {
+// LargestOverlap returns the index of the rectangle in 'haystack' that has the 
+// largest overlap with the rectangle 'needle'.
+// This is commonly used to find which monitor a window should belong on. 
+// (Since it can technically be partially displayed on more than one monitor 
+// at a time.)
+// Be careful, the return value can be -1 if there is no overlap.
+func LargestOverlap(needle Rect, haystack []Rect) int {
 	biggestArea := 0
+	reti := -1
 
 	var area int
-	for _, possible := range haystack {
+	for i, possible := range haystack {
 		area = IntersectArea(needle, possible)
 		if area > biggestArea {
 			biggestArea = area
-			result = possible
+			reti = i
 		}
 	}
-	return
+	return reti
 }
 
 // ApplyStrut takes a list of Rects (typically the rectangles that represent
