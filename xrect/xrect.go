@@ -108,8 +108,8 @@ func Subtract(r1 Rect, r2 Rect) []Rect {
 	r1x1, r1y1, r1w, r1h := r1.Pieces()
 	r2x1, r2y1, r2w, r2h := r2.Pieces()
 
-	r1x2, r1y2 := r1x1 + r1w, r1y1 + r1h
-	r2x2, r2y2 := r2x1 + r2w, r2y1 + r2h
+	r1x2, r1y2 := r1x1+r1w, r1y1+r1h
+	r2x2, r2y2 := r2x1+r2w, r2y1+r2h
 
 	// No intersection; return r1.
 	if r2x1 >= r1x2 || r1x1 >= r2x2 || r2y1 >= r1y2 || r1y1 >= r2y2 {
@@ -125,10 +125,10 @@ func Subtract(r1 Rect, r2 Rect) []Rect {
 	// if they are valid (i.e., width/height >= 1)
 	result := make([]Rect, 0, 4)
 
-	rect1 := New(r1x1, r1y1, r1w, r2y1 - r1y1)
-	rect2 := New(r1x1, r1y1, r2x1 - r1x1, r1h)
-	rect3 := New(r1x1, r2y2, r1w, r1h - ((r2y1 - r1y1) + r2h))
-	rect4 := New(r2x2, r1y1, r1w - ((r2x1 - r1x1) + r2w), r1h)
+	rect1 := New(r1x1, r1y1, r1w, r2y1-r1y1)
+	rect2 := New(r1x1, r1y1, r2x1-r1x1, r1h)
+	rect3 := New(r1x1, r2y2, r1w, r1h-((r2y1-r1y1)+r2h))
+	rect4 := New(r2x2, r1y1, r1w-((r2x1-r1x1)+r2w), r1h)
 
 	if Valid(rect1) {
 		result = append(result, rect1)
