@@ -10,11 +10,11 @@ package xevent
 import (
 	"io"
 	"log"
+
+	"code.google.com/p/jamslam-x-go-binding/xgb"
+
+	"github.com/BurntSushi/xgbutil"
 )
-
-import "code.google.com/p/jamslam-x-go-binding/xgb"
-
-import "github.com/BurntSushi/xgbutil"
 
 // Read reads one or more events and queues them in XUtil.
 // If 'block' is True, then call 'WaitForEvent' before sucking up
@@ -197,10 +197,10 @@ func Main(xu *xgbutil.XUtil) error {
 				xu.RunCallbacks(e, Expose, e.Window)
 			case xgb.GraphicsExposureEvent:
 				e := GraphicsExposureEvent{&event}
-				xu.RunCallbacks(e, GraphicsExposure, e.Drawable)
+				xu.RunCallbacks(e, GraphicsExposure, xgb.Id(e.Drawable))
 			case xgb.NoExposureEvent:
 				e := NoExposureEvent{&event}
-				xu.RunCallbacks(e, NoExposure, e.Drawable)
+				xu.RunCallbacks(e, NoExposure, xgb.Id(e.Drawable))
 			case xgb.VisibilityNotifyEvent:
 				e := VisibilityNotifyEvent{&event}
 				xu.RunCallbacks(e, VisibilityNotify, e.Window)

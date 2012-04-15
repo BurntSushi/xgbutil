@@ -39,8 +39,8 @@ func Initialize(xu *xgbutil.XUtil) {
 // "Mod" could also be one of {button1, button2, button3, button4, button5}.
 // (Actually, the parser is slightly more forgiving than what this comment
 //  leads you to believe.)
-func ParseString(xu *xgbutil.XUtil, str string) (uint16, byte) {
-	mods, button := uint16(0), byte(0)
+func ParseString(xu *xgbutil.XUtil, str string) (uint16, xgb.Button) {
+	mods, button := uint16(0), xgb.Button(0)
 	for _, part := range strings.Split(str, "-") {
 		switch strings.ToLower(part) {
 		case "shift":
@@ -75,7 +75,7 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, byte) {
 			if button == 0 { // only accept the first button we see
 				possible, err := strconv.ParseUint(part, 10, 8)
 				if err == nil {
-					button = byte(possible)
+					button = xgb.Button(possible)
 				} else {
 					log.Printf("We could not convert '%s' to a valid 8-bit "+
 						"integer. Assuming 0.\n", part)
@@ -98,7 +98,7 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, byte) {
 // grabbing client allows them to be. (Which is done via AllowEvents. Thus,
 // if propagate is True, you *must* make some call to AllowEvents at some
 // point, or else your client will lock.)
-func Grab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, button byte,
+func Grab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, button xgb.Button,
 	propagate bool) {
 
 	var pSync byte = xgb.GrabModeAsync
@@ -108,15 +108,15 @@ func Grab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, button byte,
 
 	for _, m := range xgbutil.IgnoreMods {
 		xu.Conn().GrabButton(true, win, pointerMasks, pSync,
-			xgb.GrabModeAsync, 0, 0, button, mods|m)
+			xgb.GrabModeAsync, 0, 0, byte(button), mods|m)
 	}
 }
 
 // Ungrab undoes Grab. It will handle all combinations od modifiers found
 // in xgbutil.IgnoreMods.
-func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, button byte) {
+func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, button xgb.Button) {
 	for _, m := range xgbutil.IgnoreMods {
-		xu.Conn().UngrabButton(button, win, mods|m)
+		xu.Conn().UngrabButton(byte(button), win, mods|m)
 	}
 }
 

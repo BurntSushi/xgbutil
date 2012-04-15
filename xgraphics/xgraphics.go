@@ -16,18 +16,14 @@ import (
 	"image/draw"
 	"image/png"
 	"os"
-)
 
-import "code.google.com/p/graphics-go/graphics"
+	"code.google.com/p/graphics-go/graphics"
 
-import (
 	"code.google.com/p/freetype-go/freetype"
 	"code.google.com/p/freetype-go/freetype/truetype"
-)
 
-import "code.google.com/p/jamslam-x-go-binding/xgb"
+	"code.google.com/p/jamslam-x-go-binding/xgb"
 
-import (
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/xwindow"
@@ -147,8 +143,8 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
 	}
 
 	pix := xu.Conn().NewId()
-	xu.Conn().CreatePixmap(xu.Screen().RootDepth, pix, xu.RootWin(),
-		uint16(width), uint16(height))
+	xu.Conn().CreatePixmap(xu.Screen().RootDepth, pix,
+		xgb.Drawable(xu.RootWin()), uint16(width), uint16(height))
 
 	// This is where things get hairy. X's max request size is
 	// (2^16) * 4, that is, the number of bytes specifiable in 4-byte
@@ -185,7 +181,7 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
 		// is the last send, we probably aren't sending 'rowsPer' rows.
 		h = len(data) / 4 / width
 
-		xu.Conn().PutImage(xgb.ImageFormatZPixmap, pix, xu.GC(),
+		xu.Conn().PutImage(xgb.ImageFormatZPixmap, xgb.Drawable(pix), xu.GC(),
 			uint16(width), uint16(h), 0, int16(ypos),
 			0, 24, data)
 
@@ -356,9 +352,8 @@ func PixmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
 	}
 
 	width, height := geom.Width(), geom.Height()
-	data, err := xu.Conn().GetImage(xgb.ImageFormatZPixmap, pix, 0, 0,
-		uint16(width), uint16(height),
-		(1<<32)-1)
+	data, err := xu.Conn().GetImage(xgb.ImageFormatZPixmap, xgb.Drawable(pix),
+		0, 0, uint16(width), uint16(height), (1<<32)-1)
 	if err != nil {
 		return nil, err
 	}
@@ -394,9 +389,8 @@ func BitmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
 	}
 
 	width, height := geom.Width(), geom.Height()
-	data, err := xu.Conn().GetImage(xgb.ImageFormatXYPixmap, pix, 0, 0,
-		uint16(width), uint16(height),
-		(1<<32)-1)
+	data, err := xu.Conn().GetImage(xgb.ImageFormatXYPixmap, xgb.Drawable(pix),
+		0, 0, uint16(width), uint16(height), (1<<32)-1)
 	if err != nil {
 		return nil, err
 	}

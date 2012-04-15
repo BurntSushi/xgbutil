@@ -20,7 +20,7 @@ type KeyBindKey struct {
 	Evtype int
 	Win    xgb.Id
 	Mod    uint16
-	Code   byte
+	Code   xgb.Keycode
 }
 
 type KeyboardMapping struct {
@@ -47,8 +47,8 @@ func (xu *XUtil) RedirectKeyGet() xgb.Id {
 // AttackKeyBindCallback associates an (event, window, mods, keycode)
 // with a callback.
 func (xu *XUtil) AttachKeyBindCallback(evtype int, win xgb.Id,
-	mods uint16, keycode byte,
-	fun KeyBindCallback) {
+	mods uint16, keycode xgb.Keycode, fun KeyBindCallback) {
+
 	// Create key
 	key := KeyBindKey{evtype, win, mods, keycode}
 
@@ -75,7 +75,7 @@ func (xu *XUtil) KeyBindKeys() []KeyBindKey {
 // UpdateKeyBindKey takes a key bind key and a new key code.
 // It will then remove the old key from keybinds and keygrabs,
 // and add the new key with the old key's data into keybinds and keygrabs.
-func (xu *XUtil) UpdateKeyBindKey(key KeyBindKey, newKc byte) {
+func (xu *XUtil) UpdateKeyBindKey(key KeyBindKey, newKc xgb.Keycode) {
 	newKey := KeyBindKey{key.Evtype, key.Win, key.Mod, newKc}
 
 	// Save old info
@@ -94,7 +94,7 @@ func (xu *XUtil) UpdateKeyBindKey(key KeyBindKey, newKc byte) {
 // RunKeyBindCallbacks executes every callback corresponding to a
 // particular event/window/mod/key tuple.
 func (xu *XUtil) RunKeyBindCallbacks(event interface{}, evtype int,
-	win xgb.Id, mods uint16, keycode byte) {
+	win xgb.Id, mods uint16, keycode xgb.Keycode) {
 	// Create key
 	key := KeyBindKey{evtype, win, mods, keycode}
 
@@ -137,7 +137,8 @@ func (xu *XUtil) DetachKeyBindWindow(evtype int, win xgb.Id) {
 // event/window/mods/keycode combination. Namely, this combination
 // uniquely identifies a grab. If it's repeated, we get BadAccess.
 func (xu *XUtil) KeyBindGrabs(evtype int, win xgb.Id, mods uint16,
-	keycode byte) int {
+	keycode xgb.Keycode) int {
+
 	key := KeyBindKey{evtype, win, mods, keycode}
 	return xu.keygrabs[key] // returns 0 if key does not exist
 }

@@ -52,24 +52,26 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 	// and updated appropriately. *puke*
 	// I am only somewhat confident that this is correct.
 	if e.Request == xgb.MappingKeyboard {
-		changes := make(map[byte]byte, 0)
+		changes := make(map[xgb.Keycode]xgb.Keycode, 0)
 		xuKeyMap := &xgbutil.KeyboardMapping{keyMap}
 
 		min, max := minMaxKeycodeGet(xu)
 
 		// let's not do too much allocation in our loop, shall we?
 		var newSym, oldSym xgb.Keysym
-		var column, oldKc byte
+		var oldKc xgb.Keycode
+		var column byte
 
 		// wrap 'int(..)' around bytes min and max to avoid overflow. Hideous.
 		for newKc := int(min); newKc <= int(max); newKc++ {
-			for column = 0; column < keyMap.KeysymsPerKeycode; column++ {
+			for column = 0; byte(column) < keyMap.KeysymsPerKeycode; column++ {
 				// use new key map
-				newSym = keysymGetWithMap(xu, xuKeyMap, byte(newKc), column)
+				newSym = keysymGetWithMap(xu, xuKeyMap, xgb.Keycode(newKc),
+					column)
 
 				// uses old key map
 				oldKc = keycodeGet(xu, newSym)
-				oldSym = keysymGet(xu, byte(newKc), column)
+				oldSym = keysymGet(xu, xgb.Keycode(newKc), column)
 
 				// If the old and new keysyms are the same, ignore!
 				// Also ignore if either keysym is VoidSymbol
@@ -78,8 +80,8 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 				}
 
 				// these should match if there are NO changes
-				if oldKc != byte(newKc) {
-					changes[oldKc] = byte(newKc)
+				if oldKc != xgb.Keycode(newKc) {
+					changes[oldKc] = xgb.Keycode(newKc)
 				}
 			}
 		}
@@ -120,7 +122,7 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 
 // minMaxKeycodeGet a simple accessor to the X setup info to return the
 // minimum and maximum keycodes. They are typically 8 and 255, respectively.
-func minMaxKeycodeGet(xu *xgbutil.XUtil) (byte, byte) {
+func minMaxKeycodeGet(xu *xgbutil.XUtil) (xgb.Keycode, xgb.Keycode) {
 	return xu.Conn().Setup.MinKeycode, xu.Conn().Setup.MaxKeycode
 }
 
@@ -131,7 +133,7 @@ func mapsGet(xu *xgbutil.XUtil) (*xgb.GetKeyboardMappingReply,
 	*xgb.GetModifierMappingReply) {
 
 	min, max := minMaxKeycodeGet(xu)
-	newKeymap, keyErr := xu.Conn().GetKeyboardMapping(min, max-min+1)
+	newKeymap, keyErr := xu.Conn().GetKeyboardMapping(min, byte(max-min+1))
 	newModmap, modErr := xu.Conn().GetModifierMapping()
 
 	// If there are errors, we really need to panic. We just can't do
@@ -154,8 +156,8 @@ func mapsGet(xu *xgbutil.XUtil) (*xgb.GetKeyboardMappingReply,
 // i.e., 'Mod4-j', and returns a modifiers/keycode combo.
 // (Actually, the parser is slightly more forgiving than what this comment
 //  leads you to believe.)
-func ParseString(xu *xgbutil.XUtil, str string) (uint16, byte) {
-	mods, kc := uint16(0), byte(0)
+func ParseString(xu *xgbutil.XUtil, str string) (uint16, xgb.Keycode) {
+	mods, kc := uint16(0), xgb.Keycode(0)
 	for _, part := range strings.Split(str, "-") {
 		switch strings.ToLower(part) {
 		case "shift":
@@ -193,7 +195,7 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, byte) {
 
 // StrToKeycode is a wrapper around keycodeGet meant to make our search
 // a bit more flexible if needed. (i.e., case-insensitive)
-func StrToKeycode(xu *xgbutil.XUtil, str string) byte {
+func StrToKeycode(xu *xgbutil.XUtil, str string) xgb.Keycode {
 	// Do some fancy case stuff before we give up.
 	sym, ok := keysyms[str]
 	if !ok {
@@ -209,7 +211,7 @@ func StrToKeycode(xu *xgbutil.XUtil, str string) byte {
 	// If we don't know what 'str' is, return 0.
 	// There will probably be a bad access. We should do better than that...
 	if !ok {
-		return byte(0)
+		return xgb.Keycode(0)
 	}
 
 	return keycodeGet(xu, sym)
@@ -222,15 +224,15 @@ func keysymsPer(xu *xgbutil.XUtil) int {
 
 // Given a keysym, find the keycode mapped to it in the current X environment.
 // keybind.Initialize MUST have been called before using this function.
-func keycodeGet(xu *xgbutil.XUtil, keysym xgb.Keysym) byte {
+func keycodeGet(xu *xgbutil.XUtil, keysym xgb.Keysym) xgb.Keycode {
 	min, max := minMaxKeycodeGet(xu)
 	keyMap := xu.KeyMapGet()
 
 	var c byte
 	for kc := int(min); kc <= int(max); kc++ {
 		for c = 0; c < keyMap.KeysymsPerKeycode; c++ {
-			if keysym == keysymGet(xu, byte(kc), c) {
-				return byte(kc)
+			if keysym == keysymGet(xu, xgb.Keycode(kc), c) {
+				return xgb.Keycode(kc)
 			}
 		}
 	}
@@ -258,14 +260,14 @@ func keysymToStr(keysym xgb.Keysym) string {
 // keysymGet is a shortcut alias for 'keysymGetWithMap' using the current
 // keymap stored in XUtil.
 // keybind.Initialize MUST have been called before using this function.
-func keysymGet(xu *xgbutil.XUtil, keycode byte, column byte) xgb.Keysym {
+func keysymGet(xu *xgbutil.XUtil, keycode xgb.Keycode, column byte) xgb.Keysym {
 	return keysymGetWithMap(xu, xu.KeyMapGet(), keycode, column)
 }
 
 // keysymGetWithMap uses the given key map and finds a keysym associated
 // with the given keycode in the current X environment.
 func keysymGetWithMap(xu *xgbutil.XUtil, keyMap *xgbutil.KeyboardMapping,
-	keycode byte, column byte) xgb.Keysym {
+	keycode xgb.Keycode, column byte) xgb.Keysym {
 
 	min, _ := minMaxKeycodeGet(xu)
 	i := (int(keycode)-int(min))*int(keyMap.KeysymsPerKeycode) + int(column)
@@ -275,7 +277,7 @@ func keysymGetWithMap(xu *xgbutil.XUtil, keyMap *xgbutil.KeyboardMapping,
 
 // ModGet finds the modifier currently associated with a given keycode.
 // If a modifier doesn't exist for this keycode, then 0 is returned.
-func ModGet(xu *xgbutil.XUtil, keycode byte) uint16 {
+func ModGet(xu *xgbutil.XUtil, keycode xgb.Keycode) uint16 {
 	modMap := xu.ModMapGet()
 
 	var i byte
@@ -331,7 +333,7 @@ func XModMap(xu *xgbutil.XUtil) {
 
 // Grabs a key with mods on a particular window.
 // Will also grab all combinations of modifiers found in xgbutil.IgnoreMods
-func Grab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key byte) {
+func Grab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key xgb.Keycode) {
 	for _, m := range xgbutil.IgnoreMods {
 		xu.Conn().GrabKey(true, win, mods|m, key,
 			xgb.GrabModeAsync, xgb.GrabModeAsync)
@@ -340,7 +342,7 @@ func Grab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key byte) {
 
 // Ungrab undoes Grab. It will handle all combinations od modifiers found
 // in xgbutil.IgnoreMods.
-func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key byte) {
+func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key xgb.Keycode) {
 	for _, m := range xgbutil.IgnoreMods {
 		xu.Conn().UngrabKey(key, win, mods|m)
 	}

@@ -141,7 +141,7 @@ func GetGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
 
 // RawGeometry isn't smart. It just queries the window given for geometry.
 func RawGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
-	xgeom, err := xu.Conn().GetGeometry(win)
+	xgeom, err := xu.Conn().GetGeometry(xgb.Drawable(win))
 	if err != nil {
 		return nil, err
 	}

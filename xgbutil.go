@@ -158,7 +158,7 @@ func Dial(display string) (*XUtil, error) {
 
 	// Create a general purpose graphics context
 	xu.gc = xu.conn.NewId()
-	xu.conn.CreateGC(xu.gc, xu.root, xgb.GCForeground,
+	xu.conn.CreateGC(xu.gc, xgb.Drawable(xu.root), xgb.GCForeground,
 		[]uint32{xu.screen.WhitePixel})
 
 	// Create a dummy window

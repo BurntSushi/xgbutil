@@ -44,7 +44,7 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
 	xu.AttachKeyBindCallback(evtype, win, mods, keycode, callback)
 }
 
-func DeduceKeyInfo(state uint16, detail byte) (uint16, byte) {
+func DeduceKeyInfo(state uint16, detail xgb.Keycode) (uint16, xgb.Keycode) {
 	mods, kc := state, detail
 	for _, m := range xgbutil.IgnoreMods {
 		mods &= ^m

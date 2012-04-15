@@ -44,7 +44,7 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback,
 	xu.AttachMouseBindCallback(evtype, win, mods, button, callback)
 }
 
-func deduceButtonInfo(state uint16, detail byte) (uint16, byte) {
+func DeduceButtonInfo(state uint16, detail xgb.Button) (uint16, xgb.Button) {
 	mods, button := state, detail
 	for _, m := range xgbutil.IgnoreMods {
 		mods &= ^m
@@ -96,7 +96,7 @@ func (callback ButtonReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
 // RunButtonPressCallbacks infers the window, button and modifiers from a
 // ButtonPressEvent and runs the corresponding callbacks.
 func RunButtonPressCallbacks(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
-	mods, button := deduceButtonInfo(ev.State, ev.Detail)
+	mods, button := DeduceButtonInfo(ev.State, ev.Detail)
 
 	xu.RunMouseBindCallbacks(ev, xevent.ButtonPress, ev.Event, mods, button)
 }
@@ -106,7 +106,7 @@ func RunButtonPressCallbacks(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
 func RunButtonReleaseCallbacks(xu *xgbutil.XUtil,
 	ev xevent.ButtonReleaseEvent) {
 
-	mods, button := deduceButtonInfo(ev.State, ev.Detail)
+	mods, button := DeduceButtonInfo(ev.State, ev.Detail)
 
 	xu.RunMouseBindCallbacks(ev, xevent.ButtonRelease, ev.Event, mods, button)
 }

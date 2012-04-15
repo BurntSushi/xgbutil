@@ -20,14 +20,14 @@ type MouseBindKey struct {
 	Evtype int
 	Win    xgb.Id
 	Mod    uint16
-	Button byte
+	Button xgb.Button
 }
 
 // AttackMouseBindCallback associates an (event, window, mods, button)
 // with a callback.
 func (xu *XUtil) AttachMouseBindCallback(evtype int, win xgb.Id,
-	mods uint16, button byte,
-	fun MouseBindCallback) {
+	mods uint16, button xgb.Button, fun MouseBindCallback) {
+
 	// Create key
 	key := MouseBindKey{evtype, win, mods, button}
 
@@ -54,7 +54,7 @@ func (xu *XUtil) MouseBindKeys() []MouseBindKey {
 // RunMouseBindCallbacks executes every callback corresponding to a
 // particular event/window/mod/button tuple.
 func (xu *XUtil) RunMouseBindCallbacks(event interface{}, evtype int,
-	win xgb.Id, mods uint16, button byte) {
+	win xgb.Id, mods uint16, button xgb.Button) {
 	// Create key
 	key := MouseBindKey{evtype, win, mods, button}
 
@@ -97,7 +97,7 @@ func (xu *XUtil) DetachMouseBindWindow(evtype int, win xgb.Id) {
 // event/window/mods/button combination. Namely, this combination
 // uniquely identifies a grab. If it's repeated, we get BadAccess.
 func (xu *XUtil) MouseBindGrabs(evtype int, win xgb.Id, mods uint16,
-	button byte) int {
+	button xgb.Button) int {
 	key := MouseBindKey{evtype, win, mods, button}
 	return xu.mousegrabs[key] // returns 0 if key does not exist
 }
