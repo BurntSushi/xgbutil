@@ -30,7 +30,7 @@ func Initialize(xu *xgbutil.XUtil) {
 	xevent.MappingNotifyFun(updateMaps).Connect(xu, xgbutil.NoWindow)
 
 	// Give us an initial mapping state...
-	keyMap, modMap := mapsGet(xu)
+	keyMap, modMap := MapsGet(xu)
 	xu.KeyMapSet(keyMap)
 	xu.ModMapSet(modMap)
 }
@@ -40,7 +40,7 @@ func Initialize(xu *xgbutil.XUtil) {
 // and modifier maps is correct. (Pointer mappings should be handled in
 // a similar callback in the mousebind package.)
 func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
-	keyMap, modMap := mapsGet(xu)
+	keyMap, modMap := MapsGet(xu)
 
 	// Hold up... If this is MappingKeyboard, then we may have some keycode
 	// changes. This is GROSS. We basically need to go through each keycode
@@ -129,7 +129,7 @@ func minMaxKeycodeGet(xu *xgbutil.XUtil) (xgb.Keycode, xgb.Keycode) {
 // A convenience function to grab the KeyboardMapping and ModifierMapping
 // from X. We need to do this on startup (see Initialize) and whenever we
 // get a MappingNotify event.
-func mapsGet(xu *xgbutil.XUtil) (*xgb.GetKeyboardMappingReply,
+func MapsGet(xu *xgbutil.XUtil) (*xgb.GetKeyboardMappingReply,
 	*xgb.GetModifierMappingReply) {
 
 	min, max := minMaxKeycodeGet(xu)
