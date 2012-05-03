@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-import "code.google.com/p/jamslam-x-go-binding/xgb"
+import "github.com/BurntSushi/xgb"
 
 import (
 	"github.com/BurntSushi/xgbutil"

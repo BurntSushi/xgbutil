@@ -19,7 +19,7 @@ import (
 	"code.google.com/p/freetype-go/freetype"
 	"io/ioutil"
 
-	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/xcursor"

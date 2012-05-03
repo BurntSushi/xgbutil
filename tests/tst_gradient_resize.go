@@ -5,7 +5,7 @@ import (
 	"image/color"
 	"log"
 
-	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgb"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
@@ -19,7 +19,7 @@ func createWindow() xgb.Id {
 	wid := X.Conn().NewId()
 	scrn := X.Screen()
 
-	X.Conn().CreateWindow(scrn.RootDepth, wid, X.RootWin(), 0, 0, 1, 1, 0,
+	X.Conn().CreateWindow(scrn.RootDepth, wid, X.RootWin(), 0, 0, 400, 400, 0,
 		xgb.WindowClassInputOutput, scrn.RootVisual, 0, []uint32{})
 
 	return wid

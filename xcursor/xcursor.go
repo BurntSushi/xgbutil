@@ -4,7 +4,7 @@
 */
 package xcursor
 
-import "code.google.com/p/jamslam-x-go-binding/xgb"
+import "github.com/BurntSushi/xgb"
 import "github.com/BurntSushi/xgbutil"
 
 // CreateCursor sets some default colors for nice and easy cursor creation.

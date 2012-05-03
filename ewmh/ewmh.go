@@ -49,7 +49,7 @@
 package ewmh
 
 import (
-	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgb"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"

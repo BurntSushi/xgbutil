@@ -18,7 +18,7 @@ package xevent
 import "fmt"
 
 import (
-	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgbutil"
 )
 
@@ -45,38 +45,40 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
 	data ...interface{}) (*ClientMessageEvent, error) {
 
 	// Create the client data list first
-	clientData := new(xgb.ClientMessageData)
+	var clientData xgb.ClientMessageDataUnion
 
 	// Don't support formats 8 or 16 yet. They aren't used in EWMH anyway.
 	switch Format {
 	case 8:
-		// copy(clientData.Data8[:], data.([]byte)) 
-		// Using a loop here instead of a straight copy because
-		// it appears I can't use type assertions like 'data.([]byte)'.
-		// I'm still on my second day with Go, so I'm not sure why that is yet.
+		buf := make([]byte, 20)
 		for i := 0; i < 20; i++ {
 			if i >= len(data) {
-				clientData.Data8[i] = 0
+				buf[i] = 0
 			} else {
-				clientData.Data8[i] = data[i].(byte)
+				buf[i] = data[i].(byte)
 			}
 		}
+		clientData = xgb.NewClientMessageDataUnionData8(buf)
 	case 16:
+		buf := make([]uint16, 10)
 		for i := 0; i < 10; i++ {
 			if i >= len(data) {
-				clientData.Data16[i] = 0
+				buf[i] = 0
 			} else {
-				clientData.Data16[i] = data[i].(uint16)
+				buf[i] = data[i].(uint16)
 			}
 		}
+		clientData = xgb.NewClientMessageDataUnionData16(buf)
 	case 32:
+		buf := make([]uint32, 5)
 		for i := 0; i < 5; i++ {
 			if i >= len(data) {
-				clientData.Data32[i] = 0
+				buf[i] = 0
 			} else {
-				clientData.Data32[i] = uint32(data[i].(int))
+				buf[i] = uint32(data[i].(int))
 			}
 		}
+		clientData = xgb.NewClientMessageDataUnionData32(buf)
 	default:
 		return nil, xgbutil.Xuerr("NewClientMessage",
 			"Unsupported format '%d'.", Format)
@@ -86,7 +88,7 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
 		Format: 32,
 		Window: Window,
 		Type:   Type,
-		Data:   *clientData,
+		Data:   clientData,
 	}}, nil
 }
 

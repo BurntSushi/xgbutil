@@ -13,7 +13,7 @@ It is not for the faint of heart.
 import (
 	"unicode"
 
-	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgb"
 
 	"github.com/BurntSushi/xgbutil"
 )

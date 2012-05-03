@@ -11,7 +11,7 @@ import (
 	"io"
 	"log"
 
-	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgb"
 
 	"github.com/BurntSushi/xgbutil"
 )
@@ -66,8 +66,8 @@ func processEventError(xu *xgbutil.XUtil, err error) bool {
 	if err == io.EOF {
 		log.Println("EOF. Stopping everything. Sorry :-(")
 		return true
-	} else if xgbErr, ok := err.(*xgb.Error); ok {
-		if !xu.IgnoredWindow(xgbErr.Id) {
+	} else if xgbErr, ok := err.(xgb.Error); ok {
+		if !xu.IgnoredWindow(xgbErr.BadId()) {
 			log.Printf("ERROR: %v\n", err)
 		}
 		return false
@@ -282,7 +282,7 @@ func Main(xu *xgbutil.XUtil) error {
 // SendRootEvent takes a type implementing the XEvent interface, converts it
 // to raw X bytes, and sends it off using the SendEvent request.
 func SendRootEvent(xu *xgbutil.XUtil, ev XEvent, evMask uint32) {
-	xu.Conn().SendEvent(false, xu.RootWin(), evMask, ev.Bytes())
+	xu.Conn().SendEvent(false, xu.RootWin(), evMask, string(ev.Bytes()))
 }
 
 // ReplayPointer is a quick alias to AllowEvents with 'ReplayPointer' mode.

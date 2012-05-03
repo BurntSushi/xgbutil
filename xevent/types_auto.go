@@ -10,7 +10,7 @@
 package xevent
 
 import "fmt"
-import "code.google.com/p/jamslam-x-go-binding/xgb"
+import "github.com/BurntSushi/xgb"
 
 type KeyPressEvent struct {
 	*xgb.KeyPressEvent

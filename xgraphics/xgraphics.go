@@ -22,7 +22,7 @@ import (
 	"code.google.com/p/freetype-go/freetype"
 	"code.google.com/p/freetype-go/freetype/truetype"
 
-	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgb"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -100,7 +100,7 @@ func CreateImageWindow(xu *xgbutil.XUtil, img image.Image, x, y int) xgb.Id {
 	scrn := xu.Screen()
 	width, height := GetDim(img)
 
-	winMask := uint32(xgb.CWBackPixmap | xgb.CWOverrideRedirect)
+	winMask := uint32(xgb.CwBackPixmap | xgb.CwOverrideRedirect)
 	winVals := []uint32{xgb.BackPixmapParentRelative, 1}
 	xu.Conn().CreateWindow(scrn.RootDepth, win, xu.RootWin(),
 		int16(x), int16(y),
@@ -117,7 +117,7 @@ func CreateImageWindow(xu *xgbutil.XUtil, img image.Image, x, y int) xgb.Id {
 // window.
 func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
 	pix := CreatePixmap(xu, img)
-	xu.Conn().ChangeWindowAttributes(win, uint32(xgb.CWBackPixmap),
+	xu.Conn().ChangeWindowAttributes(win, uint32(xgb.CwBackPixmap),
 		[]uint32{uint32(pix)})
 	xu.Conn().ClearArea(false, win, 0, 0, 0, 0)
 	FreePixmap(xu, pix)
@@ -144,7 +144,7 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
 
 	pix := xu.Conn().NewId()
 	xu.Conn().CreatePixmap(xu.Screen().RootDepth, pix,
-		xgb.Drawable(xu.RootWin()), uint16(width), uint16(height))
+		xu.RootWin(), uint16(width), uint16(height))
 
 	// This is where things get hairy. X's max request size is
 	// (2^16) * 4, that is, the number of bytes specifiable in 4-byte
@@ -181,7 +181,7 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
 		// is the last send, we probably aren't sending 'rowsPer' rows.
 		h = len(data) / 4 / width
 
-		xu.Conn().PutImage(xgb.ImageFormatZPixmap, xgb.Drawable(pix), xu.GC(),
+		xu.Conn().PutImage(xgb.ImageFormatZPixmap, pix, xu.GC(),
 			uint16(width), uint16(h), 0, int16(ypos),
 			0, 24, data)
 
@@ -352,7 +352,7 @@ func PixmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
 	}
 
 	width, height := geom.Width(), geom.Height()
-	data, err := xu.Conn().GetImage(xgb.ImageFormatZPixmap, xgb.Drawable(pix),
+	data, err := xu.Conn().GetImage(xgb.ImageFormatZPixmap, pix,
 		0, 0, uint16(width), uint16(height), (1<<32)-1)
 	if err != nil {
 		return nil, err
@@ -389,7 +389,7 @@ func BitmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
 	}
 
 	width, height := geom.Width(), geom.Height()
-	data, err := xu.Conn().GetImage(xgb.ImageFormatXYPixmap, xgb.Drawable(pix),
+	data, err := xu.Conn().GetImage(xgb.ImageFormatXYPixmap, pix,
 		0, 0, uint16(width), uint16(height), (1<<32)-1)
 	if err != nil {
 		return nil, err

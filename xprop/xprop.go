@@ -8,7 +8,7 @@
 package xprop
 
 import (
-	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgbutil"
 )
 
@@ -55,7 +55,7 @@ func ChangeProp(xu *xgbutil.XUtil, win xgb.Id, format byte, prop string,
 	}
 
 	xu.Conn().ChangeProperty(xgb.PropModeReplace, win, propAtom,
-		typAtom, format, data)
+		typAtom, format, uint32(len(data)/int(format)), data)
 	return nil
 }
 
@@ -93,7 +93,7 @@ func Atom(xu *xgbutil.XUtil, name string, only_if_exists bool) (xgb.Id, error) {
 		return aid, nil
 	}
 
-	reply, err := xu.Conn().InternAtom(only_if_exists, name)
+	reply, err := xu.Conn().InternAtom(only_if_exists, uint16(len(name)), name)
 	if err != nil {
 		return 0, xgbutil.Xerr(err, "Atom", "Error interning atom '%s'", name)
 	}

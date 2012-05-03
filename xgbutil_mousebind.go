@@ -4,7 +4,7 @@
 */
 package xgbutil
 
-import "code.google.com/p/jamslam-x-go-binding/xgb"
+import "github.com/BurntSushi/xgb"
 
 // MouseBindCallback operates in the spirit of Callback, except that it works
 // specifically on mouse bindings.

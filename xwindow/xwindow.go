@@ -24,7 +24,7 @@
 */
 package xwindow
 
-import "code.google.com/p/jamslam-x-go-binding/xgb"
+import "github.com/BurntSushi/xgb"
 
 import (
 	"github.com/BurntSushi/xgbutil"
@@ -41,7 +41,7 @@ func Listen(xu *xgbutil.XUtil, win xgb.Id, evMasks ...int) {
 		evMask |= mask
 	}
 
-	xu.Conn().ChangeWindowAttributes(win, xgb.CWEventMask,
+	xu.Conn().ChangeWindowAttributes(win, xgb.CwEventMask,
 		[]uint32{uint32(evMask)})
 }
 
@@ -141,7 +141,7 @@ func GetGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
 
 // RawGeometry isn't smart. It just queries the window given for geometry.
 func RawGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
-	xgeom, err := xu.Conn().GetGeometry(xgb.Drawable(win))
+	xgeom, err := xu.Conn().GetGeometry(win)
 	if err != nil {
 		return nil, err
 	}

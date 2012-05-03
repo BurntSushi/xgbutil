@@ -5,7 +5,7 @@ import (
 	"log"
 	"math/rand"
 	// "os" 
-	"code.google.com/p/jamslam-x-go-binding/xgb"
+	"github.com/BurntSushi/xgb"
 	"time"
 )
 

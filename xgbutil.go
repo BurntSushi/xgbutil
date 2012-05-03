@@ -8,8 +8,8 @@
 package xgbutil
 
 import (
-	"code.google.com/p/jamslam-x-go-binding/xgb"
 	"fmt"
+	"github.com/BurntSushi/xgb"
 	"log"
 )
 
@@ -158,7 +158,7 @@ func Dial(display string) (*XUtil, error) {
 
 	// Create a general purpose graphics context
 	xu.gc = xu.conn.NewId()
-	xu.conn.CreateGC(xu.gc, xgb.Drawable(xu.root), xgb.GCForeground,
+	xu.conn.CreateGC(xu.gc, xu.root, xgb.GcForeground,
 		[]uint32{xu.screen.WhitePixel})
 
 	// Create a dummy window
@@ -166,7 +166,7 @@ func Dial(display string) (*XUtil, error) {
 	xu.conn.CreateWindow(xu.Screen().RootDepth, xu.dummy, xu.RootWin(),
 		-1000, -1000, 1, 1, 0,
 		xgb.WindowClassInputOutput, xu.Screen().RootVisual,
-		xgb.CWEventMask|xgb.CWOverrideRedirect,
+		xgb.CwEventMask|xgb.CwOverrideRedirect,
 		[]uint32{1, xgb.EventMaskPropertyChange})
 	xu.conn.MapWindow(xu.dummy)
 
@@ -351,23 +351,6 @@ func (xu *XUtil) IgnoreWindowErrorsRemove(id xgb.Id) {
 
 // True utility/misc functions. Could be factored out to another package at 
 // some point.
-
-// BeSafe will recover from any panic produced by xgb or xgbutil and transform
-// it into an idiomatic Go error as a second return value.
-func BeSafe(err *error) {
-	if r := recover(); r != nil {
-		// If we get an error that isn't from xgbutil or xgb itself,
-		// then let the panic happen.
-		var ok bool
-		*err, ok = r.(*XError)
-		if !ok {
-			*err, ok = r.(*xgb.Error)
-			if !ok { // some other error, panic!
-				panic(r)
-			}
-		}
-	}
-}
 
 // put16 adds a 16 bit integer to a byte slice.
 // Lifted from the xgb package.
