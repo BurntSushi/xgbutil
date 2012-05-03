@@ -15,6 +15,7 @@ import (
 // GetProperty abstracts the messiness of calling xgb.GetProperty.
 func GetProperty(xu *xgbutil.XUtil, win xgb.Id, atom string) (
 	*xgb.GetPropertyReply, error) {
+
 	atomId, err := Atm(xu, atom)
 	if err != nil {
 		return nil, err
