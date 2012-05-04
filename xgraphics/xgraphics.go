@@ -96,7 +96,10 @@ func ParseFont(fontBytes []byte) (*truetype.Font, error) {
 // XXX: This will likely change to include the window masks and vals as
 // parameters.
 func CreateImageWindow(xu *xgbutil.XUtil, img image.Image, x, y int) xgb.Id {
-	win := xu.Conn().NewId()
+	win, err := xu.Conn().NewId()
+	if err != nil {
+		return 0
+	}
 	scrn := xu.Screen()
 	width, height := GetDim(img)
 
@@ -142,7 +145,10 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
 		}
 	}
 
-	pix := xu.Conn().NewId()
+	pix, err := xu.Conn().NewId()
+	if err != nil {
+		return 0
+	}
 	xu.Conn().CreatePixmap(xu.Screen().RootDepth, pix,
 		xu.RootWin(), uint16(width), uint16(height))
 

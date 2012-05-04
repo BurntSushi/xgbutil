@@ -126,7 +126,7 @@ var IgnoreMods []uint16 = []uint16{
 
 // Dial connects to the X server and creates a new XUtil.
 func Dial(display string) (*XUtil, error) {
-	c, err := xgb.Dial(display)
+	c, err := xgb.NewConnDisplay(display)
 
 	if err != nil {
 		return nil, err
@@ -157,12 +157,18 @@ func Dial(display string) (*XUtil, error) {
 	}
 
 	// Create a general purpose graphics context
-	xu.gc = xu.conn.NewId()
+	xu.gc, err = xu.conn.NewId()
+	if err != nil {
+		return nil, err
+	}
 	xu.conn.CreateGC(xu.gc, xu.root, xgb.GcForeground,
 		[]uint32{xu.screen.WhitePixel})
 
 	// Create a dummy window
-	xu.dummy = xu.conn.NewId()
+	xu.dummy, err = xu.conn.NewId()
+	if err != nil {
+		return nil, err
+	}
 	xu.conn.CreateWindow(xu.Screen().RootDepth, xu.dummy, xu.RootWin(),
 		-1000, -1000, 1, 1, 0,
 		xgb.WindowClassInputOutput, xu.Screen().RootVisual,

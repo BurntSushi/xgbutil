@@ -16,7 +16,10 @@ import (
 var X *xgbutil.XUtil
 
 func createWindow() xgb.Id {
-	wid := X.Conn().NewId()
+	wid, err := X.Conn().NewId()
+	if err != nil {
+		log.Fatal(err)
+	}
 	scrn := X.Screen()
 
 	X.Conn().CreateWindow(scrn.RootDepth, wid, X.RootWin(), 0, 0, 400, 400, 0,
