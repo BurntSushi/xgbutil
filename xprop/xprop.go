@@ -8,6 +8,8 @@
 package xprop
 
 import (
+	"fmt"
+
 	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgbutil"
 )
@@ -23,18 +25,16 @@ func GetProperty(xu *xgbutil.XUtil, win xgb.Id, atom string) (
 
 	reply, err := xu.Conn().GetProperty(false, win, atomId,
 		xgb.GetPropertyTypeAny, 0,
-		(1<<32)-1)
+		(1<<32)-1).Reply()
 
 	if err != nil {
-		return nil, xgbutil.Xerr(err, "GetProperty",
-			"Error retrieving property '%s' on window %x",
-			atom, win)
+		return nil, fmt.Errorf("GetProperty: Error retrieving property '%s' "+
+			"on window %x: %s", atom, win, err)
 	}
 
 	if reply.Format == 0 {
-		return nil, xgbutil.Xuerr("GetProperty",
-			"No such property '%s' on window %x.",
-			atom, win)
+		return nil, fmt.Errorf("GetProperty: No such property '%s' on "+
+			"window %x.", atom, win)
 	}
 
 	return reply, nil
@@ -55,7 +55,7 @@ func ChangeProp(xu *xgbutil.XUtil, win xgb.Id, format byte, prop string,
 	}
 
 	xu.Conn().ChangeProperty(xgb.PropModeReplace, win, propAtom,
-		typAtom, format, uint32(len(data)/int(format)), data)
+		typAtom, format, uint32(len(data)/(int(format)/8)), data)
 	return nil
 }
 
@@ -66,7 +66,7 @@ func ChangeProp32(xu *xgbutil.XUtil, win xgb.Id, prop string, typ string,
 
 	buf := make([]byte, len(data)*4)
 	for i, datum := range data {
-		xgbutil.Put32(buf[(i*4):], uint32(datum))
+		xgb.Put32(buf[(i*4):], uint32(datum))
 	}
 
 	return ChangeProp(xu, win, 32, prop, typ, buf)
@@ -79,8 +79,7 @@ func Atm(xu *xgbutil.XUtil, name string) (xgb.Id, error) {
 		return 0, err
 	}
 	if aid == 0 {
-		return 0, xgbutil.Xuerr("Atm", "'%s' returned an identifier of 0.",
-			name)
+		return 0, fmt.Errorf("Atm: '%s' returned an identifier of 0.", name)
 	}
 
 	return aid, err
@@ -93,9 +92,10 @@ func Atom(xu *xgbutil.XUtil, name string, only_if_exists bool) (xgb.Id, error) {
 		return aid, nil
 	}
 
-	reply, err := xu.Conn().InternAtom(only_if_exists, uint16(len(name)), name)
+	reply, err := xu.Conn().InternAtom(only_if_exists,
+		uint16(len(name)), name).Reply()
 	if err != nil {
-		return 0, xgbutil.Xerr(err, "Atom", "Error interning atom '%s'", name)
+		return 0, fmt.Errorf("Atom: Error interning atom '%s': %s", name, err)
 	}
 
 	// If we're here, it means we didn't have this atom cached. So cache it!
@@ -111,10 +111,10 @@ func AtomName(xu *xgbutil.XUtil, aid xgb.Id) (string, error) {
 		return string(atomName), nil
 	}
 
-	reply, err := xu.Conn().GetAtomName(aid)
+	reply, err := xu.Conn().GetAtomName(aid).Reply()
 	if err != nil {
-		return "", xgbutil.Xerr(err, "AtomName",
-			"Error fetching name for ATOM id '%d'", aid)
+		return "", fmt.Errorf("AtomName: Error fetching name for ATOM "+
+			"id '%d': %s", aid, err)
 	}
 
 	// If we're here, it means we didn't have ths ATOM id cached. So cache it.
@@ -161,11 +161,11 @@ func PropValAtom(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply,
 		return "", err
 	}
 	if reply.Format != 32 {
-		return "", xgbutil.Xuerr("PropValAtom", "Expected format 32 but got %d",
+		return "", fmt.Errorf("PropValAtom: Expected format 32 but got %d",
 			reply.Format)
 	}
 
-	return AtomName(xu, xgb.Id(xgbutil.Get32(reply.Value)))
+	return AtomName(xu, xgb.Id(xgb.Get32(reply.Value)))
 }
 
 // PropValAtoms is the same as PropValAtom, except that it returns a slice
@@ -178,14 +178,14 @@ func PropValAtoms(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply,
 		return nil, err
 	}
 	if reply.Format != 32 {
-		return nil, xgbutil.Xuerr("PropValAtoms",
-			"Expected format 32 but got %d", reply.Format)
+		return nil, fmt.Errorf("PropValAtoms: Expected format 32 but got %d",
+			reply.Format)
 	}
 
 	ids := make([]string, reply.ValueLen)
 	vals := reply.Value
 	for i := 0; len(vals) >= 4; i++ {
-		ids[i], err = AtomName(xu, xgb.Id(xgbutil.Get32(vals)))
+		ids[i], err = AtomName(xu, xgb.Id(xgb.Get32(vals)))
 		if err != nil {
 			return nil, err
 		}
@@ -204,11 +204,11 @@ func PropValId(reply *xgb.GetPropertyReply, err error) (xgb.Id, error) {
 		return 0, err
 	}
 	if reply.Format != 32 {
-		return 0, xgbutil.Xuerr("PropValId", "Expected format 32 but got %d",
+		return 0, fmt.Errorf("PropValId: Expected format 32 but got %d",
 			reply.Format)
 	}
 
-	return xgb.Id(xgbutil.Get32(reply.Value)), nil
+	return xgb.Id(xgb.Get32(reply.Value)), nil
 }
 
 // PropValIds is the same as PropValId, except that it returns a slice
@@ -218,14 +218,14 @@ func PropValIds(reply *xgb.GetPropertyReply, err error) ([]xgb.Id, error) {
 		return nil, err
 	}
 	if reply.Format != 32 {
-		return nil, xgbutil.Xuerr("PropValIds", "Expected format 32 but got %d",
+		return nil, fmt.Errorf("PropValIds: Expected format 32 but got %d",
 			reply.Format)
 	}
 
 	ids := make([]xgb.Id, reply.ValueLen)
 	vals := reply.Value
 	for i := 0; len(vals) >= 4; i++ {
-		ids[i] = xgb.Id(xgbutil.Get32(vals))
+		ids[i] = xgb.Id(xgb.Get32(vals))
 		vals = vals[4:]
 	}
 
@@ -239,11 +239,11 @@ func PropValNum(reply *xgb.GetPropertyReply, err error) (int, error) {
 		return 0, err
 	}
 	if reply.Format != 32 {
-		return 0, xgbutil.Xuerr("PropValNum", "Expected format 32 but got %d",
+		return 0, fmt.Errorf("PropValNum: Expected format 32 but got %d",
 			reply.Format)
 	}
 
-	return int(xgbutil.Get32(reply.Value)), nil
+	return int(xgb.Get32(reply.Value)), nil
 }
 
 // PropValNums is the same as PropValNum, except that it returns a slice
@@ -253,14 +253,14 @@ func PropValNums(reply *xgb.GetPropertyReply, err error) ([]int, error) {
 		return nil, err
 	}
 	if reply.Format != 32 {
-		return nil, xgbutil.Xuerr("PropValIds", "Expected format 32 but got %d",
+		return nil, fmt.Errorf("PropValIds: Expected format 32 but got %d",
 			reply.Format)
 	}
 
 	nums := make([]int, reply.ValueLen)
 	vals := reply.Value
 	for i := 0; len(vals) >= 4; i++ {
-		nums[i] = int(xgbutil.Get32(vals))
+		nums[i] = int(xgb.Get32(vals))
 		vals = vals[4:]
 	}
 
@@ -275,7 +275,7 @@ func PropValStr(reply *xgb.GetPropertyReply, err error) (string, error) {
 		return "", err
 	}
 	if reply.Format != 8 {
-		return "", xgbutil.Xuerr("PropValStr", "Expected format 8 but got %d",
+		return "", fmt.Errorf("PropValStr: Expected format 8 but got %d",
 			reply.Format)
 	}
 
@@ -290,7 +290,7 @@ func PropValStrs(reply *xgb.GetPropertyReply, err error) ([]string, error) {
 		return nil, err
 	}
 	if reply.Format != 8 {
-		return nil, xgbutil.Xuerr("PropValStrs", "Expected format 8 but got %d",
+		return nil, fmt.Errorf("PropValStrs: Expected format 8 but got %d",
 			reply.Format)
 	}
 

@@ -102,6 +102,17 @@ func (xu *XUtil) MouseBindGrabs(evtype int, win xgb.Id, mods uint16,
 	return xu.mousegrabs[key] // returns 0 if key does not exist
 }
 
+// MouseDragFun is the kind of function used on each dragging step
+// and at the end of a drag.
+type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int)
+
+// MouseDragBeginFun is the kind of function used to initialize a drag.
+// The difference between this and MouseDragFun is that the begin function
+// returns a bool (of whether or not to cancel the drag) and an X resource
+// identifier corresponding to a cursor.
+type MouseDragBeginFun func(xu *XUtil, rootX, rootY,
+	eventX, eventY int) (bool, xgb.Id)
+
 // MouseDrag true when a mouse drag is in progress.
 func (xu *XUtil) MouseDrag() bool {
 	return xu.mouseDrag

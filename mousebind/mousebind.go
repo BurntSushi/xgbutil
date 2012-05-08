@@ -4,13 +4,12 @@
 */
 package mousebind
 
-import "log"
-import "strconv"
-import "strings"
-
-import "github.com/BurntSushi/xgb"
-
 import (
+	"strconv"
+	"strings"
+
+	"github.com/BurntSushi/xgb"
+
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
 )
@@ -77,16 +76,16 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, xgb.Button) {
 				if err == nil {
 					button = xgb.Button(possible)
 				} else {
-					log.Printf("We could not convert '%s' to a valid 8-bit "+
-						"integer. Assuming 0.\n", part)
+					xgbutil.Logger.Printf("We could not convert '%s' to a "+
+						"valid 8-bit integer. Assuming 0.", part)
 				}
 			}
 		}
 	}
 
 	if button == 0 {
-		log.Printf("We could not find a valid button in the string '%s'. "+
-			"Things probably will not work right.\n", str)
+		xgbutil.Logger.Printf("We could not find a valid button in the "+
+			"string '%s'. Things probably will not work right.", str)
 	}
 
 	return mods, button

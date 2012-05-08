@@ -62,7 +62,7 @@ func newGradientWindow(width, height int) {
 }
 
 func main() {
-	X, _ = xgbutil.Dial("")
+	X, _ = xgbutil.NewConn()
 
 	go newGradientWindow(200, 200)
 	go newGradientWindow(400, 400)

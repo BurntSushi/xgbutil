@@ -1,26 +1,25 @@
-/*
-   This is a utility library designed to work with the X Go Binding. This 
-   project's main goal is to make various X related tasks easier. For example, 
-   binding keys, using the EWMH or ICCCM specs with the window manager, 
-   moving/resizing windows, assigning function callbacks to particular events, 
-   etc.
-*/
 package xgbutil
 
 import (
-	"fmt"
-	"github.com/BurntSushi/xgb"
 	"log"
+	"os"
+
+	"github.com/BurntSushi/xgb"
 )
 
-const MAX_REQ_SIZE = (1 << 16) * 4
+// Logger is used through xgbutil when messages need to be emitted to stderr.
+var Logger = log.New(os.Stderr, "XGBUTIL: ", 0)
+
+// The current maximum request size. I think we can expand this with
+// BigReq, but it probably isn't worth it at the moment.
+const MaxReqSize = (1 << 16) * 4
 
 // An XUtil represents the state of xgbutil. It keeps track of the current 
 // X connection, the root window, event callbacks, key/mouse bindings, etc.
 type XUtil struct {
 	conn      *xgb.Conn
 	quit      bool // when true, the main event loop will stop gracefully
-	evqueue   []xgb.Event
+	evqueue   []eventOrError
 	screen    *xgb.ScreenInfo
 	root      xgb.Id
 	eventTime xgb.Timestamp
@@ -45,87 +44,19 @@ type XUtil struct {
 
 	dummy xgb.Id // a dummy window used for mouse/key GRABs
 
-	ignoreWindowErrors map[xgb.Id]bool // when true, errors don't go to stderr
+	errorHandler ErrorHandlerFun
 }
 
-type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int)
-type MouseDragBeginFun func(xu *XUtil, rootX, rootY,
-	eventX, eventY int) (bool, xgb.Id)
-
-// Callback is an interface that should be implemented by event callback 
-// functions. Namely, to assign a function to a particular event/window
-// combination, simply define a function with type '|Event|Fun' (pre-defined
-// in xevent/callback.go), and call the 'Connect' method.
-// The 'Run' method is used inside the Main event loop, and shouldn't be used
-// by the user.
-// Also, it is perfectly legitimate to connect to events that don't specify
-// a window (like MappingNotify and KeymapNotify). In this case, simply
-// use 'xgbutil.NoWindow' as the window id.
-type Callback interface {
-	Connect(xu *XUtil, win xgb.Id)
-	Run(xu *XUtil, ev interface{})
+// NewConn connects to the X server using the DISPLAY environment variable
+// and creates a new XUtil.
+func NewConn() (*XUtil, error) {
+	return NewConnDisplay("")
 }
 
-// Sometimes we need to specify NO WINDOW when a window is typically
-// expected. (Like connecting to MappingNotify or KeymapNotify events.)
-// Use this value to do that.
-var NoWindow xgb.Id = 0
-
-// XError encapsulates any error returned by xgbutil.
-type XError struct {
-	funcName string     // some identifier so we know where the error comes from
-	err      string     // free form string explaining the error
-	XGBError *xgb.Error // error struct from XGB - to get the raw X error
-}
-
-// Error turns values of type *XError into a nice string.
-func (xe *XError) Error() string {
-	return fmt.Sprintf("%s: %s", xe.funcName, xe.err)
-}
-
-// Constructs an error struct from an X error
-func Xerr(xgberr interface{}, funcName string, err string,
-	params ...interface{}) *XError {
-	switch e := xgberr.(type) {
-	case *xgb.Error:
-		return &XError{
-			funcName: funcName,
-			err:      fmt.Sprintf("%s: %v", fmt.Sprintf(err, params...), e),
-			XGBError: e,
-		}
-	case error:
-		return &XError{
-			funcName: "",
-			err:      e.Error(),
-			XGBError: nil,
-		}
-	}
-
-	panic(Xuerr("Xerr", "Unsupported error type: %T: %s", xgberr, err))
-}
-
-// Constructs an error struct from an error inside xgbutil (i.e., user error)
-func Xuerr(funcName string, err string, params ...interface{}) *XError {
-	return &XError{
-		funcName: funcName,
-		err:      fmt.Sprintf(err, params...),
-		XGBError: nil,
-	}
-}
-
-// IgnoreMods is a list of X modifiers that we don't want interfering
-// with our mouse or key bindings. In particular, for each mouse or key binding 
-// issued, there is a seperate mouse or key binding made for each of the 
-// following modifiers.
-var IgnoreMods []uint16 = []uint16{
-	0,
-	xgb.ModMaskLock,                // Num lock
-	xgb.ModMask2,                   // Caps lock
-	xgb.ModMaskLock | xgb.ModMask2, // Caps and Num lock
-}
-
-// Dial connects to the X server and creates a new XUtil.
-func Dial(display string) (*XUtil, error) {
+// NewConnDisplay connects to the X server and creates a new XUtil.
+// See the XGB documentation for xgb.NewConnDisplay for which values of
+// 'display' are supported.
+func NewConnDisplay(display string) (*XUtil, error) {
 	c, err := xgb.NewConnDisplay(display)
 
 	if err != nil {
@@ -134,26 +65,26 @@ func Dial(display string) (*XUtil, error) {
 
 	// Initialize our central struct that stores everything.
 	xu := &XUtil{
-		conn:               c,
-		quit:               false,
-		evqueue:            make([]xgb.Event, 0),
-		screen:             c.DefaultScreen(),
-		root:               c.DefaultScreen().Root,
-		eventTime:          xgb.Timestamp(0), // last event time
-		atoms:              make(map[string]xgb.Id, 50),
-		atomNames:          make(map[xgb.Id]string, 50),
-		callbacks:          make(map[int]map[xgb.Id][]Callback, 33),
-		keymap:             nil, // we don't have anything yet
-		modmap:             nil,
-		keyRedirect:        0,
-		keybinds:           make(map[KeyBindKey][]KeyBindCallback, 10),
-		keygrabs:           make(map[KeyBindKey]int, 10),
-		mousebinds:         make(map[MouseBindKey][]MouseBindCallback, 10),
-		mousegrabs:         make(map[MouseBindKey]int, 10),
-		mouseDrag:          false,
-		mouseDragStep:      nil,
-		mouseDragEnd:       nil,
-		ignoreWindowErrors: make(map[xgb.Id]bool, 10),
+		conn:          c,
+		quit:          false,
+		evqueue:       make([]eventOrError, 0),
+		screen:        c.DefaultScreen(),
+		root:          c.DefaultScreen().Root,
+		eventTime:     xgb.Timestamp(0), // last event time
+		atoms:         make(map[string]xgb.Id, 50),
+		atomNames:     make(map[xgb.Id]string, 50),
+		callbacks:     make(map[int]map[xgb.Id][]Callback, 33),
+		keymap:        nil, // we don't have anything yet
+		modmap:        nil,
+		keyRedirect:   0,
+		keybinds:      make(map[KeyBindKey][]KeyBindCallback, 10),
+		keygrabs:      make(map[KeyBindKey]int, 10),
+		mousebinds:    make(map[MouseBindKey][]MouseBindCallback, 10),
+		mousegrabs:    make(map[MouseBindKey]int, 10),
+		mouseDrag:     false,
+		mouseDragStep: nil,
+		mouseDragEnd:  nil,
+		errorHandler:  defaultErrorHandler,
 	}
 
 	// Create a general purpose graphics context
@@ -177,14 +108,14 @@ func Dial(display string) (*XUtil, error) {
 	xu.conn.MapWindow(xu.dummy)
 
 	// Register the Xinerama extension... because it doesn't cost much.
-	err = xu.conn.RegisterExtension("XINERAMA")
+	err = xu.conn.XineramaInit()
 
 	// If we can't register Xinerama, that's okay. Output something
 	// and move on.
 	if err != nil {
-		log.Printf("WARNING: %s\n", err)
-		log.Printf("MESSAGE: The 'xinerama' package cannot be used because " +
-			"the XINERAMA extension could not be loaded.")
+		Logger.Printf("WARNING: %s\n", err)
+		Logger.Printf("MESSAGE: The 'xinerama' package cannot be used " +
+			"because the XINERAMA extension could not be loaded.")
 	}
 
 	return xu, nil
@@ -213,33 +144,6 @@ func (xu *XUtil) Quitting() bool {
 // Forces XGB to catch up with all events and synchronize.
 func (xu *XUtil) Flush() {
 	xu.conn.GetInputFocus()
-}
-
-// Enqueue queues up an event read from X.
-func (xu *XUtil) Enqueue(ev xgb.Event) {
-	xu.evqueue = append(xu.evqueue, ev)
-}
-
-// Dequeue pops an event from the queue and returns it.
-func (xu *XUtil) Dequeue() xgb.Event {
-	ev := xu.evqueue[0]
-	xu.evqueue = xu.evqueue[1:]
-	return ev
-}
-
-// DequeueAt removes a particular item from the queue
-func (xu *XUtil) DequeueAt(i int) {
-	xu.evqueue = append(xu.evqueue[:i], xu.evqueue[i+1:]...)
-}
-
-// QueueEmpty returns whether the event queue is empty or not.
-func (xu *XUtil) QueueEmpty() bool {
-	return len(xu.evqueue) == 0
-}
-
-// QueuePeek returns the current queue so we can examine it
-func (xu *XUtil) QueuePeek() []xgb.Event {
-	return xu.evqueue
 }
 
 // Screen returns the default screen
@@ -336,58 +240,99 @@ func (xu *XUtil) Ungrab() {
 	xu.conn.UngrabServer()
 }
 
-// IgnoredWindow returns true if the given client id's errors should be
-// exempt from stderr and false otherwise.
-func (xu *XUtil) IgnoredWindow(id xgb.Id) bool {
-	ignored, ok := xu.ignoreWindowErrors[id]
-	return ok && ignored
+// Enqueue queues up an event read from X.
+func (xu *XUtil) Enqueue(everr eventOrError) {
+	xu.evqueue = append(xu.evqueue, everr)
 }
 
-// IgnoreWindowErrorsAdd ignores all errors generated by the client ID
-// provided. "ignore" means to not emit to stderr.
-func (xu *XUtil) IgnoreWindowErrorsAdd(id xgb.Id) {
-	xu.ignoreWindowErrors[id] = true
+// Dequeue pops an event from the queue and returns it.
+func (xu *XUtil) Dequeue() eventOrError {
+	everr := xu.evqueue[0]
+	xu.evqueue = xu.evqueue[1:]
+	return everr
 }
 
-// IgnoreWindowErrorsRemove stops ignoring all errors generated by the client 
-// ID provided. "ignore" means to not emit to stderr.
-func (xu *XUtil) IgnoreWindowErrorsRemove(id xgb.Id) {
-	delete(xu.ignoreWindowErrors, id)
+// DequeueAt removes a particular item from the queue
+func (xu *XUtil) DequeueAt(i int) {
+	xu.evqueue = append(xu.evqueue[:i], xu.evqueue[i+1:]...)
 }
 
-// True utility/misc functions. Could be factored out to another package at 
-// some point.
-
-// put16 adds a 16 bit integer to a byte slice.
-// Lifted from the xgb package.
-func Put16(buf []byte, v uint16) {
-	buf[0] = byte(v)
-	buf[1] = byte(v >> 8)
+// QueueEmpty returns whether the event queue is empty or not.
+func (xu *XUtil) QueueEmpty() bool {
+	return len(xu.evqueue) == 0
 }
 
-// put32 adds a 32 bit integer to a byte slice.
-// Lifted from the xgb package.
-func Put32(buf []byte, v uint32) {
-	buf[0] = byte(v)
-	buf[1] = byte(v >> 8)
-	buf[2] = byte(v >> 16)
-	buf[3] = byte(v >> 24)
+// QueuePeek returns the current queue so we can examine it
+func (xu *XUtil) QueuePeek() []eventOrError {
+	return xu.evqueue
 }
 
-// get16 extracts a 16 bit integer from a byte slice.
-// Lifted from the xgb package.
-func Get16(buf []byte) uint16 {
-	v := uint16(buf[0])
-	v |= uint16(buf[1]) << 8
-	return v
+// ErrorHandlerFun is the type of function required to handle errors that
+// come in through the main event loop.
+type ErrorHandlerFun func(err xgb.Error)
+
+// ErrorHandlerSet sets the default error handler for errors that come
+// into the main event loop. (This may be removed in the future in favor
+// of a particular callback interface like events, but these sorts of errors
+// aren't handled often in practice, so maybe not.)
+// This is only called for errors returned from unchecked (asynchronous error
+// handling) requests.
+func (xu *XUtil) ErrorHandlerSet(fun ErrorHandlerFun) {
+	xu.errorHandler = fun
 }
 
-// get32 extracts a 32 bit integer from a byte slice.
-// Lifted from the xgb package.
-func Get32(buf []byte) uint32 {
-	v := uint32(buf[0])
-	v |= uint32(buf[1]) << 8
-	v |= uint32(buf[2]) << 16
-	v |= uint32(buf[3]) << 24
-	return v
+// ErrorHandlerGet retrieves the default error handler.
+func (xu *XUtil) ErrorHandlerGet() ErrorHandlerFun {
+	return xu.errorHandler
+}
+
+// defaultErrorHandler just emits errors to stderr.
+func defaultErrorHandler(err xgb.Error) {
+	Logger.Println(err)
+}
+
+// eventOrError is a struct that contains either an event value or an error
+// value. It is an error to contain both. Containing neither indicates an
+// error too.
+type eventOrError struct {
+	Event xgb.Event
+	Err   xgb.Error
+}
+
+// newEventOrError creates a new eventOrError value.
+func NewEventOrError(event xgb.Event, err xgb.Error) eventOrError {
+	return eventOrError{
+		Event: event,
+		Err:   err,
+	}
+}
+
+// Callback is an interface that should be implemented by event callback 
+// functions. Namely, to assign a function to a particular event/window
+// combination, simply define a function with type '|Event|Fun' (pre-defined
+// in xevent/callback.go), and call the 'Connect' method.
+// The 'Run' method is used inside the Main event loop, and shouldn't be used
+// by the user.
+// Also, it is perfectly legitimate to connect to events that don't specify
+// a window (like MappingNotify and KeymapNotify). In this case, simply
+// use 'xgbutil.NoWindow' as the window id.
+type Callback interface {
+	Connect(xu *XUtil, win xgb.Id)
+	Run(xu *XUtil, ev interface{})
+}
+
+// Sometimes we need to specify NO WINDOW when a window is typically
+// expected. (Like connecting to MappingNotify or KeymapNotify events.)
+// Use this value to do that.
+var NoWindow xgb.Id = 0
+
+// IgnoreMods is a list of X modifiers that we don't want interfering
+// with our mouse or key bindings. In particular, for each mouse or key binding 
+// issued, there is a seperate mouse or key binding made for each of the 
+// following modifiers.
+var IgnoreMods []uint16 = []uint16{
+	0,
+	xgb.ModMaskLock,                // Num lock
+	xgb.ModMask2,                   // Caps lock
+	xgb.ModMaskLock | xgb.ModMask2, // Caps and Num lock
 }

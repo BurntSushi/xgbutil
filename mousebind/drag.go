@@ -1,10 +1,8 @@
 package mousebind
 
-import "log"
-
-import "github.com/BurntSushi/xgb"
-
 import (
+	"github.com/BurntSushi/xgb"
+
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
 )
@@ -26,11 +24,12 @@ func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string, grab bool,
 func dragGrab(xu *xgbutil.XUtil, win xgb.Id, cursor xgb.Id) bool {
 	status, err := GrabPointer(xu, xu.Dummy(), xu.RootWin(), cursor)
 	if err != nil {
-		log.Printf("Mouse dragging was unsuccessful because: %v", err)
+		xgbutil.Logger.Printf("Mouse dragging was unsuccessful because: %v",
+			err)
 		return false
 	}
 	if !status {
-		log.Println("Mouse dragging was unsuccessful because " +
+		xgbutil.Logger.Println("Mouse dragging was unsuccessful because " +
 			"we could not establish a pointer grab.")
 		return false
 	}

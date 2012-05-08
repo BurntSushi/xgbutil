@@ -1,3 +1,5 @@
+package xevent
+
 /*
    Defines event types and their associated methods automatically.
 
@@ -7,7 +9,6 @@
 
    Edit it at your peril.
 */
-package xevent
 
 import "fmt"
 import "github.com/BurntSushi/xgb"

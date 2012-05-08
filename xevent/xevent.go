@@ -8,9 +8,6 @@
 package xevent
 
 import (
-	"io"
-	"log"
-
 	"github.com/BurntSushi/xgb"
 
 	"github.com/BurntSushi/xgbutil"
@@ -19,16 +16,13 @@ import (
 // Read reads one or more events and queues them in XUtil.
 // If 'block' is True, then call 'WaitForEvent' before sucking up
 // all events that have been queued by XGB.
-// Returns false if we've hit an unrecoverable error and need to quit.
-func Read(xu *xgbutil.XUtil, block bool) bool {
+func Read(xu *xgbutil.XUtil, block bool) {
 	if block {
 		ev, err := xu.Conn().WaitForEvent()
-		if err != nil {
-			if processEventError(xu, err) {
-				return false
-			}
+		if ev == nil && err == nil {
+			xgbutil.Logger.Fatal("BUG: Could not read an event or an error.")
 		}
-		xu.Enqueue(ev)
+		xu.Enqueue(xgbutil.NewEventOrError(ev, err))
 	}
 
 	// Clean up anything that's in the queue
@@ -40,41 +34,9 @@ func Read(xu *xgbutil.XUtil, block bool) bool {
 			break
 		}
 
-		// Error!
-		if err != nil {
-			if processEventError(xu, err) {
-				return false
-			} else {
-				continue
-			}
-		}
-
 		// We're good, queue it up
-		xu.Enqueue(ev)
+		xu.Enqueue(xgbutil.NewEventOrError(ev, err))
 	}
-
-	return true
-}
-
-// processEventError handles errors returned when calling
-// WaitForEvent or PollForEvent.
-// In particular, if the error is extreme (like EOF), then we unfortunately
-// need to crash. If it's something like a BadValue or a BadWindow, we can
-// live for another day...
-// The 'bool' return value is true when the caller needs to QUIT.
-func processEventError(xu *xgbutil.XUtil, err error) bool {
-	if err == io.EOF {
-		log.Println("EOF. Stopping everything. Sorry :-(")
-		return true
-	} else if xgbErr, ok := err.(xgb.Error); ok {
-		if !xu.IgnoredWindow(xgbErr.BadId()) {
-			log.Printf("ERROR: %v\n", err)
-		}
-		return false
-	}
-
-	log.Printf("UNKNOWN ERROR: %v\n", err)
-	return true
 }
 
 // Main starts the main X event loop. It will read events and call appropriate
@@ -88,10 +50,7 @@ func Main(xu *xgbutil.XUtil) error {
 		if xu.Quitting() {
 			break
 		}
-
-		if !Read(xu, true) {
-			break
-		}
+		Read(xu, true)
 
 		// We have to look for xgb events here. But we re-wrap them in our
 		// own event types.
@@ -100,9 +59,17 @@ func Main(xu *xgbutil.XUtil) error {
 				return nil
 			}
 
-			reply := xu.Dequeue()
+			everr := xu.Dequeue()
+			if everr.Err != nil {
+				xu.ErrorHandlerGet()(everr.Err)
+				continue
+			}
 
-			switch event := reply.(type) {
+			if everr.Event == nil {
+				xgbutil.Logger.Fatal("BUG: Expected an event but got nil.")
+			}
+
+			switch event := everr.Event.(type) {
 			case xgb.KeyPressEvent:
 				e := KeyPressEvent{&event}
 
@@ -150,8 +117,11 @@ func Main(xu *xgbutil.XUtil) error {
 					Read(xu, false)
 
 					found := false
-					for i, ev := range xu.QueuePeek() {
-						if motNot, ok := ev.(xgb.MotionNotifyEvent); ok {
+					for i, ee := range xu.QueuePeek() {
+						if ee.Err != nil {
+							continue
+						}
+						if motNot, ok := ee.Event.(xgb.MotionNotifyEvent); ok {
 							if motNot.Event == e.Event {
 								laste = motNot
 								xu.DequeueAt(i)
@@ -269,7 +239,8 @@ func Main(xu *xgbutil.XUtil) error {
 				xu.RunCallbacks(e, MappingNotify, xgbutil.NoWindow)
 			default:
 				if event != nil {
-					log.Printf("ERROR: UNSUPPORTED EVENT TYPE: %T\n", event)
+					xgbutil.Logger.Printf("ERROR: UNSUPPORTED EVENT TYPE: %T",
+						event)
 				}
 				continue
 			}

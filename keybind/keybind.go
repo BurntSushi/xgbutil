@@ -6,13 +6,10 @@ package keybind
 
 import (
 	"fmt"
-	"log"
 	"strings"
-)
 
-import "github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb"
 
-import (
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
 )
@@ -186,8 +183,8 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, xgb.Keycode) {
 	}
 
 	if kc == 0 {
-		log.Printf("We could not find a valid keycode in the string '%s'. "+
-			"Things probably will not work right.\n", str)
+		xgbutil.Logger.Printf("We could not find a valid keycode in the "+
+			"string '%s'. Things probably will not work right.", str)
 	}
 
 	return mods, kc

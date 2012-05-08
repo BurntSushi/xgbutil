@@ -38,7 +38,7 @@ func (hds Heads) Swap(i int, j int) {
 // Heads returns the list of heads in a physical ordering.
 // Namely, left to right then top to bottom. (Defined by (X, Y).)
 func PhysicalHeads(xu *xgbutil.XUtil) (Heads, error) {
-	xinfo, err := xu.Conn().XineramaQueryScreens()
+	xinfo, err := xu.Conn().XineramaQueryScreens().Reply()
 	if err != nil {
 		return nil, err
 	}

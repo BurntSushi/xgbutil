@@ -15,11 +15,10 @@
 */
 package xevent
 
-import "fmt"
-
 import (
+	"fmt"
+
 	"github.com/BurntSushi/xgb"
-	"github.com/BurntSushi/xgbutil"
 )
 
 // XEvent is an interface whereby an event struct ought to be convertible into
@@ -80,8 +79,8 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
 		}
 		clientData = xgb.NewClientMessageDataUnionData32(buf)
 	default:
-		return nil, xgbutil.Xuerr("NewClientMessage",
-			"Unsupported format '%d'.", Format)
+		return nil, fmt.Errorf("NewClientMessage: Unsupported format '%d'.",
+			Format)
 	}
 
 	return &ClientMessageEvent{&xgb.ClientMessageEvent{
@@ -98,8 +97,8 @@ func (ev *ClientMessageEvent) Bytes() []byte {
 
 	buf[0] = xgb.ClientMessage
 	buf[1] = ev.Format
-	xgbutil.Put32(buf[4:], uint32(ev.Window))
-	xgbutil.Put32(buf[8:], uint32(ev.Type))
+	xgb.Put32(buf[4:], uint32(ev.Window))
+	xgb.Put32(buf[8:], uint32(ev.Type))
 
 	// ClientMessage data is a 20 byte list and can be one of:
 	// 20 8-bit values
@@ -112,14 +111,14 @@ func (ev *ClientMessageEvent) Bytes() []byte {
 		copy(data, ev.Data.Data8[:])
 	case 16:
 		for i, datum := range ev.Data.Data16 {
-			xgbutil.Put16(data[(i*2):], datum)
+			xgb.Put16(data[(i*2):], datum)
 		}
 	case 32:
 		for i, datum := range ev.Data.Data32 {
-			xgbutil.Put32(data[(i*4):], datum)
+			xgb.Put32(data[(i*4):], datum)
 		}
 	default:
-		panic(xgbutil.Xuerr("Bytes", "Unsupported format '%d'.", ev.Format))
+		panic(fmt.Errorf("Bytes: Unsupported format '%d'.", ev.Format))
 	}
 
 	return buf
@@ -157,19 +156,19 @@ func (ev *ConfigureNotifyEvent) Bytes() []byte {
 	buf := make([]byte, 32)
 
 	buf[0] = ConfigureNotify
-	xgbutil.Put32(buf[4:], uint32(ev.Event))
-	xgbutil.Put32(buf[8:], uint32(ev.Window))
-	xgbutil.Put32(buf[12:], uint32(ev.AboveSibling))
-	xgbutil.Put16(buf[16:], uint16(ev.X))
-	xgbutil.Put16(buf[18:], uint16(ev.Y))
-	xgbutil.Put16(buf[20:], ev.Width)
-	xgbutil.Put16(buf[22:], ev.Height)
-	xgbutil.Put16(buf[24:], ev.BorderWidth)
+	xgb.Put32(buf[4:], uint32(ev.Event))
+	xgb.Put32(buf[8:], uint32(ev.Window))
+	xgb.Put32(buf[12:], uint32(ev.AboveSibling))
+	xgb.Put16(buf[16:], uint16(ev.X))
+	xgb.Put16(buf[18:], uint16(ev.Y))
+	xgb.Put16(buf[20:], ev.Width)
+	xgb.Put16(buf[22:], ev.Height)
+	xgb.Put16(buf[24:], ev.BorderWidth)
 
 	if ev.OverrideRedirect {
-		xgbutil.Put16(buf[26:], 1)
+		xgb.Put16(buf[26:], 1)
 	} else {
-		xgbutil.Put16(buf[26:], 0)
+		xgb.Put16(buf[26:], 0)
 	}
 
 	return buf

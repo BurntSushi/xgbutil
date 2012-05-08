@@ -24,9 +24,11 @@
 */
 package xwindow
 
-import "github.com/BurntSushi/xgb"
-
 import (
+	"fmt"
+
+	"github.com/BurntSushi/xgb"
+
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/xrect"
@@ -47,11 +49,11 @@ func Listen(xu *xgbutil.XUtil, win xgb.Id, evMasks ...int) {
 
 // ParentWindow queries the QueryTree and finds the parent window.
 func ParentWindow(xu *xgbutil.XUtil, win xgb.Id) (xgb.Id, error) {
-	tree, err := xu.Conn().QueryTree(win)
+	tree, err := xu.Conn().QueryTree(win).Reply()
 
 	if err != nil {
-		return 0, xgbutil.Xerr(err, "ParentWindow",
-			"Error retrieving parent window for %x", win)
+		return 0, fmt.Errorf("ParentWindow: Error retrieving parent window "+
+			"for %x: %s", win, err)
 	}
 
 	return tree.Parent, nil
@@ -141,7 +143,7 @@ func GetGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
 
 // RawGeometry isn't smart. It just queries the window given for geometry.
 func RawGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
-	xgeom, err := xu.Conn().GetGeometry(win)
+	xgeom, err := xu.Conn().GetGeometry(win).Reply()
 	if err != nil {
 		return nil, err
 	}

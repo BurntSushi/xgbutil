@@ -6,7 +6,7 @@ import "github.com/BurntSushi/xgbutil/ewmh"
 import "github.com/BurntSushi/xgbutil/xinerama"
 
 func main() {
-	X, _ := xgbutil.Dial("")
+	X, _ := xgbutil.NewConn()
 
 	heads, err := xinerama.PhysicalHeads(X)
 	if err != nil {

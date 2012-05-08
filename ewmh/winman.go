@@ -4,7 +4,11 @@
 */
 package ewmh
 
-import "github.com/BurntSushi/xgbutil"
+import (
+	"fmt"
+
+	"github.com/BurntSushi/xgbutil"
+)
 
 // GetEwmhWM uses the EWMH spec to find if a conforming window manager
 // is currently running or not. If it is, then its name will be returned.
@@ -13,17 +17,17 @@ import "github.com/BurntSushi/xgbutil"
 func GetEwmhWM(xu *xgbutil.XUtil) (wmName string, err error) {
 	childCheck, err := SupportingWmCheckGet(xu, xu.RootWin())
 	if err != nil {
-		return "", xgbutil.Xuerr("GetEwmhWM", "Failed because: %v", err)
+		return "", fmt.Errorf("GetEwmhWM: Failed because: %s", err)
 	}
 
 	childCheck2, err := SupportingWmCheckGet(xu, childCheck)
 	if err != nil {
-		return "", xgbutil.Xuerr("GetEwmhWM", "Failed because: %v", err)
+		return "", fmt.Errorf("GetEwmhWM: Failed because: %s", err)
 	}
 
 	if childCheck != childCheck2 {
-		return "", xgbutil.Xuerr("GetEwmhWM",
-			"_NET_SUPPORTING_WM_CHECK value on the root window "+
+		return "", fmt.Errorf(
+			"GetEwmhWM: _NET_SUPPORTING_WM_CHECK value on the root window "+
 				"(%x) does not match _NET_SUPPORTING_WM_CHECK value "+
 				"on the child window (%x).", childCheck, childCheck2)
 	}

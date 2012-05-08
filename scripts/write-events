@@ -41,6 +41,7 @@ events = [
 assert len(sys.argv) == 2
 
 if sys.argv[1] == 'evtypes':
+    print 'package xevent'
     print '''/*
     Defines event types and their associated methods automatically.
     
@@ -50,10 +51,9 @@ if sys.argv[1] == 'evtypes':
 
     Edit it at your peril.
 */'''
-    print 'package xevent'
     print
     print 'import "fmt"'
-    print 'import "burntsushi.net/go/x-go-binding/xgb"'
+    print 'import "github.com/BurntSushi/xgb"'
     print
 
     for e in events:
@@ -75,6 +75,7 @@ if sys.argv[1] == 'evtypes':
         print '}'
         print
 elif sys.argv[1] == 'callbacks':
+    print 'package xevent'
     print '''/*
     Does all the plumbing to allow a simple callback interface for users.
 
@@ -82,10 +83,12 @@ elif sys.argv[1] == 'callbacks':
 
     Edit it at your peril.
 */'''
-    print 'package xevent'
     print
-    print 'import "burntsushi.net/go/x-go-binding/xgb"'
-    print 'import "burntsushi.net/go/xgbutil"'
+    print 'import ('
+    print '\t"github.com/BurntSushi/xgb"'
+    print
+    print '\t"github.com/BurntSushi/xgbutil"'
+    print ')'
     print
 
     # print 'type Callback interface {' 

@@ -158,8 +158,8 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
 	// We check if the imgData is bigger than this max size minus 28 bytes
 	// (accounting for the fixed size of a PutImage request). If it is,
 	// we need to split up the data into chunks and send it that way.
-	sends := imgDataLen/(xgbutil.MAX_REQ_SIZE-28) + 1
-	rowsPer := (xgbutil.MAX_REQ_SIZE - 28) / (width * 4)
+	sends := imgDataLen/(xgbutil.MaxReqSize-28) + 1
+	rowsPer := (xgbutil.MaxReqSize - 28) / (width * 4)
 
 	// The idea here is to send "sends" number of PutImage requests with
 	// "rowsPer" rows of the image each time. (If a single row of an image
@@ -359,7 +359,7 @@ func PixmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
 
 	width, height := geom.Width(), geom.Height()
 	data, err := xu.Conn().GetImage(xgb.ImageFormatZPixmap, pix,
-		0, 0, uint16(width), uint16(height), (1<<32)-1)
+		0, 0, uint16(width), uint16(height), (1<<32)-1).Reply()
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +396,7 @@ func BitmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
 
 	width, height := geom.Width(), geom.Height()
 	data, err := xu.Conn().GetImage(xgb.ImageFormatXYPixmap, pix,
-		0, 0, uint16(width), uint16(height), (1<<32)-1)
+		0, 0, uint16(width), uint16(height), (1<<32)-1).Reply()
 	if err != nil {
 		return nil, err
 	}
