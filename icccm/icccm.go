@@ -1,20 +1,10 @@
-/*
-   Provides an API for most of the ICCCM spec[1].
-
-   This API follows most of the same conventions as the corresponding EWMH
-   API.
-
-   Also, I believe there are a few client root events specified by the ICCCM,
-   but I haven't put them in here (yet). I am not sure that they are even
-   used any more.
-
-   [1] - http://tronche.com/gui/x/icccm/
-*/
 package icccm
 
-import "github.com/BurntSushi/xgb"
-
 import (
+	"fmt"
+
+	"github.com/BurntSushi/xgb"
+
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xprop"
 )
@@ -95,10 +85,8 @@ func WmNormalHintsGet(xu *xgbutil.XUtil,
 	}
 	if len(hints) != lenExpect {
 		return nil,
-			xgbutil.Xuerr("WmNormalHint",
-				"There are %d fields in "+
-					"WM_NORMAL_HINTS, but xgbutil expects %d.",
-				len(hints), lenExpect)
+			fmt.Errorf("WmNormalHint: There are %d fields in WM_NORMAL_HINTS, "+
+				"but xgbutil expects %d.", len(hints), lenExpect)
 	}
 
 	nh = &NormalHints{}
@@ -163,10 +151,8 @@ func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (hints *Hints, err error) {
 	}
 	if len(raw) != lenExpect {
 		return nil,
-			xgbutil.Xuerr("WmHints",
-				"There are %d fields in "+
-					"WM_HINTS, but xgbutil expects %d.",
-				len(raw), lenExpect)
+			fmt.Errorf("WmHints: There are %d fields in "+
+				"WM_HINTS, but xgbutil expects %d.", len(raw), lenExpect)
 	}
 
 	hints = &Hints{}
@@ -210,9 +196,8 @@ func WmClassGet(xu *xgbutil.XUtil, win xgb.Id) (*WmClass, error) {
 	}
 	if len(raw) != 2 {
 		return nil,
-			xgbutil.Xuerr("WmClass",
-				"Two string make up WM_CLASS, but "+
-					"xgbutil found %d in '%v'.", len(raw), raw)
+			fmt.Errorf("WmClass: Two string make up WM_CLASS, but "+
+				"xgbutil found %d in '%v'.", len(raw), raw)
 	}
 
 	return &WmClass{
@@ -297,9 +282,8 @@ func WmStateGet(xu *xgbutil.XUtil, win xgb.Id) (*WmState, error) {
 	}
 	if len(raw) != 2 {
 		return nil,
-			xgbutil.Xuerr("WmState",
-				"Expected two integers in WM_STATE property "+
-					"but xgbutil found %d in '%v'.", len(raw), raw)
+			fmt.Errorf("WmState: Expected two integers in WM_STATE property "+
+				"but xgbutil found %d in '%v'.", len(raw), raw)
 	}
 
 	return &WmState{
@@ -332,10 +316,8 @@ func WmIconSizeGet(xu *xgbutil.XUtil, win xgb.Id) (*IconSize, error) {
 	}
 	if len(raw) != 6 {
 		return nil,
-			xgbutil.Xuerr("WmIconSize",
-				"Expected six integers in WM_ICON_SIZE "+
-					"property, but xgbutil found "+
-					"%d in '%v'.", len(raw), raw)
+			fmt.Errorf("WmIconSize: Expected six integers in WM_ICON_SIZE "+
+				"property, but xgbutil found "+"%d in '%v'.", len(raw), raw)
 	}
 
 	return &IconSize{

@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	X, _ := xgbutil.Dial("")
+	X, _ := xgbutil.NewConn()
 
 	keybind.Initialize(X)
 

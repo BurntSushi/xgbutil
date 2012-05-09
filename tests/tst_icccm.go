@@ -13,7 +13,7 @@ func showTest(vals ...interface{}) {
 	fmt.Printf("%s\n\t%v\n\t%v\n", vals...)
 }
 func main() {
-	X, _ := xgbutil.Dial("")
+	X, _ := xgbutil.NewConn()
 
 	active, err := ewmh.ActiveWindowGet(X)
 

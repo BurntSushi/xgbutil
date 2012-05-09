@@ -8,7 +8,7 @@ import "github.com/BurntSushi/xgbutil/xrect"
 import "github.com/BurntSushi/xgbutil/xwindow"
 
 func main() {
-	X, _ := xgbutil.Dial("")
+	X, _ := xgbutil.NewConn()
 
 	heads, err := xinerama.PhysicalHeads(X)
 	if err != nil {
@@ -16,12 +16,12 @@ func main() {
 	}
 
 	// Test intersection
-	r1 := xrect.Make(0, 0, 100, 100)
-	r2 := xrect.Make(100, 100, 100, 100)
+	r1 := xrect.New(0, 0, 100, 100)
+	r2 := xrect.New(100, 100, 100, 100)
 	fmt.Println(xrect.IntersectArea(r1, r2))
 
 	// Test largest overlap
-	window := xrect.Make(1800, 0, 300, 200)
+	window := xrect.New(1800, 0, 300, 200)
 	fmt.Println(xrect.LargestOverlap(window, heads))
 
 	// Test ApplyStrut

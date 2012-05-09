@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	// "os" 
 	"github.com/BurntSushi/xgb"
@@ -18,39 +17,8 @@ import (
 var X *xgbutil.XUtil
 var Xerr error
 
-func Recovery() {
-	if r := recover(); r != nil {
-		// if xuError, ok := r.(*xgbutil.XError); ok { 
-		// if xuError.XGBError != nil { 
-		// if xuError.XGBError.Detail == xgb.BadValue { 
-		// log.Println("BadValue") 
-		// } else { 
-		// log.Println("WOOYAA") 
-		// } 
-		// } else { 
-		// log.Println(r) 
-		// } 
-		// } else { 
-		// log.Println(r) 
-		// } 
-
-		switch err := r.(type) {
-		case *xgb.Error:
-			log.Println("XGB ERROR:", err)
-		case *xgbutil.XError:
-			log.Println("XGB UTIL ERROR:", err)
-		default: // not our problem, produce stack trace
-			panic(err)
-		}
-
-		// os.Exit(1) 
-	}
-}
-
 func main() {
-	// defer Recovery() 
-
-	X, Xerr = xgbutil.Dial("")
+	X, Xerr = xgbutil.NewConn()
 	if Xerr != nil {
 		panic(Xerr)
 	}
@@ -86,7 +54,7 @@ func main() {
 	fmt.Printf("Desktop names: %s\n", desktops)
 
 	var desk string
-	if curdesk < uint32(len(desktops)) {
+	if curdesk < len(desktops) {
 		desk = desktops[curdesk]
 	} else {
 		desk = string(curdesk)

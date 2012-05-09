@@ -7,7 +7,7 @@ import "github.com/BurntSushi/xgbutil"
 import "github.com/BurntSushi/xgbutil/ewmh"
 import "github.com/BurntSushi/xgbutil/motif"
 
-func DoDecor(mh motif.Hints) bool {
+func DoDecor(mh *motif.Hints) bool {
 	if mh.Flags&motif.HintDecorations > 0 &&
 		(mh.Decoration == motif.DecorationNone ||
 			(mh.Decoration&motif.DecorationAll == 0 &&
@@ -20,9 +20,9 @@ func DoDecor(mh motif.Hints) bool {
 }
 
 func main() {
-	X, _ := xgbutil.Dial("")
+	X, _ := xgbutil.NewConn()
 
-	gChrome := xgb.Id(0x2e00047)
+	gChrome := xgb.Id(0x3600040)
 	active, _ := ewmh.ActiveWindowGet(X)
 
 	mh, err := motif.WmHintsGet(X, gChrome)

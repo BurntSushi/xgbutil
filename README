@@ -9,5 +9,5 @@ other project, xpybutil.
 
 To install:
 
-  go get burntsushi.net/go/xgbutil
+  go get github.com/BurntSushi/xgbutil
 

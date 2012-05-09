@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	X, err := xgbutil.Dial("")
+	X, err := xgbutil.NewConn()
 	if err != nil {
 		log.Fatalf("Could not connect to X: %v", err)
 	}

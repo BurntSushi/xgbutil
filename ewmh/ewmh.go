@@ -98,8 +98,8 @@ func ActiveWindowReq(xu *xgbutil.XUtil, win xgb.Id) error {
 func ActiveWindowReqExtra(xu *xgbutil.XUtil, win xgb.Id, source int,
 	time xgb.Timestamp, current_active xgb.Id) error {
 
-	return ClientEvent(xu, win, "_NET_ACTIVE_WINDOW", source, time,
-		current_active)
+	return ClientEvent(xu, win, "_NET_ACTIVE_WINDOW", source, int(time),
+		int(current_active))
 }
 
 // _NET_CLIENT_LIST get
@@ -159,7 +159,8 @@ func CurrentDesktopReq(xu *xgbutil.XUtil, desk int) error {
 func CurrentDesktopReqExtra(xu *xgbutil.XUtil, desk int,
 	time xgb.Timestamp) error {
 
-	return ClientEvent(xu, xu.RootWin(), "_NET_CURRENT_DESKTOP", desk, time)
+	return ClientEvent(xu, xu.RootWin(), "_NET_CURRENT_DESKTOP", desk,
+		int(time))
 }
 
 // _NET_DESKTOP_NAMES get
@@ -422,7 +423,7 @@ func RestackWindow(xu *xgbutil.XUtil, win xgb.Id) error {
 func RestackWindowExtra(xu *xgbutil.XUtil, win xgb.Id, stack_mode int,
 	sibling xgb.Id, source int) error {
 
-	return ClientEvent(xu, win, "_NET_RESTACK_WINDOW", source, sibling,
+	return ClientEvent(xu, win, "_NET_RESTACK_WINDOW", source, int(sibling),
 		stack_mode)
 }
 
@@ -862,7 +863,8 @@ func WmPingExtra(xu *xgbutil.XUtil, win xgb.Id, response bool,
 		evWindow = win
 	}
 
-	return ClientEvent(xu, evWindow, "WM_PROTOCOLS", int(pingAtom), time, win)
+	return ClientEvent(xu, evWindow, "WM_PROTOCOLS", int(pingAtom), int(time),
+		int(win))
 }
 
 // _NET_WM_STATE constants for state toggling
@@ -916,7 +918,8 @@ func WmStateReqExtra(xu *xgbutil.XUtil, win xgb.Id, action int,
 		atom2 = 0
 	}
 
-	return ClientEvent(xu, win, "_NET_WM_STATE", action, atom1, atom2, source)
+	return ClientEvent(xu, win, "_NET_WM_STATE", action, int(atom1), int(atom2),
+		source)
 }
 
 // WmStrut struct organizes information for the _NET_WM_STRUT property.
@@ -1022,7 +1025,8 @@ func WmSyncRequestExtra(xu *xgbutil.XUtil, win xgb.Id, req_num uint64,
 	high := int(req_num >> 32)
 	low := int(req_num<<32 ^ req_num)
 
-	return ClientEvent(xu, win, "WM_PROTOCOLS", syncReq, time, low, high)
+	return ClientEvent(xu, win, "WM_PROTOCOLS", int(syncReq), int(time),
+		low, high)
 }
 
 // _NET_WM_SYNC_REQUEST_COUNTER get 

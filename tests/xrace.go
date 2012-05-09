@@ -13,8 +13,11 @@ import (
 
 func main() {
 	sleepy := time.Millisecond
-	X, _ := xgbutil.Dial("")
+	X, _ := xgbutil.NewConn()
 	conn := X.Conn()
+
+	aDesktop := "_NET_WM_DESKTOP"
+	aActive := "_NET_ACTIVE_WINDOW"
 
 	xwindow.Listen(X, X.RootWin(), xgb.EventMaskPropertyChange)
 	xevent.PropertyNotifyFun(
@@ -26,31 +29,33 @@ func main() {
 
 	go func() {
 		for {
-			reply, err := conn.InternAtom(true, "_NET_WM_DESKTOP")
+			reply, err := conn.InternAtom(true, uint16(len(aDesktop)),
+				aDesktop).Reply()
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			log.Println(reply)
+			log.Println("A1-299", reply.Sequence, reply.Atom)
 			time.Sleep(sleepy)
 		}
 	}()
 
 	go func() {
 		for {
-			reply, err := conn.InternAtom(true, "_NET_ACTIVE_WINDOW")
+			reply, err := conn.InternAtom(true, uint16(len(aActive)),
+				aActive).Reply()
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			log.Println(reply)
+			log.Println("A2-294", reply.Sequence, reply.Atom)
 			time.Sleep(sleepy)
 		}
 	}()
 
 	go func() {
 		for {
-			reply, err := conn.GetGeometry(0x1)
+			reply, err := conn.GetGeometry(0x1).Reply()
 			if err != nil {
 				log.Println("0x1:", err)
 			} else {
@@ -62,7 +67,7 @@ func main() {
 
 	go func() {
 		for {
-			reply, err := conn.GetGeometry(0x2)
+			reply, err := conn.GetGeometry(0x2).Reply()
 			if err != nil {
 				log.Println("0x2:", err)
 			} else {

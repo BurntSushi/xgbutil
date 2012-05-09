@@ -1,10 +1,7 @@
-/*
-   Package mousebind provides an easy interface to bind and run callback
-   functions for human readable mouse bindings.
-*/
 package mousebind
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -129,11 +126,10 @@ func GrabPointer(xu *xgbutil.XUtil, win xgb.Id, confine xgb.Id,
 
 	reply, err := xu.Conn().GrabPointer(false, win, pointerMasks,
 		xgb.GrabModeAsync, xgb.GrabModeAsync,
-		confine, cursor, 0)
+		confine, cursor, 0).Reply()
 	if err != nil {
-		return false, xgbutil.Xerr(err, "GrabPointer",
-			"Error grabbing pointer on window '%x'",
-			win)
+		return false, fmt.Errorf("GrabPointer: Error grabbing pointer on "+
+			"window '%x': %s", win, err)
 	}
 
 	return reply.Status == xgb.GrabStatusSuccess, nil

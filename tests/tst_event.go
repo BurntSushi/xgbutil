@@ -50,7 +50,7 @@ func KeyReleaseCallback(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {
 
 func main() {
 	fmt.Printf("Starting...\n")
-	X, _ := xgbutil.Dial("")
+	X, _ := xgbutil.NewConn()
 
 	// active, _ := ewmh.ActiveWindowGet(X) 
 
@@ -71,9 +71,10 @@ func main() {
 			keybind.XModMap(X)
 		}).Connect(X, X.RootWin(), "Mod4-z")
 
-	mousebind.ButtonPressFun(BPressCB).Connect(X, X.RootWin(), "Mod4-8", false)
+	mousebind.ButtonPressFun(BPressCB).Connect(X, X.RootWin(), "Mod4-8",
+		false, true)
 	mousebind.ButtonReleaseFun(BReleaseCB).Connect(
-		X, X.RootWin(), "Mod4-9", false)
+		X, X.RootWin(), "Mod4-9", false, true)
 
 	// keycbRelease := keybind.KeyReleaseFun(KeyReleaseCallback) 
 	// keycbRelease.Connect(X, X.RootWin(), "Mod4-j") // Mod4-j 

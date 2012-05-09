@@ -15,9 +15,11 @@
 */
 package motif
 
-import "github.com/BurntSushi/xgb"
-
 import (
+	"fmt"
+
+	"github.com/BurntSushi/xgb"
+
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xprop"
 )
@@ -62,8 +64,8 @@ const StatusTearoffWindow = 1
 // Hints is a struct that organizes the information related to the
 // WM_NORMAL_HINTS property.
 type Hints struct {
-	Flags                               uint32
-	Function, Decoration, Input, Status uint32
+	Flags                               int
+	Function, Decoration, Input, Status int
 }
 
 // _MOTIF_WM_HINTS get
@@ -76,9 +78,9 @@ func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (mh *Hints, err error) {
 	}
 	if len(hints) != lenExpect {
 		return nil,
-			xgbutil.Xuerr("motif.WmHintsGet",
-				"There are %d fields in _MOTIF_WM_HINTS, "+
-					"but xgbutil expects %d.", len(hints), lenExpect)
+			fmt.Errorf("motif.WmHintsGet: There are %d fields in "+
+				"_MOTIF_WM_HINTS, but xgbutil expects %d.",
+				len(hints), lenExpect)
 	}
 
 	mh = &Hints{}
@@ -93,7 +95,7 @@ func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (mh *Hints, err error) {
 
 // _MOTIF_WM_HINTS set
 func WmHintsSet(xu *xgbutil.XUtil, win xgb.Id, mh *Hints) error {
-	raw := []uint32{mh.Flags, mh.Function, mh.Decoration, mh.Input, mh.Status}
+	raw := []int{mh.Flags, mh.Function, mh.Decoration, mh.Input, mh.Status}
 	return xprop.ChangeProp32(xu, win, "_MOTIF_WM_HINTS", "_MOTIF_WM_HINTS",
 		raw...)
 }

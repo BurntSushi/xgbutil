@@ -130,8 +130,9 @@ func MapsGet(xu *xgbutil.XUtil) (*xgb.GetKeyboardMappingReply,
 	*xgb.GetModifierMappingReply) {
 
 	min, max := minMaxKeycodeGet(xu)
-	newKeymap, keyErr := xu.Conn().GetKeyboardMapping(min, byte(max-min+1))
-	newModmap, modErr := xu.Conn().GetModifierMapping()
+	newKeymap, keyErr := xu.Conn().GetKeyboardMapping(min,
+		byte(max-min+1)).Reply()
+	newModmap, modErr := xu.Conn().GetModifierMapping().Reply()
 
 	// If there are errors, we really need to panic. We just can't do
 	// any key binding without a mapping from the server.
@@ -352,11 +353,10 @@ func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key xgb.Keycode) {
 // be sent to that window. Make sure you have a callback attached :-)
 func GrabKeyboard(xu *xgbutil.XUtil, win xgb.Id) (bool, error) {
 	reply, err := xu.Conn().GrabKeyboard(false, win, 0,
-		xgb.GrabModeAsync, xgb.GrabModeAsync)
+		xgb.GrabModeAsync, xgb.GrabModeAsync).Reply()
 	if err != nil {
-		return false, xgbutil.Xerr(err, "GrabKeyboard",
-			"Error grabbing keyboard on window '%x'",
-			win)
+		return false, fmt.Errorf("GrabKeyboard: Error grabbing keyboard on "+
+			"window '%x': %s", win, err)
 	}
 
 	return reply.Status == xgb.GrabStatusSuccess, nil
@@ -374,8 +374,7 @@ func DummyGrab(xu *xgbutil.XUtil) error {
 		return err
 	}
 	if !ok {
-		return xgbutil.Xuerr("DummyGrab",
-			"Grabbing keyboard was not successful.")
+		return fmt.Errorf("DummyGrab: Grabbing keyboard was not successful.")
 	}
 
 	// Now redirect all key events to the dummy window to prevent races
