@@ -17,33 +17,108 @@ const MaxReqSize = (1 << 16) * 4
 // An XUtil represents the state of xgbutil. It keeps track of the current 
 // X connection, the root window, event callbacks, key/mouse bindings, etc.
 type XUtil struct {
-	conn      *xgb.Conn
-	quit      bool // when true, the main event loop will stop gracefully
-	evqueue   []eventOrError
-	screen    *xgb.ScreenInfo
-	root      xgb.Id
-	eventTime xgb.Timestamp
-	atoms     map[string]xgb.Id
+	// conn is the XGB connection object used to issue protocol requests.
+	conn *xgb.Conn
+
+	// quit can be set to true, and the main event loop will finish processing
+	// the current event, and gracefully quit afterwards.
+	quit bool // when true, the main event loop will stop gracefully
+
+	// screen is a simple alias to the default screen info.
+	screen *xgb.ScreenInfo
+
+	// root is an alias to the default root window.
+	root xgb.Id
+
+	// atoms is a cache of atom names to resource identifiers. This minimizes
+	// round trips to the X server, since atom identifiers never change.
+	atoms map[string]xgb.Id
+
+	// atomNames is a cache just like 'atoms', but in the reverse direction.
 	atomNames map[xgb.Id]string
+
+	// evqueue is the queue that stores the results of xgb.WaitForEvent.
+	// Namely, each value is either an Event *or* an Error.
+	// I didn't see any particular reason to use a channel for this.
+	evqueue []eventOrError
+
+	// callbacks is a map of event numbers to a map of window identifiers
+	// to callback functions.
+	// This is the data structure that stores all callback functions, where
+	// a callback function is always attached to a (event, window) tuple.
 	callbacks map[int]map[xgb.Id][]Callback // ev code -> win -> callbacks
 
+	// eventTime is the last time recorded by an event. It is automatically
+	// updated if xgbutil's main event loop is used.
+	eventTime xgb.Timestamp
+
+	// keymap corresponds to xgbutil's current conception of the keyboard
+	// mapping. It is automatically kept up-to-date if xgbutil's event loop
+	// is used.
 	keymap *KeyboardMapping
+
+	// modmap corresponds to xgbutil's current conception of the modifier key
+	// mapping. It is automatically kept up-to-date if xgbutil's event loop
+	// is used.
 	modmap *ModifierMapping
 
+	// keyRedirect corresponds to a window identifier that, when set,
+	// automatically receives *all* keyboard events. This is a sort-of
+	// synthetic grab and is helpful in avoiding race conditions.
 	keyRedirect xgb.Id
-	keybinds    map[KeyBindKey][]KeyBindCallback
-	keygrabs    map[KeyBindKey]int
 
-	mousebinds    map[MouseBindKey][]MouseBindCallback
-	mousegrabs    map[MouseBindKey]int
-	mouseDrag     bool
+	// keybinds is the data structure storing all callbacks for key bindings.
+	// This is extremely similar to the general notion of event callbacks,
+	// but adds extra support to make handling key bindings easier. (Like
+	// specifying human readable key sequences to bind to.)
+	// KeyBindKey is a struct representing the 4-tuple
+	// (event-type, window-id, modifiers, keycode).
+	keybinds map[KeyBindKey][]KeyBindCallback
+
+	// keygrabs is a frequency count of the number of callbacks associated
+	// with a particular KeyBindKey. This is necessary because we can only
+	// grab a particular key *once*, but we may want to attach several callbacks
+	// to a single keypress.
+	keygrabs map[KeyBindKey]int
+
+	// mousebinds is the data structure storing all callbacks for mouse
+	// bindings.This is extremely similar to the general notion of event
+	// callbacks,but adds extra support to make handling mouse bindings easier.
+	// (Like specifying human readable mouse sequences to bind to.)
+	// MouseBindKey is a struct representing the 4-tuple
+	// (event-type, window-id, modifiers, button).
+	mousebinds map[MouseBindKey][]MouseBindCallback
+
+	// mousegrabs is a frequency count of the number of callbacks associated
+	// with a particular MouseBindKey. This is necessary because we can only
+	// grab a particular mouse button *once*, but we may want to attach
+	// several callbacks to a single button press.
+	mousegrabs map[MouseBindKey]int
+
+	// mouseDrag is true if a drag is currently in progress.
+	mouseDrag bool
+
+	// mouseDragStep is the function executed for each step (i.e., pointer
+	// movement) in the current mouse drag. Note that this is nil when a drag
+	// is not in progress.
 	mouseDragStep MouseDragFun
-	mouseDragEnd  MouseDragFun
 
-	gc xgb.Id // a general purpose graphics context; used to paint images
+	// mouseDragEnd is the function executed at the end of the current
+	// mouse drag. This is nil when a drag is not in progress.
+	mouseDragEnd MouseDragFun
 
-	dummy xgb.Id // a dummy window used for mouse/key GRABs
+	// gc is a general purpose graphics context; used to paint images.
+	// Since we don't do any real X drawing, we don't really care about the
+	// particulars of our graphics context.
+	gc xgb.Id
 
+	// dummy is a dummy window used for mouse/key GRABs.
+	// Basically, whenever a grab is instituted, mouse and key events are
+	// redirected to the dummy the window.
+	dummy xgb.Id
+
+	// errorHandler is the function that handles errors *in the event loop*.
+	// By default, it simply emits them to stderr.
 	errorHandler ErrorHandlerFun
 }
 
@@ -54,8 +129,13 @@ func NewConn() (*XUtil, error) {
 }
 
 // NewConnDisplay connects to the X server and creates a new XUtil.
-// See the XGB documentation for xgb.NewConnDisplay for which values of
-// 'display' are supported.
+// If 'display' is empty, the DISPLAY environment variable is used. Otherwise
+// there are several different display formats supported:
+//
+// NewConn(":1") -> net.Dial("unix", "", "/tmp/.X11-unix/X1")
+// NewConn("/tmp/launch-123/:0") -> net.Dial("unix", "", "/tmp/launch-123/:0")
+// NewConn("hostname:2.1") -> net.Dial("tcp", "", "hostname:6002")
+// NewConn("tcp/hostname:1.0") -> net.Dial("tcp", "", "hostname:6001")
 func NewConnDisplay(display string) (*XUtil, error) {
 	c, err := xgb.NewConnDisplay(display)
 
@@ -126,24 +206,21 @@ func (xu *XUtil) Conn() *xgb.Conn {
 	return xu.conn
 }
 
-// Die forcefully shuts everything down.
-func (xu *XUtil) Die() {
-	xu.Conn().Close()
-}
-
 // Quit elegantly exits out of the main event loop.
 func (xu *XUtil) Quit() {
 	xu.quit = true
 }
 
 // Quitting returns whether it's time to quit.
+// This is only used in the main event loop in xevent.
 func (xu *XUtil) Quitting() bool {
 	return xu.quit
 }
 
-// Forces XGB to catch up with all events and synchronize.
-func (xu *XUtil) Flush() {
-	xu.conn.GetInputFocus()
+// Sync forces XGB to catch up with all events/requests and synchronize.
+// This is done by issuing a benign round trip request to X.
+func (xu *XUtil) Sync() {
+	xu.conn.GetInputFocus().Reply()
 }
 
 // Screen returns the default screen
@@ -156,21 +233,21 @@ func (xu *XUtil) RootWin() xgb.Id {
 	return xu.root
 }
 
-// SetRootWin will change the current root window to the one provided.
+// RootWinSet will change the current root window to the one provided.
 // N.B. This probably shouldn't be used unless you're desperately trying
 // to support multiple X screens. (This is *not* the same as Xinerama/RandR or
 // TwinView. All of those have a single root window.)
-func (xu *XUtil) SetRootWin(root xgb.Id) {
+func (xu *XUtil) RootWinSet(root xgb.Id) {
 	xu.root = root
 }
 
-// GetTime gets the most recent time seen by an event.
-func (xu *XUtil) GetTime() xgb.Timestamp {
+// TimeGet gets the most recent time seen by an event.
+func (xu *XUtil) TimeGet() xgb.Timestamp {
 	return xu.eventTime
 }
 
-// SetTime sets the most recent time seen by an event.
-func (xu *XUtil) SetTime(t xgb.Timestamp) {
+// TimeSet sets the most recent time seen by an event.
+func (xu *XUtil) TimeSet(t xgb.Timestamp) {
 	xu.eventTime = t
 }
 
@@ -186,10 +263,12 @@ func (xu *XUtil) Dummy() xgb.Id {
 }
 
 // AttachCallback associates a (event, window) tuple with an event.
+// This function should not be used. It is exported for use in the xevent
+// package.
+// See the Callback type for an example of attaching event handlers.
 func (xu *XUtil) AttachCallback(evtype int, win xgb.Id, fun Callback) {
-	// Do we need to allocate?
 	if _, ok := xu.callbacks[evtype]; !ok {
-		xu.callbacks[evtype] = make(map[xgb.Id][]Callback, 10)
+		xu.callbacks[evtype] = make(map[xgb.Id][]Callback, 20)
 	}
 	if _, ok := xu.callbacks[evtype][win]; !ok {
 		xu.callbacks[evtype][win] = make([]Callback, 0)
@@ -199,6 +278,8 @@ func (xu *XUtil) AttachCallback(evtype int, win xgb.Id, fun Callback) {
 
 // RunCallbacks executes every callback corresponding to a
 // particular event/window tuple.
+// This function should not be used. It is exported for use in the xevent
+// package.
 func (xu *XUtil) RunCallbacks(event interface{}, evtype int, win xgb.Id) {
 	for _, cb := range xu.callbacks[evtype][win] {
 		cb.Run(xu, event)
@@ -206,25 +287,33 @@ func (xu *XUtil) RunCallbacks(event interface{}, evtype int, win xgb.Id) {
 }
 
 // DetachWindow removes all callbacks associated with a particular window.
+// This function should not be used, since it only cleans up Callback and not
+// key and mouse bindings. Instead, use xevent.Detach instead.
 func (xu *XUtil) DetachWindow(win xgb.Id) {
 	for evtype, _ := range xu.callbacks {
 		delete(xu.callbacks[evtype], win)
 	}
 }
 
-// GetAtom retrieves an atom identifier from a cache if it exists.
-func (xu *XUtil) GetAtom(name string) (aid xgb.Id, ok bool) {
+// AtomGet retrieves an atom identifier from a cache if it exists.
+// This function should not be used. It is exported for use in the xprop
+// package. Instead, to intern an atom, use xprop.Atom or xprop.Atm.
+func (xu *XUtil) AtomGet(name string) (aid xgb.Id, ok bool) {
 	aid, ok = xu.atoms[name]
 	return
 }
 
-// GetAtomName retrieves an atom name from a cache if it exists.
-func (xu *XUtil) GetAtomName(aid xgb.Id) (name string, ok bool) {
+// AtomNameGet retrieves an atom name from a cache if it exists.
+// This function should not be used. It is exported for use in the xprop
+// package. Instead, to get the name of an atom, use xprop.AtomName.
+func (xu *XUtil) AtomNameGet(aid xgb.Id) (name string, ok bool) {
 	name, ok = xu.atomNames[aid]
 	return
 }
 
 // CacheAtom puts an atom into the cache.
+// This function should not be used. It is exported for use in the xprop
+// package.
 func (xu *XUtil) CacheAtom(name string, aid xgb.Id) {
 	xu.atoms[name] = aid
 	xu.atomNames[aid] = name
@@ -241,11 +330,13 @@ func (xu *XUtil) Ungrab() {
 }
 
 // Enqueue queues up an event read from X.
+// Note that an event read may return an error, in which case, this queue
+// entry will be an error and not an event.
 func (xu *XUtil) Enqueue(everr eventOrError) {
 	xu.evqueue = append(xu.evqueue, everr)
 }
 
-// Dequeue pops an event from the queue and returns it.
+// Dequeue pops an event/error from the queue and returns it.
 func (xu *XUtil) Dequeue() eventOrError {
 	everr := xu.evqueue[0]
 	xu.evqueue = xu.evqueue[1:]
@@ -253,6 +344,8 @@ func (xu *XUtil) Dequeue() eventOrError {
 }
 
 // DequeueAt removes a particular item from the queue
+// This is primarily used in the main event loop when compressing events like
+// MotionNotify.
 func (xu *XUtil) DequeueAt(i int) {
 	xu.evqueue = append(xu.evqueue[:i], xu.evqueue[i+1:]...)
 }
@@ -262,7 +355,9 @@ func (xu *XUtil) QueueEmpty() bool {
 	return len(xu.evqueue) == 0
 }
 
-// QueuePeek returns the current queue so we can examine it
+// QueuePeek returns the current queue so we can examine it.
+// This can be useful when trying to determine if a particular kind of
+// event will be processed in the future.
 func (xu *XUtil) QueuePeek() []eventOrError {
 	return xu.evqueue
 }
@@ -277,6 +372,7 @@ type ErrorHandlerFun func(err xgb.Error)
 // aren't handled often in practice, so maybe not.)
 // This is only called for errors returned from unchecked (asynchronous error
 // handling) requests.
+// The default error handler just emits them to stderr.
 func (xu *XUtil) ErrorHandlerSet(fun ErrorHandlerFun) {
 	xu.errorHandler = fun
 }
@@ -300,6 +396,8 @@ type eventOrError struct {
 }
 
 // newEventOrError creates a new eventOrError value.
+// This function should not be used. It is exported for use in the xevent
+// package.
 func NewEventOrError(event xgb.Event, err xgb.Error) eventOrError {
 	return eventOrError{
 		Event: event,
@@ -316,6 +414,13 @@ func NewEventOrError(event xgb.Event, err xgb.Error) eventOrError {
 // Also, it is perfectly legitimate to connect to events that don't specify
 // a window (like MappingNotify and KeymapNotify). In this case, simply
 // use 'xgbutil.NoWindow' as the window id.
+//
+// Example to respond to ConfigureNotify events on window 0x1
+//
+//     xevent.ConfigureNotifyFun(
+//		func(X *xgbutil.XUtil, e xevent.ConfigureNotifyEvent) {
+//			fmt.Printf("(%d, %d) %dx%d\n", e.X, e.Y, e.Width, e.Height)
+//		}).Connect(X, 0x1)
 type Callback interface {
 	Connect(xu *XUtil, win xgb.Id)
 	Run(xu *XUtil, ev interface{})
@@ -329,7 +434,7 @@ var NoWindow xgb.Id = 0
 // IgnoreMods is a list of X modifiers that we don't want interfering
 // with our mouse or key bindings. In particular, for each mouse or key binding 
 // issued, there is a seperate mouse or key binding made for each of the 
-// following modifiers.
+// modifiers specified.
 var IgnoreMods []uint16 = []uint16{
 	0,
 	xgb.ModMaskLock,                // Num lock

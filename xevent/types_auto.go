@@ -10,8 +10,11 @@ package xevent
    Edit it at your peril.
 */
 
-import "fmt"
-import "github.com/BurntSushi/xgb"
+import (
+	"fmt"
+
+	"github.com/BurntSushi/xgb"
+)
 
 type KeyPressEvent struct {
 	*xgb.KeyPressEvent

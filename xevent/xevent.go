@@ -41,30 +41,35 @@ func Read(xu *xgbutil.XUtil, block bool) {
 
 // Main starts the main X event loop. It will read events and call appropriate
 // callback functions. 
-// XXX: This only supports using one X connection. It should at least allow
-//      some arbitrary number of connections. Not sure what the best approach
-//      is, but I'm sure it needs to use channels (and multiple calls to
-//      Main using select, by the user).
+// N.B. If you have multiple X connections in the same program, you could be
+// able to run this in different goroutines concurrently. However, only
+// *one* of these should run for *each* connection.
 func Main(xu *xgbutil.XUtil) error {
 	for {
 		if xu.Quitting() {
 			break
 		}
+
+		// Gobble up as many events as possible (into the queue).
+		// If there are no events, we block.
 		Read(xu, true)
 
-		// We have to look for xgb events here. But we re-wrap them in our
-		// own event types.
 		for !xu.QueueEmpty() {
 			if xu.Quitting() {
 				return nil
 			}
 
 			everr := xu.Dequeue()
+
+			// If we gobbled up an error, send it to the error event handler
+			// and move on the next event/error.
 			if everr.Err != nil {
 				xu.ErrorHandlerGet()(everr.Err)
 				continue
 			}
 
+			// We know there isn't an error. If there isn't an event either,
+			// then there's a bug somewhere.
 			if everr.Event == nil {
 				xgbutil.Logger.Fatal("BUG: Expected an event but got nil.")
 			}
@@ -78,7 +83,7 @@ func Main(xu *xgbutil.XUtil) error {
 					e.Event = wid
 				}
 
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, KeyPress, e.Event)
 			case xgb.KeyReleaseEvent:
 				e := KeyReleaseEvent{&event}
@@ -88,15 +93,15 @@ func Main(xu *xgbutil.XUtil) error {
 					e.Event = wid
 				}
 
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, KeyRelease, e.Event)
 			case xgb.ButtonPressEvent:
 				e := ButtonPressEvent{&event}
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, ButtonPress, e.Event)
 			case xgb.ButtonReleaseEvent:
 				e := ButtonReleaseEvent{&event}
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, ButtonRelease, e.Event)
 			case xgb.MotionNotifyEvent:
 				e := MotionNotifyEvent{&event}
@@ -113,7 +118,7 @@ func Main(xu *xgbutil.XUtil) error {
 				// motion notify.
 				var laste xgb.MotionNotifyEvent
 				for {
-					xu.Flush()
+					xu.Sync()
 					Read(xu, false)
 
 					found := false
@@ -143,15 +148,15 @@ func Main(xu *xgbutil.XUtil) error {
 					e.EventY = laste.EventY
 				}
 
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, MotionNotify, e.Event)
 			case xgb.EnterNotifyEvent:
 				e := EnterNotifyEvent{&event}
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, EnterNotify, e.Event)
 			case xgb.LeaveNotifyEvent:
 				e := LeaveNotifyEvent{&event}
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, LeaveNotify, e.Event)
 			case xgb.FocusInEvent:
 				e := FocusInEvent{&event}
@@ -214,19 +219,19 @@ func Main(xu *xgbutil.XUtil) error {
 				xu.RunCallbacks(e, CirculateRequest, e.Window)
 			case xgb.PropertyNotifyEvent:
 				e := PropertyNotifyEvent{&event}
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, PropertyNotify, e.Window)
 			case xgb.SelectionClearEvent:
 				e := SelectionClearEvent{&event}
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, SelectionClear, e.Owner)
 			case xgb.SelectionRequestEvent:
 				e := SelectionRequestEvent{&event}
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, SelectionRequest, e.Requestor)
 			case xgb.SelectionNotifyEvent:
 				e := SelectionNotifyEvent{&event}
-				xu.SetTime(e.Time)
+				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, SelectionNotify, e.Requestor)
 			case xgb.ColormapNotifyEvent:
 				e := ColormapNotifyEvent{&event}
@@ -250,9 +255,9 @@ func Main(xu *xgbutil.XUtil) error {
 	return nil
 }
 
-// SendRootEvent takes a type implementing the XEvent interface, converts it
+// SendRootEvent takes a type implementing the xgb.Event interface, converts it
 // to raw X bytes, and sends it off using the SendEvent request.
-func SendRootEvent(xu *xgbutil.XUtil, ev XEvent, evMask uint32) {
+func SendRootEvent(xu *xgbutil.XUtil, ev xgb.Event, evMask uint32) {
 	xu.Conn().SendEvent(false, xu.RootWin(), evMask, string(ev.Bytes()))
 }
 
@@ -263,6 +268,8 @@ func ReplayPointer(xu *xgbutil.XUtil) {
 
 // Detach removes *everything* associated with a particular
 // window, including key and mouse bindings.
+// This should be used on a window that can no longer receive events. (i.e.,
+// it was destroyed.)
 func Detach(xu *xgbutil.XUtil, win xgb.Id) {
 	xu.DetachWindow(win)
 	xu.DetachKeyBindWindow(KeyPress, win)

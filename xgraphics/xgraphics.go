@@ -118,6 +118,10 @@ func CreateImageWindow(xu *xgbutil.XUtil, img image.Image, x, y int) xgb.Id {
 
 // PaintImg will slap the given image as a background pixmap into the given
 // window.
+// Note that we're currently showing a pixmap in a window by using a 
+// BackPixmap (a background image). Apparently, this can sometimes cause
+// rendering problems. If so, know to try CopyArea instead:
+// http://goo.gl/5jWqA
 func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
 	pix := CreatePixmap(xu, img)
 	xu.Conn().ChangeWindowAttributes(win, uint32(xgb.CwBackPixmap),

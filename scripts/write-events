@@ -52,8 +52,11 @@ if sys.argv[1] == 'evtypes':
     Edit it at your peril.
 */'''
     print
-    print 'import "fmt"'
-    print 'import "github.com/BurntSushi/xgb"'
+    print 'import ('
+    print '\t"fmt"'
+    print
+    print '\t"github.com/BurntSushi/xgb"'
+    print ')'
     print
 
     for e in events:

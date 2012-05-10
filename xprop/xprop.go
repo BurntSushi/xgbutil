@@ -73,6 +73,8 @@ func ChangeProp32(xu *xgbutil.XUtil, win xgb.Id, prop string, typ string,
 }
 
 // Atm is a short alias for Atom in the common case of interning an atom.
+// Namely, interning the atom always succeeds. (If the atom does not already
+// exist, a new one is created.)
 func Atm(xu *xgbutil.XUtil, name string) (xgb.Id, error) {
 	aid, err := Atom(xu, name, false)
 	if err != nil {
@@ -88,7 +90,7 @@ func Atm(xu *xgbutil.XUtil, name string) (xgb.Id, error) {
 // Atom interns an atom and panics if there is any error.
 func Atom(xu *xgbutil.XUtil, name string, only_if_exists bool) (xgb.Id, error) {
 	// Check the cache first
-	if aid, ok := xu.GetAtom(name); ok {
+	if aid, ok := xu.AtomGet(name); ok {
 		return aid, nil
 	}
 
@@ -107,7 +109,7 @@ func Atom(xu *xgbutil.XUtil, name string, only_if_exists bool) (xgb.Id, error) {
 // AtomName fetches a string representation of an ATOM given its integer id.
 func AtomName(xu *xgbutil.XUtil, aid xgb.Id) (string, error) {
 	// Check the cache first
-	if atomName, ok := xu.GetAtomName(aid); ok {
+	if atomName, ok := xu.AtomNameGet(aid); ok {
 		return string(atomName), nil
 	}
 

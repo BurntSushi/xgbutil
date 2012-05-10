@@ -367,7 +367,7 @@ func UngrabKeyboard(xu *xgbutil.XUtil) {
 	xu.Conn().UngrabKeyboard(0)
 }
 
-// DummyGrab grabs the keyboard and sends all key event to the dummy window.
+// DummyGrab grabs the keyboard and sends all key events to the dummy window.
 func DummyGrab(xu *xgbutil.XUtil) error {
 	ok, err := GrabKeyboard(xu, xu.Dummy())
 	if err != nil {

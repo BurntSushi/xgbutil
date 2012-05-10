@@ -1098,6 +1098,8 @@ func WmVisibleNameSet(xu *xgbutil.XUtil, win xgb.Id, name string) error {
 // compositing managers (i.e., xcompmgr, cairo-compmgr, etc.).
 // This property is typically set not on a client window, but the *parent*
 // of a client window in reparenting window managers.
+// The float returned will be in the range [0.0, 1.0] where 0.0 is completely
+// transparent and 1.0 is completely opaque.
 func WmWindowOpacityGet(xu *xgbutil.XUtil, win xgb.Id) (float64, error) {
 	intOpacity, err := xprop.PropValNum(
 		xprop.GetProperty(xu, win, "_NET_WM_WINDOW_OPACITY"))
@@ -1105,7 +1107,7 @@ func WmWindowOpacityGet(xu *xgbutil.XUtil, win xgb.Id) (float64, error) {
 		return 0, err
 	}
 
-	return float64(intOpacity) / float64(0xffffffff), nil
+	return float64(uint(intOpacity)) / float64(0xffffffff), nil
 }
 
 // _NET_WM_WINDOW_OPACITY set

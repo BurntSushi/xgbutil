@@ -23,7 +23,11 @@ func main() {
 		panic(Xerr)
 	}
 
-	fmt.Println(X)
+	active, _ := ewmh.ActiveWindowGet(X)
+
+	parent, _ := xwindow.ParentWindow(X, active)
+	actOpacity, _ := ewmh.WmWindowOpacityGet(X, parent)
+	fmt.Printf("Opacity for active window: %f\n", actOpacity)
 
 	showDesk, _ := ewmh.ShowingDesktopGet(X)
 	fmt.Printf("Showing desktop? %v\n", showDesk)
@@ -39,7 +43,6 @@ func main() {
 	pager := xgb.Id(0x160001e)
 	middle := xgb.Id(0x3200016)
 	geom, _ := ewmh.DesktopGeometryGet(X)
-	active, _ := ewmh.ActiveWindowGet(X)
 	desktops, _ := ewmh.DesktopNamesGet(X)
 	curdesk, _ := ewmh.CurrentDesktopGet(X)
 	clients, _ := ewmh.ClientListGet(X)
@@ -66,7 +69,7 @@ func main() {
 	// fmt.Printf("Current desktop is now: %d\n", ewmh.CurrentDesktop(X)) 
 
 	fmt.Printf("Setting active win to %x\n", middle)
-	ewmh.ActiveWindowReq(X, middle)
+	// ewmh.ActiveWindowReq(X, middle) 
 
 	rand.Seed(int64(time.Now().Nanosecond()))
 	randStr := make([]byte, 20)
@@ -122,7 +125,7 @@ func main() {
 	// fmt.Printf("Virtual roots: %v\n", ewmh.VirtualRoots(X)) 
 	// fmt.Printf("Desktop layout: %v\n", ewmh.DesktopLayout(X)) 
 	fmt.Printf("Closing window %x\n", 0x2e004c5)
-	ewmh.CloseWindow(X, 0x2e004c5)
+	ewmh.CloseWindow(X, 0x1e00cdf)
 
 	fmt.Printf("Moving/resizing window: %x\n", 0x2e004d0)
 	ewmh.MoveresizeWindow(X, 0x2e004d0, 1920, 30, 500, 500)
@@ -137,14 +140,6 @@ func main() {
 
 	fmt.Printf("Requesting frame extents for active window...\n")
 	ewmh.RequestFrameExtents(X, active)
-
-	parent, _ := xwindow.ParentWindow(X, active)
-	actOpacity, _ := ewmh.WmWindowOpacityGet(X, parent)
-	// actOpacity2 := ewmh.WmWindowOpacityGet(
-	// X.ParentWindow(X.EwmhActiveWindow(X))) 
-	fmt.Printf("Opacity for active window: %f\n", actOpacity)
-	// fmt.Printf("Opacity for real active window: %f\n", actOpacity2) 
-	// ewmh.WmWindowOpacitySet(X.ParentWindow(X, active), 0.5) 
 
 	activeDesk, _ := ewmh.WmDesktopGet(X, active)
 	activeType, _ := ewmh.WmWindowTypeGet(X, active)

@@ -33,7 +33,7 @@ type ModifierMapping struct {
 
 // RedirectKeyEvents, when set to a window id (greater than 0), will force
 // *all* Key{Press,Release} to callbacks attached to the specified window.
-// This close to emulating a Keyboard grab without the racing.
+// This is close to emulating a Keyboard grab without the racing.
 func (xu *XUtil) RedirectKeyEvents(wid xgb.Id) {
 	xu.keyRedirect = wid
 }
