@@ -1,7 +1,7 @@
 all: callback.go types_auto.go gofmt
 
 gofmt:
-	gofmt -w *.go */*.go examples/*.go examples/*/*.go
+	gofmt -w *.go */*.go examples/*/*.go
 	colcheck *.go */*.go
 
 callback.go:
