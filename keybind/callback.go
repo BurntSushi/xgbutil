@@ -5,6 +5,8 @@
 package keybind
 
 import (
+	"fmt"
+
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
@@ -15,14 +17,29 @@ type KeyPressFun xevent.KeyPressFun
 
 // connect is essentially 'Connect' for either KeyPress or KeyRelease events.
 func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
-	evtype int, win xproto.Window, keyStr string) {
+	evtype int, win xproto.Window, keyStr string) error {
 
 	// Get the mods/key first
-	mods, keycode := ParseString(xu, keyStr)
+	mods, keycode, err := ParseString(xu, keyStr)
+	if err != nil {
+		return err
+	}
 
 	// Only do the grab if we haven't yet on this window.
 	if xu.KeyBindGrabs(evtype, win, mods, keycode) == 0 {
-		Grab(xu, win, mods, keycode)
+		err := GrabChecked(xu, win, mods, keycode)
+		if err != nil {
+			// If a bad access, let's be nice and give a good error message.
+			switch err.(type) {
+			case xproto.AccessError:
+				return fmt.Errorf("Got a bad access error when trying to bind "+
+					"'%s'. This usually means another client has already "+
+					"grabbed this keybinding.", keyStr)
+			default:
+				return fmt.Errorf("Could not bind '%s' because: %s",
+					keyStr, err)
+			}
+		}
 	}
 
 	// If we've never grabbed anything on this window before, we need to
@@ -42,6 +59,8 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
 
 	// Finally, attach the callback.
 	xu.AttachKeyBindCallback(evtype, win, mods, keycode, callback)
+
+	return nil
 }
 
 func DeduceKeyInfo(state uint16,
@@ -55,9 +74,9 @@ func DeduceKeyInfo(state uint16,
 }
 
 func (callback KeyPressFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
-	keyStr string) {
+	keyStr string) error {
 
-	connect(xu, callback, xevent.KeyPress, win, keyStr)
+	return connect(xu, callback, xevent.KeyPress, win, keyStr)
 }
 
 func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -67,9 +86,9 @@ func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 type KeyReleaseFun xevent.KeyReleaseFun
 
 func (callback KeyReleaseFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
-	keyStr string) {
+	keyStr string) error {
 
-	connect(xu, callback, xevent.KeyRelease, win, keyStr)
+	return connect(xu, callback, xevent.KeyRelease, win, keyStr)
 }
 
 func (callback KeyReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {

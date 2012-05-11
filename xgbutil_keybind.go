@@ -9,7 +9,7 @@ import "github.com/BurntSushi/xgb/xproto"
 // KeyBindCallback operates in the spirit of Callback, except that it works
 // specifically on key bindings.
 type KeyBindCallback interface {
-	Connect(xu *XUtil, win xproto.Window, keyStr string)
+	Connect(xu *XUtil, win xproto.Window, keyStr string) error
 	Run(xu *XUtil, ev interface{})
 }
 

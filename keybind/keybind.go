@@ -155,7 +155,9 @@ func MapsGet(xu *xgbutil.XUtil) (*xproto.GetKeyboardMappingReply,
 // i.e., 'Mod4-j', and returns a modifiers/keycode combo.
 // (Actually, the parser is slightly more forgiving than what this comment
 //  leads you to believe.)
-func ParseString(xu *xgbutil.XUtil, str string) (uint16, xproto.Keycode) {
+func ParseString(xu *xgbutil.XUtil,
+	str string) (uint16, xproto.Keycode, error) {
+
 	mods, kc := uint16(0), xproto.Keycode(0)
 	for _, part := range strings.Split(str, "-") {
 		switch strings.ToLower(part) {
@@ -185,11 +187,11 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, xproto.Keycode) {
 	}
 
 	if kc == 0 {
-		xgbutil.Logger.Printf("We could not find a valid keycode in the "+
-			"string '%s'. Things probably will not work right.", str)
+		return 0, 0, fmt.Errorf("Could not find a valid keycode in the "+
+			"string '%s'. Key binding failed.", str)
 	}
 
-	return mods, kc
+	return mods, kc, nil
 }
 
 // StrToKeycode is a wrapper around keycodeGet meant to make our search
@@ -341,6 +343,20 @@ func Grab(xu *xgbutil.XUtil, win xproto.Window,
 		xproto.GrabKey(xu.Conn(), true, win, mods|m, key,
 			xproto.GrabModeAsync, xproto.GrabModeAsync)
 	}
+}
+
+func GrabChecked(xu *xgbutil.XUtil, win xproto.Window,
+	mods uint16, key xproto.Keycode) error {
+
+	var err error
+	for _, m := range xgbutil.IgnoreMods {
+		err = xproto.GrabKeyChecked(xu.Conn(), true, win, mods|m, key,
+			xproto.GrabModeAsync, xproto.GrabModeAsync).Check()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Ungrab undoes Grab. It will handle all combinations od modifiers found

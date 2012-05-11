@@ -1,6 +1,7 @@
 package main
 
 import "fmt"
+import "github.com/BurntSushi/xgb/xproto"
 import "github.com/BurntSushi/xgbutil"
 import "github.com/BurntSushi/xgbutil/ewmh"
 import "github.com/BurntSushi/xgbutil/xinerama"
@@ -25,7 +26,7 @@ func main() {
 	fmt.Println(xrect.LargestOverlap(window, heads))
 
 	// Test ApplyStrut
-	rgeom, _ := xwindow.RawGeometry(X, X.RootWin())
+	rgeom, _ := xwindow.RawGeometry(X, xproto.Drawable(X.RootWin()))
 	fmt.Println("---------------------------")
 	for i, head := range heads {
 		fmt.Printf("%d - %v\n", i, head)
