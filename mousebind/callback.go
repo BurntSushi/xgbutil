@@ -4,17 +4,17 @@
 */
 package mousebind
 
-import "github.com/BurntSushi/xgb"
-
 import (
+	"github.com/BurntSushi/xgb/xproto"
+
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
 )
 
 // connect is essentially 'Connect' for either ButtonPress or
 // ButtonRelease events.
-func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback,
-	evtype int, win xgb.Id, buttonStr string, propagate bool, grab bool) {
+func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback, evtype int,
+	win xproto.Window, buttonStr string, propagate bool, grab bool) {
 
 	// Get the mods/button first
 	mods, button := ParseString(xu, buttonStr)
@@ -44,7 +44,9 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback,
 	xu.AttachMouseBindCallback(evtype, win, mods, button, callback)
 }
 
-func DeduceButtonInfo(state uint16, detail xgb.Button) (uint16, xgb.Button) {
+func DeduceButtonInfo(state uint16,
+	detail xproto.Button) (uint16, xproto.Button) {
+
 	mods, button := state, detail
 	for _, m := range xgbutil.IgnoreMods {
 		mods &= ^m
@@ -55,15 +57,15 @@ func DeduceButtonInfo(state uint16, detail xgb.Button) (uint16, xgb.Button) {
 	modsTemp := int32(mods)
 	switch button {
 	case 1:
-		modsTemp &= ^xgb.ButtonMask1
+		modsTemp &= ^xproto.ButtonMask1
 	case 2:
-		modsTemp &= ^xgb.ButtonMask2
+		modsTemp &= ^xproto.ButtonMask2
 	case 3:
-		modsTemp &= ^xgb.ButtonMask3
+		modsTemp &= ^xproto.ButtonMask3
 	case 4:
-		modsTemp &= ^xgb.ButtonMask4
+		modsTemp &= ^xproto.ButtonMask4
 	case 5:
-		modsTemp &= ^xgb.ButtonMask5
+		modsTemp &= ^xproto.ButtonMask5
 	}
 
 	return uint16(modsTemp), button
@@ -71,7 +73,7 @@ func DeduceButtonInfo(state uint16, detail xgb.Button) (uint16, xgb.Button) {
 
 type ButtonPressFun xevent.ButtonPressFun
 
-func (callback ButtonPressFun) Connect(xu *xgbutil.XUtil, win xgb.Id,
+func (callback ButtonPressFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
 	buttonStr string, propagate bool, grab bool) {
 
 	connect(xu, callback, xevent.ButtonPress, win, buttonStr, propagate, grab)
@@ -83,7 +85,7 @@ func (callback ButtonPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ButtonReleaseFun xevent.ButtonReleaseFun
 
-func (callback ButtonReleaseFun) Connect(xu *xgbutil.XUtil, win xgb.Id,
+func (callback ButtonReleaseFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
 	buttonStr string, propagate bool, grab bool) {
 
 	connect(xu, callback, xevent.ButtonRelease, win, buttonStr, propagate, grab)

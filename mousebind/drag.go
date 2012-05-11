@@ -1,7 +1,7 @@
 package mousebind
 
 import (
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
@@ -10,7 +10,7 @@ import (
 // Drag is the public interface that will make the appropriate connections
 // to register a drag event for three functions: the begin function, the 
 // step function and the end function.
-func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string, grab bool,
+func Drag(xu *xgbutil.XUtil, win xproto.Window, buttonStr string, grab bool,
 	begin xgbutil.MouseDragBeginFun, step xgbutil.MouseDragFun,
 	end xgbutil.MouseDragFun) {
 
@@ -21,7 +21,7 @@ func Drag(xu *xgbutil.XUtil, win xgb.Id, buttonStr string, grab bool,
 }
 
 // dragGrab is a shortcut for grabbing the pointer for a drag.
-func dragGrab(xu *xgbutil.XUtil, win xgb.Id, cursor xgb.Id) bool {
+func dragGrab(xu *xgbutil.XUtil, win xproto.Window, cursor xproto.Cursor) bool {
 	status, err := GrabPointer(xu, xu.Dummy(), xu.RootWin(), cursor)
 	if err != nil {
 		xgbutil.Logger.Printf("Mouse dragging was unsuccessful because: %v",
@@ -46,7 +46,7 @@ func dragUngrab(xu *xgbutil.XUtil) {
 
 // dragStart executes the "begin" function registered for the current drag.
 // It also initiates the grab.
-func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent, win xgb.Id,
+func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent, win xproto.Window,
 	begin xgbutil.MouseDragBeginFun, step xgbutil.MouseDragFun,
 	end xgbutil.MouseDragFun) {
 

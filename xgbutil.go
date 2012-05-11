@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xinerama"
+	"github.com/BurntSushi/xgb/xproto"
 )
 
 // Logger is used through xgbutil when messages need to be emitted to stderr.
@@ -24,18 +26,21 @@ type XUtil struct {
 	// the current event, and gracefully quit afterwards.
 	quit bool // when true, the main event loop will stop gracefully
 
+	// setup contains all the setup information retrieved at connection time.
+	setup *xproto.SetupInfo
+
 	// screen is a simple alias to the default screen info.
-	screen *xgb.ScreenInfo
+	screen *xproto.ScreenInfo
 
 	// root is an alias to the default root window.
-	root xgb.Id
+	root xproto.Window
 
 	// atoms is a cache of atom names to resource identifiers. This minimizes
 	// round trips to the X server, since atom identifiers never change.
-	atoms map[string]xgb.Id
+	atoms map[string]xproto.Atom
 
 	// atomNames is a cache just like 'atoms', but in the reverse direction.
-	atomNames map[xgb.Id]string
+	atomNames map[xproto.Atom]string
 
 	// evqueue is the queue that stores the results of xgb.WaitForEvent.
 	// Namely, each value is either an Event *or* an Error.
@@ -46,11 +51,11 @@ type XUtil struct {
 	// to callback functions.
 	// This is the data structure that stores all callback functions, where
 	// a callback function is always attached to a (event, window) tuple.
-	callbacks map[int]map[xgb.Id][]Callback // ev code -> win -> callbacks
+	callbacks map[int]map[xproto.Window][]Callback // evcode -> win -> callbacks
 
 	// eventTime is the last time recorded by an event. It is automatically
 	// updated if xgbutil's main event loop is used.
-	eventTime xgb.Timestamp
+	eventTime xproto.Timestamp
 
 	// keymap corresponds to xgbutil's current conception of the keyboard
 	// mapping. It is automatically kept up-to-date if xgbutil's event loop
@@ -65,7 +70,7 @@ type XUtil struct {
 	// keyRedirect corresponds to a window identifier that, when set,
 	// automatically receives *all* keyboard events. This is a sort-of
 	// synthetic grab and is helpful in avoiding race conditions.
-	keyRedirect xgb.Id
+	keyRedirect xproto.Window
 
 	// keybinds is the data structure storing all callbacks for key bindings.
 	// This is extremely similar to the general notion of event callbacks,
@@ -110,12 +115,12 @@ type XUtil struct {
 	// gc is a general purpose graphics context; used to paint images.
 	// Since we don't do any real X drawing, we don't really care about the
 	// particulars of our graphics context.
-	gc xgb.Id
+	gc xproto.Gcontext
 
 	// dummy is a dummy window used for mouse/key GRABs.
 	// Basically, whenever a grab is instituted, mouse and key events are
 	// redirected to the dummy the window.
-	dummy xgb.Id
+	dummy xproto.Window
 
 	// errorHandler is the function that handles errors *in the event loop*.
 	// By default, it simply emits them to stderr.
@@ -143,17 +148,21 @@ func NewConnDisplay(display string) (*XUtil, error) {
 		return nil, err
 	}
 
+	setup := xproto.Setup(c)
+	screen := setup.DefaultScreen(c)
+
 	// Initialize our central struct that stores everything.
 	xu := &XUtil{
 		conn:          c,
 		quit:          false,
 		evqueue:       make([]eventOrError, 0),
-		screen:        c.DefaultScreen(),
-		root:          c.DefaultScreen().Root,
-		eventTime:     xgb.Timestamp(0), // last event time
-		atoms:         make(map[string]xgb.Id, 50),
-		atomNames:     make(map[xgb.Id]string, 50),
-		callbacks:     make(map[int]map[xgb.Id][]Callback, 33),
+		setup:         setup,
+		screen:        screen,
+		root:          screen.Root,
+		eventTime:     xproto.Timestamp(0), // last event time
+		atoms:         make(map[string]xproto.Atom, 50),
+		atomNames:     make(map[xproto.Atom]string, 50),
+		callbacks:     make(map[int]map[xproto.Window][]Callback, 33),
 		keymap:        nil, // we don't have anything yet
 		modmap:        nil,
 		keyRedirect:   0,
@@ -168,27 +177,27 @@ func NewConnDisplay(display string) (*XUtil, error) {
 	}
 
 	// Create a general purpose graphics context
-	xu.gc, err = xu.conn.NewId()
+	xu.gc, err = xproto.NewGcontextId(xu.conn)
 	if err != nil {
 		return nil, err
 	}
-	xu.conn.CreateGC(xu.gc, xu.root, xgb.GcForeground,
-		[]uint32{xu.screen.WhitePixel})
+	xproto.CreateGC(xu.conn, xu.gc, xproto.Drawable(xu.root),
+		xproto.GcForeground, []uint32{xu.screen.WhitePixel})
 
 	// Create a dummy window
-	xu.dummy, err = xu.conn.NewId()
+	xu.dummy, err = xproto.NewWindowId(xu.conn)
 	if err != nil {
 		return nil, err
 	}
-	xu.conn.CreateWindow(xu.Screen().RootDepth, xu.dummy, xu.RootWin(),
+	xproto.CreateWindow(xu.conn, xu.Screen().RootDepth, xu.dummy, xu.RootWin(),
 		-1000, -1000, 1, 1, 0,
-		xgb.WindowClassInputOutput, xu.Screen().RootVisual,
-		xgb.CwEventMask|xgb.CwOverrideRedirect,
-		[]uint32{1, xgb.EventMaskPropertyChange})
-	xu.conn.MapWindow(xu.dummy)
+		xproto.WindowClassInputOutput, xu.Screen().RootVisual,
+		xproto.CwEventMask|xproto.CwOverrideRedirect,
+		[]uint32{1, xproto.EventMaskPropertyChange})
+	xproto.MapWindow(xu.conn, xu.dummy)
 
 	// Register the Xinerama extension... because it doesn't cost much.
-	err = xu.conn.XineramaInit()
+	err = xinerama.Init(xu.conn)
 
 	// If we can't register Xinerama, that's okay. Output something
 	// and move on.
@@ -220,16 +229,21 @@ func (xu *XUtil) Quitting() bool {
 // Sync forces XGB to catch up with all events/requests and synchronize.
 // This is done by issuing a benign round trip request to X.
 func (xu *XUtil) Sync() {
-	xu.conn.GetInputFocus().Reply()
+	xproto.GetInputFocus(xu.Conn()).Reply()
+}
+
+// Setup returns the setup information retrieved during connection time.
+func (xu *XUtil) Setup() *xproto.SetupInfo {
+	return xu.setup
 }
 
 // Screen returns the default screen
-func (xu *XUtil) Screen() *xgb.ScreenInfo {
+func (xu *XUtil) Screen() *xproto.ScreenInfo {
 	return xu.screen
 }
 
 // RootWin returns the current root window.
-func (xu *XUtil) RootWin() xgb.Id {
+func (xu *XUtil) RootWin() xproto.Window {
 	return xu.root
 }
 
@@ -237,28 +251,28 @@ func (xu *XUtil) RootWin() xgb.Id {
 // N.B. This probably shouldn't be used unless you're desperately trying
 // to support multiple X screens. (This is *not* the same as Xinerama/RandR or
 // TwinView. All of those have a single root window.)
-func (xu *XUtil) RootWinSet(root xgb.Id) {
+func (xu *XUtil) RootWinSet(root xproto.Window) {
 	xu.root = root
 }
 
 // TimeGet gets the most recent time seen by an event.
-func (xu *XUtil) TimeGet() xgb.Timestamp {
+func (xu *XUtil) TimeGet() xproto.Timestamp {
 	return xu.eventTime
 }
 
 // TimeSet sets the most recent time seen by an event.
-func (xu *XUtil) TimeSet(t xgb.Timestamp) {
+func (xu *XUtil) TimeSet(t xproto.Timestamp) {
 	xu.eventTime = t
 }
 
 // GC gets a general purpose graphics context that is typically used to simply
 // paint images.
-func (xu *XUtil) GC() xgb.Id {
+func (xu *XUtil) GC() xproto.Gcontext {
 	return xu.gc
 }
 
 // Dummy gets the id of the dummy window.
-func (xu *XUtil) Dummy() xgb.Id {
+func (xu *XUtil) Dummy() xproto.Window {
 	return xu.dummy
 }
 
@@ -266,9 +280,9 @@ func (xu *XUtil) Dummy() xgb.Id {
 // This function should not be used. It is exported for use in the xevent
 // package.
 // See the Callback type for an example of attaching event handlers.
-func (xu *XUtil) AttachCallback(evtype int, win xgb.Id, fun Callback) {
+func (xu *XUtil) AttachCallback(evtype int, win xproto.Window, fun Callback) {
 	if _, ok := xu.callbacks[evtype]; !ok {
-		xu.callbacks[evtype] = make(map[xgb.Id][]Callback, 20)
+		xu.callbacks[evtype] = make(map[xproto.Window][]Callback, 20)
 	}
 	if _, ok := xu.callbacks[evtype][win]; !ok {
 		xu.callbacks[evtype][win] = make([]Callback, 0)
@@ -280,7 +294,9 @@ func (xu *XUtil) AttachCallback(evtype int, win xgb.Id, fun Callback) {
 // particular event/window tuple.
 // This function should not be used. It is exported for use in the xevent
 // package.
-func (xu *XUtil) RunCallbacks(event interface{}, evtype int, win xgb.Id) {
+func (xu *XUtil) RunCallbacks(event interface{}, evtype int,
+	win xproto.Window) {
+
 	for _, cb := range xu.callbacks[evtype][win] {
 		cb.Run(xu, event)
 	}
@@ -289,7 +305,7 @@ func (xu *XUtil) RunCallbacks(event interface{}, evtype int, win xgb.Id) {
 // DetachWindow removes all callbacks associated with a particular window.
 // This function should not be used, since it only cleans up Callback and not
 // key and mouse bindings. Instead, use xevent.Detach instead.
-func (xu *XUtil) DetachWindow(win xgb.Id) {
+func (xu *XUtil) DetachWindow(win xproto.Window) {
 	for evtype, _ := range xu.callbacks {
 		delete(xu.callbacks[evtype], win)
 	}
@@ -298,35 +314,35 @@ func (xu *XUtil) DetachWindow(win xgb.Id) {
 // AtomGet retrieves an atom identifier from a cache if it exists.
 // This function should not be used. It is exported for use in the xprop
 // package. Instead, to intern an atom, use xprop.Atom or xprop.Atm.
-func (xu *XUtil) AtomGet(name string) (aid xgb.Id, ok bool) {
-	aid, ok = xu.atoms[name]
-	return
+func (xu *XUtil) AtomGet(name string) (xproto.Atom, bool) {
+	aid, ok := xu.atoms[name]
+	return aid, ok
 }
 
 // AtomNameGet retrieves an atom name from a cache if it exists.
 // This function should not be used. It is exported for use in the xprop
 // package. Instead, to get the name of an atom, use xprop.AtomName.
-func (xu *XUtil) AtomNameGet(aid xgb.Id) (name string, ok bool) {
-	name, ok = xu.atomNames[aid]
-	return
+func (xu *XUtil) AtomNameGet(aid xproto.Atom) (string, bool) {
+	name, ok := xu.atomNames[aid]
+	return name, ok
 }
 
 // CacheAtom puts an atom into the cache.
 // This function should not be used. It is exported for use in the xprop
 // package.
-func (xu *XUtil) CacheAtom(name string, aid xgb.Id) {
+func (xu *XUtil) CacheAtom(name string, aid xproto.Atom) {
 	xu.atoms[name] = aid
 	xu.atomNames[aid] = name
 }
 
 // Grabs the server. Everything becomes synchronous.
 func (xu *XUtil) Grab() {
-	xu.conn.GrabServer()
+	xproto.GrabServer(xu.Conn())
 }
 
 // Ungrabs the server.
 func (xu *XUtil) Ungrab() {
-	xu.conn.UngrabServer()
+	xproto.UngrabServer(xu.Conn())
 }
 
 // Enqueue queues up an event read from X.
@@ -422,14 +438,14 @@ func NewEventOrError(event xgb.Event, err xgb.Error) eventOrError {
 //			fmt.Printf("(%d, %d) %dx%d\n", e.X, e.Y, e.Width, e.Height)
 //		}).Connect(X, 0x1)
 type Callback interface {
-	Connect(xu *XUtil, win xgb.Id)
+	Connect(xu *XUtil, win xproto.Window)
 	Run(xu *XUtil, ev interface{})
 }
 
 // Sometimes we need to specify NO WINDOW when a window is typically
 // expected. (Like connecting to MappingNotify or KeymapNotify events.)
 // Use this value to do that.
-var NoWindow xgb.Id = 0
+var NoWindow xproto.Window = 0
 
 // IgnoreMods is a list of X modifiers that we don't want interfering
 // with our mouse or key bindings. In particular, for each mouse or key binding 
@@ -437,7 +453,7 @@ var NoWindow xgb.Id = 0
 // modifiers specified.
 var IgnoreMods []uint16 = []uint16{
 	0,
-	xgb.ModMaskLock,                // Num lock
-	xgb.ModMask2,                   // Caps lock
-	xgb.ModMaskLock | xgb.ModMask2, // Caps and Num lock
+	xproto.ModMaskLock,                   // Num lock
+	xproto.ModMask2,                      // Caps lock
+	xproto.ModMaskLock | xproto.ModMask2, // Caps and Num lock
 }

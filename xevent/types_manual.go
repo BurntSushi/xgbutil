@@ -3,27 +3,27 @@ package xevent
 import (
 	"fmt"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 )
 
 // ClientMessageEvent embeds the struct by the same name from the xgb library.
 type ClientMessageEvent struct {
-	*xgb.ClientMessageEvent
+	*xproto.ClientMessageEvent
 }
 
 // The unique code for a ClientMessage event.
-const ClientMessage = xgb.ClientMessage
+const ClientMessage = xproto.ClientMessage
 
 // NewClientMessage takes all arguments required to build a ClientMessageEvent 
 // struct and hides the messy details.
 // The varidic parameters coincide with the "data" part of a client message.
 // Right now, this function only supports a list of up to 5 uint32s.
 // XXX: Use type assertions to support bytes and uint16s.
-func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
+func NewClientMessage(Format byte, Window xproto.Window, Type xproto.Atom,
 	data ...interface{}) (*ClientMessageEvent, error) {
 
 	// Create the client data list first
-	var clientData xgb.ClientMessageDataUnion
+	var clientData xproto.ClientMessageDataUnion
 
 	// Don't support formats 8 or 16 yet. They aren't used in EWMH anyway.
 	switch Format {
@@ -35,7 +35,7 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
 			}
 			buf[i] = data[i].(byte)
 		}
-		clientData = xgb.NewClientMessageDataUnionData8(buf)
+		clientData = xproto.ClientMessageDataUnionData8New(buf)
 	case 16:
 		buf := make([]uint16, 10)
 		for i := 0; i < 10; i++ {
@@ -44,7 +44,7 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
 			}
 			buf[i] = uint16(data[i].(int16))
 		}
-		clientData = xgb.NewClientMessageDataUnionData16(buf)
+		clientData = xproto.ClientMessageDataUnionData16New(buf)
 	case 32:
 		buf := make([]uint32, 5)
 		for i := 0; i < 5; i++ {
@@ -53,13 +53,13 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
 			}
 			buf[i] = uint32(data[i].(int))
 		}
-		clientData = xgb.NewClientMessageDataUnionData32(buf)
+		clientData = xproto.ClientMessageDataUnionData32New(buf)
 	default:
 		return nil, fmt.Errorf("NewClientMessage: Unsupported format '%d'.",
 			Format)
 	}
 
-	return &ClientMessageEvent{&xgb.ClientMessageEvent{
+	return &ClientMessageEvent{&xproto.ClientMessageEvent{
 		Format: Format,
 		Window: Window,
 		Type:   Type,
@@ -69,19 +69,19 @@ func NewClientMessage(Format byte, Window xgb.Id, Type xgb.Id,
 
 // ConfigureNotifyEvent embeds the struct by the same name in XGB.
 type ConfigureNotifyEvent struct {
-	*xgb.ConfigureNotifyEvent
+	*xproto.ConfigureNotifyEvent
 }
 
 // The unique code for a ConfigureNotify event.
-const ConfigureNotify = xgb.ConfigureNotify
+const ConfigureNotify = xproto.ConfigureNotify
 
 // NewConfigureNotify takes all arguments required to build a 
 // ConfigureNotifyEvent struct and hides the messy details.
-func NewConfigureNotify(Event, Window, AboveSibling xgb.Id,
+func NewConfigureNotify(Event, Window, AboveSibling xproto.Window,
 	X, Y, Width, Height int, BorderWidth uint16,
 	OverrideRedirect bool) *ConfigureNotifyEvent {
 
-	return &ConfigureNotifyEvent{&xgb.ConfigureNotifyEvent{
+	return &ConfigureNotifyEvent{&xproto.ConfigureNotifyEvent{
 		Event: Event, Window: Window, AboveSibling: AboveSibling,
 		X: int16(X), Y: int16(Y), Width: uint16(Width), Height: uint16(Height),
 		BorderWidth: BorderWidth, OverrideRedirect: OverrideRedirect,

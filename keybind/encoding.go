@@ -13,14 +13,14 @@ It is not for the faint of heart.
 import (
 	"unicode"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 )
 
 // interpretSymList interprets the keysym list for a particular keycode as
 // described in the third and fourth paragraphs of http://goo.gl/qum9q
-func interpretSymList(xu *xgbutil.XUtil, keycode xgb.Keycode) (
+func interpretSymList(xu *xgbutil.XUtil, keycode xproto.Keycode) (
 	k1 string, k2 string, k3 string, k4 string) {
 
 	ks1 := keysymGet(xu, keycode, 0)
@@ -75,11 +75,13 @@ func interpretSymList(xu *xgbutil.XUtil, keycode xgb.Keycode) (
 // We just check if the modifiers are activated. That's good enough for me.
 // XXX: We ignore num lock stuff.
 // XXX: We ignore MODE SWITCH stuff. (i.e., we don't use group 2 key syms.)
-func LookupString(xu *xgbutil.XUtil, mods uint16, keycode xgb.Keycode) string {
+func LookupString(xu *xgbutil.XUtil, mods uint16,
+	keycode xproto.Keycode) string {
+
 	k1, k2, _, _ := interpretSymList(xu, keycode)
 
-	shift := mods&xgb.ModMaskShift > 0
-	lock := mods&xgb.ModMaskLock > 0
+	shift := mods&xproto.ModMaskShift > 0
+	lock := mods&xproto.ModMaskLock > 0
 	switch {
 	case !shift && !lock:
 		return k1

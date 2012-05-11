@@ -22,7 +22,7 @@ import (
 	"code.google.com/p/freetype-go/freetype"
 	"code.google.com/p/freetype-go/freetype/truetype"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -95,20 +95,22 @@ func ParseFont(fontBytes []byte) (*truetype.Font, error) {
 // with `X.Conn().MapWindow(window_id)`.
 // XXX: This will likely change to include the window masks and vals as
 // parameters.
-func CreateImageWindow(xu *xgbutil.XUtil, img image.Image, x, y int) xgb.Id {
-	win, err := xu.Conn().NewId()
+func CreateImageWindow(xu *xgbutil.XUtil, img image.Image,
+	x, y int) xproto.Window {
+
+	win, err := xproto.NewWindowId(xu.Conn())
 	if err != nil {
 		return 0
 	}
 	scrn := xu.Screen()
 	width, height := GetDim(img)
 
-	winMask := uint32(xgb.CwBackPixmap | xgb.CwOverrideRedirect)
-	winVals := []uint32{xgb.BackPixmapParentRelative, 1}
-	xu.Conn().CreateWindow(scrn.RootDepth, win, xu.RootWin(),
+	winMask := uint32(xproto.CwBackPixmap | xproto.CwOverrideRedirect)
+	winVals := []uint32{xproto.BackPixmapParentRelative, 1}
+	xproto.CreateWindow(xu.Conn(), scrn.RootDepth, win, xu.RootWin(),
 		int16(x), int16(y),
 		uint16(width), uint16(height),
-		0, xgb.WindowClassInputOutput, scrn.RootVisual,
+		0, xproto.WindowClassInputOutput, scrn.RootVisual,
 		winMask, winVals)
 
 	PaintImg(xu, win, img)
@@ -122,11 +124,11 @@ func CreateImageWindow(xu *xgbutil.XUtil, img image.Image, x, y int) xgb.Id {
 // BackPixmap (a background image). Apparently, this can sometimes cause
 // rendering problems. If so, know to try CopyArea instead:
 // http://goo.gl/5jWqA
-func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
+func PaintImg(xu *xgbutil.XUtil, win xproto.Window, img image.Image) {
 	pix := CreatePixmap(xu, img)
-	xu.Conn().ChangeWindowAttributes(win, uint32(xgb.CwBackPixmap),
+	xproto.ChangeWindowAttributes(xu.Conn(), win, uint32(xproto.CwBackPixmap),
 		[]uint32{uint32(pix)})
-	xu.Conn().ClearArea(false, win, 0, 0, 0, 0)
+	xproto.ClearArea(xu.Conn(), false, win, 0, 0, 0, 0)
 	FreePixmap(xu, pix)
 }
 
@@ -134,7 +136,7 @@ func PaintImg(xu *xgbutil.XUtil, win xgb.Id, img image.Image) {
 // Please remember to call FreePixmap when you're done!
 // Note: This gets around the X maximum request size limitation by issuing
 // multiple PutImage requests when the image data is too big.
-func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
+func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xproto.Pixmap {
 	width, height := GetDim(img)
 	imgData := make([]byte, width*height*4)
 	imgDataLen := len(imgData)
@@ -149,12 +151,12 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
 		}
 	}
 
-	pix, err := xu.Conn().NewId()
+	pix, err := xproto.NewPixmapId(xu.Conn())
 	if err != nil {
 		return 0
 	}
-	xu.Conn().CreatePixmap(xu.Screen().RootDepth, pix,
-		xu.RootWin(), uint16(width), uint16(height))
+	xproto.CreatePixmap(xu.Conn(), xu.Screen().RootDepth, pix,
+		xproto.Drawable(xu.RootWin()), uint16(width), uint16(height))
 
 	// This is where things get hairy. X's max request size is
 	// (2^16) * 4, that is, the number of bytes specifiable in 4-byte
@@ -191,7 +193,8 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
 		// is the last send, we probably aren't sending 'rowsPer' rows.
 		h = len(data) / 4 / width
 
-		xu.Conn().PutImage(xgb.ImageFormatZPixmap, pix, xu.GC(),
+		xproto.PutImage(xu.Conn(), xproto.ImageFormatZPixmap,
+			xproto.Drawable(pix), xu.GC(),
 			uint16(width), uint16(h), 0, int16(ypos),
 			0, 24, data)
 
@@ -204,8 +207,8 @@ func CreatePixmap(xu *xgbutil.XUtil, img image.Image) xgb.Id {
 }
 
 // FreePixmap frees the resources associated with pix.
-func FreePixmap(xu *xgbutil.XUtil, pix xgb.Id) {
-	xu.Conn().FreePixmap(pix)
+func FreePixmap(xu *xgbutil.XUtil, pix xproto.Pixmap) {
+	xproto.FreePixmap(xu.Conn(), pix)
 }
 
 // GetDim gets the width and height of an image
@@ -355,52 +358,49 @@ func proportional(w1, h1, w2, h2 uint32) bool {
 
 // PixmapToImage takes a Pixmap ID and converts it to an image.
 // Pixmap data is in BGR order. Ew.
-func PixmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
-	geom, err := xwindow.RawGeometry(xu, pix)
+func PixmapToImage(xu *xgbutil.XUtil, pix xproto.Pixmap) (*image.RGBA, error) {
+	geom, err := xwindow.RawGeometry(xu, xproto.Drawable(pix))
 	if err != nil {
 		return nil, err
 	}
 
 	width, height := geom.Width(), geom.Height()
-	data, err := xu.Conn().GetImage(xgb.ImageFormatZPixmap, pix,
-		0, 0, uint16(width), uint16(height), (1<<32)-1).Reply()
+	data, err := xproto.GetImage(xu.Conn(), xproto.ImageFormatZPixmap,
+		xproto.Drawable(pix), 0, 0, uint16(width), uint16(height),
+		(1<<32)-1).Reply()
 	if err != nil {
 		return nil, err
 	}
 
 	buf := make([]color.RGBA, width*height)
-	// bufa := make([]color.Alpha, width * height) 
 	for i, j := 0, 0; i < len(data.Data); i, j = i+4, j+1 {
 		blue := data.Data[i+0]
 		green := data.Data[i+1]
 		red := data.Data[i+2]
-		// alpha := data.Data[i + 3] 
 
 		buf[j] = color.RGBA{uint8(red), uint8(green), uint8(blue), 255}
-		// bufa[j] = color.Alpha{uint8(alpha)} 
 	}
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	// mask := image.NewRGBA(image.Rect(0, 0, width, height)) 
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			img.SetRGBA(x, y, buf[x+y*width])
-			// mask.Set(x, y, color.Alpha{uint8(128)}) 
 		}
 	}
 	return img, nil
 }
 
 // BitmapToImage takes a Pixmap ID and converts it to an image.
-func BitmapToImage(xu *xgbutil.XUtil, pix xgb.Id) (*image.RGBA, error) {
-	geom, err := xwindow.RawGeometry(xu, pix)
+func BitmapToImage(xu *xgbutil.XUtil, pix xproto.Pixmap) (*image.RGBA, error) {
+	geom, err := xwindow.RawGeometry(xu, xproto.Drawable(pix))
 	if err != nil {
 		return nil, err
 	}
 
 	width, height := geom.Width(), geom.Height()
-	data, err := xu.Conn().GetImage(xgb.ImageFormatXYPixmap, pix,
-		0, 0, uint16(width), uint16(height), (1<<32)-1).Reply()
+	data, err := xproto.GetImage(xu.Conn(), xproto.ImageFormatXYPixmap,
+		xproto.Drawable(pix), 0, 0, uint16(width), uint16(height),
+		(1<<32)-1).Reply()
 	if err != nil {
 		return nil, err
 	}

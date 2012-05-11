@@ -12,6 +12,8 @@ package xinerama
 import "sort"
 
 import (
+	"github.com/BurntSushi/xgb/xinerama"
+
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xrect"
 )
@@ -38,7 +40,7 @@ func (hds Heads) Swap(i int, j int) {
 // Heads returns the list of heads in a physical ordering.
 // Namely, left to right then top to bottom. (Defined by (X, Y).)
 func PhysicalHeads(xu *xgbutil.XUtil) (Heads, error) {
-	xinfo, err := xu.Conn().XineramaQueryScreens().Reply()
+	xinfo, err := xinerama.QueryScreens(xu.Conn()).Reply()
 	if err != nil {
 		return nil, err
 	}

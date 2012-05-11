@@ -4,12 +4,13 @@
 */
 package xgbutil
 
-import "github.com/BurntSushi/xgb"
+import "github.com/BurntSushi/xgb/xproto"
 
 // MouseBindCallback operates in the spirit of Callback, except that it works
 // specifically on mouse bindings.
 type MouseBindCallback interface {
-	Connect(xu *XUtil, win xgb.Id, buttonStr string, propagate bool, grab bool)
+	Connect(xu *XUtil, win xproto.Window, buttonStr string,
+		propagate bool, grab bool)
 	Run(xu *XUtil, ev interface{})
 }
 
@@ -18,15 +19,15 @@ type MouseBindCallback interface {
 // (event type, window id, modifier, button).
 type MouseBindKey struct {
 	Evtype int
-	Win    xgb.Id
+	Win    xproto.Window
 	Mod    uint16
-	Button xgb.Button
+	Button xproto.Button
 }
 
 // AttackMouseBindCallback associates an (event, window, mods, button)
 // with a callback.
-func (xu *XUtil) AttachMouseBindCallback(evtype int, win xgb.Id,
-	mods uint16, button xgb.Button, fun MouseBindCallback) {
+func (xu *XUtil) AttachMouseBindCallback(evtype int, win xproto.Window,
+	mods uint16, button xproto.Button, fun MouseBindCallback) {
 
 	// Create key
 	key := MouseBindKey{evtype, win, mods, button}
@@ -54,7 +55,7 @@ func (xu *XUtil) MouseBindKeys() []MouseBindKey {
 // RunMouseBindCallbacks executes every callback corresponding to a
 // particular event/window/mod/button tuple.
 func (xu *XUtil) RunMouseBindCallbacks(event interface{}, evtype int,
-	win xgb.Id, mods uint16, button xgb.Button) {
+	win xproto.Window, mods uint16, button xproto.Button) {
 	// Create key
 	key := MouseBindKey{evtype, win, mods, button}
 
@@ -66,7 +67,7 @@ func (xu *XUtil) RunMouseBindCallbacks(event interface{}, evtype int,
 // ConnectedMouseBind checks to see if there are any key binds for a particular
 // event type already in play. This is to work around comparing function
 // pointers (not allowed in Go), which would be used in 'Connected'.
-func (xu *XUtil) ConnectedMouseBind(evtype int, win xgb.Id) bool {
+func (xu *XUtil) ConnectedMouseBind(evtype int, win xproto.Window) bool {
 	// Since we can't create a full key, loop through all mouse binds
 	// and check if evtype and window match.
 	for key, _ := range xu.mousebinds {
@@ -82,7 +83,7 @@ func (xu *XUtil) ConnectedMouseBind(evtype int, win xgb.Id) bool {
 // window and event type (either ButtonPress or ButtonRelease)
 // Also decrements the counter in the corresponding 'mousegrabs' map
 // appropriately.
-func (xu *XUtil) DetachMouseBindWindow(evtype int, win xgb.Id) {
+func (xu *XUtil) DetachMouseBindWindow(evtype int, win xproto.Window) {
 	// Since we can't create a full key, loop through all mouse binds
 	// and check if evtype and window match.
 	for key, _ := range xu.mousebinds {
@@ -96,8 +97,8 @@ func (xu *XUtil) DetachMouseBindWindow(evtype int, win xgb.Id) {
 // MouseBindGrabs returns the number of grabs on a particular
 // event/window/mods/button combination. Namely, this combination
 // uniquely identifies a grab. If it's repeated, we get BadAccess.
-func (xu *XUtil) MouseBindGrabs(evtype int, win xgb.Id, mods uint16,
-	button xgb.Button) int {
+func (xu *XUtil) MouseBindGrabs(evtype int, win xproto.Window, mods uint16,
+	button xproto.Button) int {
 	key := MouseBindKey{evtype, win, mods, button}
 	return xu.mousegrabs[key] // returns 0 if key does not exist
 }
@@ -111,7 +112,7 @@ type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int)
 // returns a bool (of whether or not to cancel the drag) and an X resource
 // identifier corresponding to a cursor.
 type MouseDragBeginFun func(xu *XUtil, rootX, rootY,
-	eventX, eventY int) (bool, xgb.Id)
+	eventX, eventY int) (bool, xproto.Cursor)
 
 // MouseDrag true when a mouse drag is in progress.
 func (xu *XUtil) MouseDrag() bool {

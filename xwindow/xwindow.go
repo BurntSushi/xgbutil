@@ -27,7 +27,7 @@ package xwindow
 import (
 	"fmt"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -37,53 +37,49 @@ import (
 // Listen will tell X to report events corresponding to the event masks
 // provided for the given window. If a call to Listen is omitted, you will
 // not receive the events you desire.
-func Listen(xu *xgbutil.XUtil, win xgb.Id, evMasks ...int) {
+func Listen(xu *xgbutil.XUtil, win xproto.Window, evMasks ...int) {
 	evMask := 0
 	for _, mask := range evMasks {
 		evMask |= mask
 	}
 
-	xu.Conn().ChangeWindowAttributes(win, xgb.CwEventMask,
+	xproto.ChangeWindowAttributes(xu.Conn(), win, xproto.CwEventMask,
 		[]uint32{uint32(evMask)})
 }
 
 // ParentWindow queries the QueryTree and finds the parent window.
-func ParentWindow(xu *xgbutil.XUtil, win xgb.Id) (xgb.Id, error) {
-	tree, err := xu.Conn().QueryTree(win).Reply()
-
+func ParentWindow(xu *xgbutil.XUtil, win xproto.Window) (xproto.Window, error) {
+	tree, err := xproto.QueryTree(xu.Conn(), win).Reply()
 	if err != nil {
 		return 0, fmt.Errorf("ParentWindow: Error retrieving parent window "+
 			"for %x: %s", win, err)
 	}
-
 	return tree.Parent, nil
 }
 
 // MoveResize is an accurate means of resizing a window, accounting for
 // decorations. Usually, the x,y coordinates are fine---we just need to
 // adjust the width and height.
-func MoveResize(xu *xgbutil.XUtil, win xgb.Id, x, y, w, h int) error {
+func MoveResize(xu *xgbutil.XUtil, win xproto.Window, x, y, w, h int) error {
 	neww, newh, err := adjustSize(xu, win, w, h)
 	if err != nil {
 		return err
 	}
-
 	return ewmh.MoveresizeWindowExtra(xu, win, x, y, neww, newh,
-		xgb.GravityBitForget, 2, true, true)
+		xproto.GravityBitForget, 2, true, true)
 }
 
 // Move changes the position of a window without touching the size.
-func Move(xu *xgbutil.XUtil, win xgb.Id, x, y int) error {
+func Move(xu *xgbutil.XUtil, win xproto.Window, x, y int) error {
 	return ewmh.MoveWindow(xu, win, x, y)
 }
 
 // Resize changes the size of a window without touching the position.
-func Resize(xu *xgbutil.XUtil, win xgb.Id, w, h int) error {
+func Resize(xu *xgbutil.XUtil, win xproto.Window, w, h int) error {
 	neww, newh, err := adjustSize(xu, win, w, h)
 	if err != nil {
 		return err
 	}
-
 	return ewmh.ResizeWindow(xu, win, neww, newh)
 }
 
@@ -96,13 +92,17 @@ func Resize(xu *xgbutil.XUtil, win xgb.Id, w, h int) error {
 // not what you want. Therefore, transform 200 into
 // 200 - decoration window width - client window width.
 // Similarly for height.
-func adjustSize(xu *xgbutil.XUtil, win xgb.Id, w, h int) (int, int, error) {
-	cGeom, err := RawGeometry(xu, win) // raw client geometry
+func adjustSize(xu *xgbutil.XUtil, win xproto.Window,
+	w, h int) (int, int, error) {
+
+	// raw client geometry
+	cGeom, err := RawGeometry(xu, xproto.Drawable(win))
 	if err != nil {
 		return 0, 0, err
 	}
 
-	pGeom, err := GetGeometry(xu, win) // geometry with decorations
+	// geometry with decorations
+	pGeom, err := GetGeometry(xu, win)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -115,7 +115,6 @@ func adjustSize(xu *xgbutil.XUtil, win xgb.Id, w, h int) (int, int, error) {
 	if newh < 1 {
 		newh = 1
 	}
-
 	return neww, newh, nil
 }
 
@@ -128,7 +127,7 @@ func adjustSize(xu *xgbutil.XUtil, win xgb.Id, w, h int) (int, int, error) {
 // The idea then is to traverse up the tree until we hit the root window.
 // Therefore, we're at a top-level window which should accurately reflect
 // the width/height.
-func GetGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
+func GetGeometry(xu *xgbutil.XUtil, win xproto.Window) (xrect.Rect, error) {
 	parent := win
 	for {
 		tempParent, err := ParentWindow(xu, parent)
@@ -137,17 +136,15 @@ func GetGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
 		}
 		parent = tempParent
 	}
-
-	return RawGeometry(xu, parent)
+	return RawGeometry(xu, xproto.Drawable(parent))
 }
 
 // RawGeometry isn't smart. It just queries the window given for geometry.
-func RawGeometry(xu *xgbutil.XUtil, win xgb.Id) (xrect.Rect, error) {
-	xgeom, err := xu.Conn().GetGeometry(win).Reply()
+func RawGeometry(xu *xgbutil.XUtil, win xproto.Drawable) (xrect.Rect, error) {
+	xgeom, err := xproto.GetGeometry(xu.Conn(), win).Reply()
 	if err != nil {
 		return nil, err
 	}
-
 	return xrect.New(int(xgeom.X), int(xgeom.Y),
 		int(xgeom.Width), int(xgeom.Height)), nil
 }

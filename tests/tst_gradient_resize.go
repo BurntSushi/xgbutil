@@ -5,7 +5,7 @@ import (
 	"image/color"
 	"log"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
@@ -15,15 +15,16 @@ import (
 
 var X *xgbutil.XUtil
 
-func createWindow() xgb.Id {
-	wid, err := X.Conn().NewId()
+func createWindow() xproto.Window {
+	wid, err := xproto.NewWindowId(X.Conn())
 	if err != nil {
 		log.Fatal(err)
 	}
 	scrn := X.Screen()
 
-	X.Conn().CreateWindow(scrn.RootDepth, wid, X.RootWin(), 0, 0, 400, 400, 0,
-		xgb.WindowClassInputOutput, scrn.RootVisual, 0, []uint32{})
+	xproto.CreateWindow(X.Conn(), scrn.RootDepth, wid, X.RootWin(),
+		0, 0, 400, 400, 0,
+		xproto.WindowClassInputOutput, scrn.RootVisual, 0, []uint32{})
 
 	return wid
 }
@@ -44,12 +45,12 @@ func gradient(width, height int) image.Image {
 
 func newGradientWindow(width, height int) {
 	win := createWindow()
-	X.Conn().ConfigureWindow(
-		win, xgb.ConfigWindowWidth|xgb.ConfigWindowHeight,
+	xproto.ConfigureWindow(
+		X.Conn(), win, xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 		[]uint32{uint32(width), uint32(height)})
-	xwindow.Listen(X, win, xgb.EventMaskStructureNotify)
+	xwindow.Listen(X, win, xproto.EventMaskStructureNotify)
 
-	X.Conn().MapWindow(win)
+	xproto.MapWindow(X.Conn(), win)
 
 	xgraphics.PaintImg(X, win, gradient(width, height))
 

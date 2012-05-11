@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-import "github.com/BurntSushi/xgb"
+import "github.com/BurntSushi/xgb/xproto"
 import "github.com/BurntSushi/xgbutil"
 import "github.com/BurntSushi/xgbutil/ewmh"
 import "github.com/BurntSushi/xgbutil/motif"
@@ -22,7 +22,7 @@ func DoDecor(mh *motif.Hints) bool {
 func main() {
 	X, _ := xgbutil.NewConn()
 
-	gChrome := xgb.Id(0x3600040)
+	gChrome := xproto.Window(0x3600040)
 	active, _ := ewmh.ActiveWindowGet(X)
 
 	mh, err := motif.WmHintsGet(X, gChrome)

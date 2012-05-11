@@ -18,7 +18,7 @@ package motif
 import (
 	"fmt"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xprop"
@@ -69,7 +69,7 @@ type Hints struct {
 }
 
 // _MOTIF_WM_HINTS get
-func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (mh *Hints, err error) {
+func WmHintsGet(xu *xgbutil.XUtil, win xproto.Window) (mh *Hints, err error) {
 	lenExpect := 5
 	hints, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_MOTIF_WM_HINTS"))
@@ -94,7 +94,7 @@ func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (mh *Hints, err error) {
 }
 
 // _MOTIF_WM_HINTS set
-func WmHintsSet(xu *xgbutil.XUtil, win xgb.Id, mh *Hints) error {
+func WmHintsSet(xu *xgbutil.XUtil, win xproto.Window, mh *Hints) error {
 	raw := []int{mh.Flags, mh.Function, mh.Decoration, mh.Input, mh.Status}
 	return xprop.ChangeProp32(xu, win, "_MOTIF_WM_HINTS", "_MOTIF_WM_HINTS",
 		raw...)

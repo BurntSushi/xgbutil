@@ -8,16 +8,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
 )
 
 var modifiers []uint16 = []uint16{ // order matters!
-	xgb.ModMaskShift, xgb.ModMaskLock, xgb.ModMaskControl,
-	xgb.ModMask1, xgb.ModMask2, xgb.ModMask3, xgb.ModMask4, xgb.ModMask5,
-	xgb.ModMaskAny,
+	xproto.ModMaskShift, xproto.ModMaskLock, xproto.ModMaskControl,
+	xproto.ModMask1, xproto.ModMask2, xproto.ModMask3,
+	xproto.ModMask4, xproto.ModMask5,
+	xproto.ModMaskAny,
 }
 
 // Initialize attaches the appropriate callbacks to make key bindings easier.
@@ -48,27 +49,27 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 	// Once the map is constructed, we look through all of our keybindings
 	// and updated appropriately. *puke*
 	// I am only somewhat confident that this is correct.
-	if e.Request == xgb.MappingKeyboard {
-		changes := make(map[xgb.Keycode]xgb.Keycode, 0)
+	if e.Request == xproto.MappingKeyboard {
+		changes := make(map[xproto.Keycode]xproto.Keycode, 0)
 		xuKeyMap := &xgbutil.KeyboardMapping{keyMap}
 
 		min, max := minMaxKeycodeGet(xu)
 
 		// let's not do too much allocation in our loop, shall we?
-		var newSym, oldSym xgb.Keysym
-		var oldKc xgb.Keycode
+		var newSym, oldSym xproto.Keysym
+		var oldKc xproto.Keycode
 		var column byte
 
 		// wrap 'int(..)' around bytes min and max to avoid overflow. Hideous.
 		for newKc := int(min); newKc <= int(max); newKc++ {
 			for column = 0; byte(column) < keyMap.KeysymsPerKeycode; column++ {
 				// use new key map
-				newSym = keysymGetWithMap(xu, xuKeyMap, xgb.Keycode(newKc),
+				newSym = keysymGetWithMap(xu, xuKeyMap, xproto.Keycode(newKc),
 					column)
 
 				// uses old key map
 				oldKc = keycodeGet(xu, newSym)
-				oldSym = keysymGet(xu, xgb.Keycode(newKc), column)
+				oldSym = keysymGet(xu, xproto.Keycode(newKc), column)
 
 				// If the old and new keysyms are the same, ignore!
 				// Also ignore if either keysym is VoidSymbol
@@ -77,8 +78,8 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 				}
 
 				// these should match if there are NO changes
-				if oldKc != xgb.Keycode(newKc) {
-					changes[oldKc] = xgb.Keycode(newKc)
+				if oldKc != xproto.Keycode(newKc) {
+					changes[oldKc] = xproto.Keycode(newKc)
 				}
 			}
 		}
@@ -119,20 +120,20 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 
 // minMaxKeycodeGet a simple accessor to the X setup info to return the
 // minimum and maximum keycodes. They are typically 8 and 255, respectively.
-func minMaxKeycodeGet(xu *xgbutil.XUtil) (xgb.Keycode, xgb.Keycode) {
-	return xu.Conn().Setup.MinKeycode, xu.Conn().Setup.MaxKeycode
+func minMaxKeycodeGet(xu *xgbutil.XUtil) (xproto.Keycode, xproto.Keycode) {
+	return xu.Setup().MinKeycode, xu.Setup().MaxKeycode
 }
 
 // A convenience function to grab the KeyboardMapping and ModifierMapping
 // from X. We need to do this on startup (see Initialize) and whenever we
 // get a MappingNotify event.
-func MapsGet(xu *xgbutil.XUtil) (*xgb.GetKeyboardMappingReply,
-	*xgb.GetModifierMappingReply) {
+func MapsGet(xu *xgbutil.XUtil) (*xproto.GetKeyboardMappingReply,
+	*xproto.GetModifierMappingReply) {
 
 	min, max := minMaxKeycodeGet(xu)
-	newKeymap, keyErr := xu.Conn().GetKeyboardMapping(min,
+	newKeymap, keyErr := xproto.GetKeyboardMapping(xu.Conn(), min,
 		byte(max-min+1)).Reply()
-	newModmap, modErr := xu.Conn().GetModifierMapping().Reply()
+	newModmap, modErr := xproto.GetModifierMapping(xu.Conn()).Reply()
 
 	// If there are errors, we really need to panic. We just can't do
 	// any key binding without a mapping from the server.
@@ -154,28 +155,28 @@ func MapsGet(xu *xgbutil.XUtil) (*xgb.GetKeyboardMappingReply,
 // i.e., 'Mod4-j', and returns a modifiers/keycode combo.
 // (Actually, the parser is slightly more forgiving than what this comment
 //  leads you to believe.)
-func ParseString(xu *xgbutil.XUtil, str string) (uint16, xgb.Keycode) {
-	mods, kc := uint16(0), xgb.Keycode(0)
+func ParseString(xu *xgbutil.XUtil, str string) (uint16, xproto.Keycode) {
+	mods, kc := uint16(0), xproto.Keycode(0)
 	for _, part := range strings.Split(str, "-") {
 		switch strings.ToLower(part) {
 		case "shift":
-			mods |= xgb.ModMaskShift
+			mods |= xproto.ModMaskShift
 		case "lock":
-			mods |= xgb.ModMaskLock
+			mods |= xproto.ModMaskLock
 		case "control":
-			mods |= xgb.ModMaskControl
+			mods |= xproto.ModMaskControl
 		case "mod1":
-			mods |= xgb.ModMask1
+			mods |= xproto.ModMask1
 		case "mod2":
-			mods |= xgb.ModMask2
+			mods |= xproto.ModMask2
 		case "mod3":
-			mods |= xgb.ModMask3
+			mods |= xproto.ModMask3
 		case "mod4":
-			mods |= xgb.ModMask4
+			mods |= xproto.ModMask4
 		case "mod5":
-			mods |= xgb.ModMask5
+			mods |= xproto.ModMask5
 		case "any":
-			mods |= xgb.ModMaskAny
+			mods |= xproto.ModMaskAny
 		default: // a key code!
 			if kc == 0 { // only accept the first keycode we see
 				kc = StrToKeycode(xu, part)
@@ -193,7 +194,7 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, xgb.Keycode) {
 
 // StrToKeycode is a wrapper around keycodeGet meant to make our search
 // a bit more flexible if needed. (i.e., case-insensitive)
-func StrToKeycode(xu *xgbutil.XUtil, str string) xgb.Keycode {
+func StrToKeycode(xu *xgbutil.XUtil, str string) xproto.Keycode {
 	// Do some fancy case stuff before we give up.
 	sym, ok := keysyms[str]
 	if !ok {
@@ -209,7 +210,7 @@ func StrToKeycode(xu *xgbutil.XUtil, str string) xgb.Keycode {
 	// If we don't know what 'str' is, return 0.
 	// There will probably be a bad access. We should do better than that...
 	if !ok {
-		return xgb.Keycode(0)
+		return xproto.Keycode(0)
 	}
 
 	return keycodeGet(xu, sym)
@@ -222,15 +223,15 @@ func keysymsPer(xu *xgbutil.XUtil) int {
 
 // Given a keysym, find the keycode mapped to it in the current X environment.
 // keybind.Initialize MUST have been called before using this function.
-func keycodeGet(xu *xgbutil.XUtil, keysym xgb.Keysym) xgb.Keycode {
+func keycodeGet(xu *xgbutil.XUtil, keysym xproto.Keysym) xproto.Keycode {
 	min, max := minMaxKeycodeGet(xu)
 	keyMap := xu.KeyMapGet()
 
 	var c byte
 	for kc := int(min); kc <= int(max); kc++ {
 		for c = 0; c < keyMap.KeysymsPerKeycode; c++ {
-			if keysym == keysymGet(xu, xgb.Keycode(kc), c) {
-				return xgb.Keycode(kc)
+			if keysym == keysymGet(xu, xproto.Keycode(kc), c) {
+				return xproto.Keycode(kc)
 			}
 		}
 	}
@@ -241,7 +242,7 @@ func keycodeGet(xu *xgbutil.XUtil, keysym xgb.Keysym) xgb.Keycode {
 // If no matching single rune is found, the empty string is returned.
 // (Since the idea of this function is to facilate in translating keys pressed
 // to characters on the screen.)
-func keysymToStr(keysym xgb.Keysym) string {
+func keysymToStr(keysym xproto.Keysym) string {
 	symStr, ok := strKeysyms[keysym]
 	if !ok {
 		return ""
@@ -258,14 +259,16 @@ func keysymToStr(keysym xgb.Keysym) string {
 // keysymGet is a shortcut alias for 'keysymGetWithMap' using the current
 // keymap stored in XUtil.
 // keybind.Initialize MUST have been called before using this function.
-func keysymGet(xu *xgbutil.XUtil, keycode xgb.Keycode, column byte) xgb.Keysym {
+func keysymGet(xu *xgbutil.XUtil, keycode xproto.Keycode,
+	column byte) xproto.Keysym {
+
 	return keysymGetWithMap(xu, xu.KeyMapGet(), keycode, column)
 }
 
 // keysymGetWithMap uses the given key map and finds a keysym associated
 // with the given keycode in the current X environment.
 func keysymGetWithMap(xu *xgbutil.XUtil, keyMap *xgbutil.KeyboardMapping,
-	keycode xgb.Keycode, column byte) xgb.Keysym {
+	keycode xproto.Keycode, column byte) xproto.Keysym {
 
 	min, _ := minMaxKeycodeGet(xu)
 	i := (int(keycode)-int(min))*int(keyMap.KeysymsPerKeycode) + int(column)
@@ -275,7 +278,7 @@ func keysymGetWithMap(xu *xgbutil.XUtil, keyMap *xgbutil.KeyboardMapping,
 
 // ModGet finds the modifier currently associated with a given keycode.
 // If a modifier doesn't exist for this keycode, then 0 is returned.
-func ModGet(xu *xgbutil.XUtil, keycode xgb.Keycode) uint16 {
+func ModGet(xu *xgbutil.XUtil, keycode xproto.Keycode) uint16 {
 	modMap := xu.ModMapGet()
 
 	var i byte
@@ -331,18 +334,22 @@ func XModMap(xu *xgbutil.XUtil) {
 
 // Grabs a key with mods on a particular window.
 // Will also grab all combinations of modifiers found in xgbutil.IgnoreMods
-func Grab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key xgb.Keycode) {
+func Grab(xu *xgbutil.XUtil, win xproto.Window,
+	mods uint16, key xproto.Keycode) {
+
 	for _, m := range xgbutil.IgnoreMods {
-		xu.Conn().GrabKey(true, win, mods|m, key,
-			xgb.GrabModeAsync, xgb.GrabModeAsync)
+		xproto.GrabKey(xu.Conn(), true, win, mods|m, key,
+			xproto.GrabModeAsync, xproto.GrabModeAsync)
 	}
 }
 
 // Ungrab undoes Grab. It will handle all combinations od modifiers found
 // in xgbutil.IgnoreMods.
-func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key xgb.Keycode) {
+func Ungrab(xu *xgbutil.XUtil, win xproto.Window,
+	mods uint16, key xproto.Keycode) {
+
 	for _, m := range xgbutil.IgnoreMods {
-		xu.Conn().UngrabKey(key, win, mods|m)
+		xproto.UngrabKey(xu.Conn(), key, win, mods|m)
 	}
 }
 
@@ -351,20 +358,20 @@ func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, key xgb.Keycode) {
 // XGB. It is possible to not get an error and the grab to be unsuccessful.
 // The purpose of 'win' is that after a grab is successful, ALL Key*Events will
 // be sent to that window. Make sure you have a callback attached :-)
-func GrabKeyboard(xu *xgbutil.XUtil, win xgb.Id) (bool, error) {
-	reply, err := xu.Conn().GrabKeyboard(false, win, 0,
-		xgb.GrabModeAsync, xgb.GrabModeAsync).Reply()
+func GrabKeyboard(xu *xgbutil.XUtil, win xproto.Window) (bool, error) {
+	reply, err := xproto.GrabKeyboard(xu.Conn(), false, win, 0,
+		xproto.GrabModeAsync, xproto.GrabModeAsync).Reply()
 	if err != nil {
 		return false, fmt.Errorf("GrabKeyboard: Error grabbing keyboard on "+
 			"window '%x': %s", win, err)
 	}
 
-	return reply.Status == xgb.GrabStatusSuccess, nil
+	return reply.Status == xproto.GrabStatusSuccess, nil
 }
 
 // UngrabKeyboard undoes GrabKeyboard.
 func UngrabKeyboard(xu *xgbutil.XUtil) {
-	xu.Conn().UngrabKeyboard(0)
+	xproto.UngrabKeyboard(xu.Conn(), 0)
 }
 
 // DummyGrab grabs the keyboard and sends all key events to the dummy window.

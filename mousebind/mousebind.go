@@ -5,23 +5,24 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
 )
 
 var modifiers []uint16 = []uint16{ // order matters!
-	xgb.ModMaskShift, xgb.ModMaskLock, xgb.ModMaskControl,
-	xgb.ModMask1, xgb.ModMask2, xgb.ModMask3, xgb.ModMask4, xgb.ModMask5,
-	xgb.ButtonMask1, xgb.ButtonMask2, xgb.ButtonMask3,
-	xgb.ButtonMask4, xgb.ButtonMask5,
-	xgb.ButtonMaskAny,
+	xproto.ModMaskShift, xproto.ModMaskLock, xproto.ModMaskControl,
+	xproto.ModMask1, xproto.ModMask2, xproto.ModMask3,
+	xproto.ModMask4, xproto.ModMask5,
+	xproto.ButtonMask1, xproto.ButtonMask2, xproto.ButtonMask3,
+	xproto.ButtonMask4, xproto.ButtonMask5,
+	xproto.ButtonMaskAny,
 }
 
-var pointerMasks uint16 = xgb.EventMaskPointerMotion |
-	xgb.EventMaskButtonRelease |
-	xgb.EventMaskButtonPress
+var pointerMasks uint16 = xproto.EventMaskPointerMotion |
+	xproto.EventMaskButtonRelease |
+	xproto.EventMaskButtonPress
 
 // Initialize attaches the appropriate callbacks to make mouse bindings easier.
 // i.e., prep the dummy window to handle mouse dragging events
@@ -35,43 +36,43 @@ func Initialize(xu *xgbutil.XUtil) {
 // "Mod" could also be one of {button1, button2, button3, button4, button5}.
 // (Actually, the parser is slightly more forgiving than what this comment
 //  leads you to believe.)
-func ParseString(xu *xgbutil.XUtil, str string) (uint16, xgb.Button) {
-	mods, button := uint16(0), xgb.Button(0)
+func ParseString(xu *xgbutil.XUtil, str string) (uint16, xproto.Button) {
+	mods, button := uint16(0), xproto.Button(0)
 	for _, part := range strings.Split(str, "-") {
 		switch strings.ToLower(part) {
 		case "shift":
-			mods |= xgb.ModMaskShift
+			mods |= xproto.ModMaskShift
 		case "lock":
-			mods |= xgb.ModMaskLock
+			mods |= xproto.ModMaskLock
 		case "control":
-			mods |= xgb.ModMaskControl
+			mods |= xproto.ModMaskControl
 		case "mod1":
-			mods |= xgb.ModMask1
+			mods |= xproto.ModMask1
 		case "mod2":
-			mods |= xgb.ModMask2
+			mods |= xproto.ModMask2
 		case "mod3":
-			mods |= xgb.ModMask3
+			mods |= xproto.ModMask3
 		case "mod4":
-			mods |= xgb.ModMask4
+			mods |= xproto.ModMask4
 		case "mod5":
-			mods |= xgb.ModMask5
+			mods |= xproto.ModMask5
 		case "button1":
-			mods |= xgb.ButtonMask1
+			mods |= xproto.ButtonMask1
 		case "button2":
-			mods |= xgb.ButtonMask2
+			mods |= xproto.ButtonMask2
 		case "button3":
-			mods |= xgb.ButtonMask3
+			mods |= xproto.ButtonMask3
 		case "button4":
-			mods |= xgb.ButtonMask4
+			mods |= xproto.ButtonMask4
 		case "button5":
-			mods |= xgb.ButtonMask5
+			mods |= xproto.ButtonMask5
 		case "any":
-			mods |= xgb.ButtonMaskAny
+			mods |= xproto.ButtonMaskAny
 		default: // a button!
 			if button == 0 { // only accept the first button we see
 				possible, err := strconv.ParseUint(part, 10, 8)
 				if err == nil {
-					button = xgb.Button(possible)
+					button = xproto.Button(possible)
 				} else {
 					xgbutil.Logger.Printf("We could not convert '%s' to a "+
 						"valid 8-bit integer. Assuming 0.", part)
@@ -94,25 +95,27 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, xgb.Button) {
 // grabbing client allows them to be. (Which is done via AllowEvents. Thus,
 // if propagate is True, you *must* make some call to AllowEvents at some
 // point, or else your client will lock.)
-func Grab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, button xgb.Button,
-	propagate bool) {
+func Grab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
+	button xproto.Button, propagate bool) {
 
-	var pSync byte = xgb.GrabModeAsync
+	var pSync byte = xproto.GrabModeAsync
 	if propagate {
-		pSync = xgb.GrabModeSync
+		pSync = xproto.GrabModeSync
 	}
 
 	for _, m := range xgbutil.IgnoreMods {
-		xu.Conn().GrabButton(true, win, pointerMasks, pSync,
-			xgb.GrabModeAsync, 0, 0, byte(button), mods|m)
+		xproto.GrabButton(xu.Conn(), true, win, pointerMasks, pSync,
+			xproto.GrabModeAsync, 0, 0, byte(button), mods|m)
 	}
 }
 
 // Ungrab undoes Grab. It will handle all combinations od modifiers found
 // in xgbutil.IgnoreMods.
-func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, button xgb.Button) {
+func Ungrab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
+	button xproto.Button) {
+
 	for _, m := range xgbutil.IgnoreMods {
-		xu.Conn().UngrabButton(byte(button), win, mods|m)
+		xproto.UngrabButton(xu.Conn(), byte(button), win, mods|m)
 	}
 }
 
@@ -121,21 +124,21 @@ func Ungrab(xu *xgbutil.XUtil, win xgb.Id, mods uint16, button xgb.Button) {
 // XGB. It is possible to not get an error and the grab to be unsuccessful.
 // The purpose of 'win' is that after a grab is successful, ALL Button*Events 
 // will be sent to that window. Make sure you have a callback attached :-)
-func GrabPointer(xu *xgbutil.XUtil, win xgb.Id, confine xgb.Id,
-	cursor xgb.Id) (bool, error) {
+func GrabPointer(xu *xgbutil.XUtil, win xproto.Window, confine xproto.Window,
+	cursor xproto.Cursor) (bool, error) {
 
-	reply, err := xu.Conn().GrabPointer(false, win, pointerMasks,
-		xgb.GrabModeAsync, xgb.GrabModeAsync,
+	reply, err := xproto.GrabPointer(xu.Conn(), false, win, pointerMasks,
+		xproto.GrabModeAsync, xproto.GrabModeAsync,
 		confine, cursor, 0).Reply()
 	if err != nil {
 		return false, fmt.Errorf("GrabPointer: Error grabbing pointer on "+
 			"window '%x': %s", win, err)
 	}
 
-	return reply.Status == xgb.GrabStatusSuccess, nil
+	return reply.Status == xproto.GrabStatusSuccess, nil
 }
 
 // UngrabPointer undoes GrabPointer.
 func UngrabPointer(xu *xgbutil.XUtil) {
-	xu.Conn().UngrabPointer(0)
+	xproto.UngrabPointer(xu.Conn(), 0)
 }

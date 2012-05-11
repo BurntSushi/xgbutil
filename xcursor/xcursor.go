@@ -4,28 +4,31 @@
 */
 package xcursor
 
-import "github.com/BurntSushi/xgb"
-import "github.com/BurntSushi/xgbutil"
+import (
+	"github.com/BurntSushi/xgb/xproto"
+
+	"github.com/BurntSushi/xgbutil"
+)
 
 // CreateCursor sets some default colors for nice and easy cursor creation.
 // Just supply a cursor constant from 'xcursor/cursors.go'.
-func CreateCursor(xu *xgbutil.XUtil, cursor uint16) xgb.Id {
+func CreateCursor(xu *xgbutil.XUtil, cursor uint16) xproto.Cursor {
 	return CreateCursorExtra(xu, cursor, 0, 0, 0, 0xffff, 0xffff, 0xffff)
 }
 
 // CreateCursorExtra features all available parameters to creating a cursor.
 func CreateCursorExtra(xu *xgbutil.XUtil, cursor, foreRed, foreGreen,
-	foreBlue, backRed, backGreen, backBlue uint16) xgb.Id {
+	foreBlue, backRed, backGreen, backBlue uint16) xproto.Cursor {
 
-	fontId := xu.Conn().NewId()
-	cursorId := xu.Conn().NewId()
+	fontId := xproto.NewFontId(xu.Conn())
+	cursorId := xproto.NewCursorId(xu.Conn())
 
-	xu.Conn().OpenFont(fontId, "cursor")
-	xu.Conn().CreateGlyphCursor(cursorId, fontId, fontId,
+	xproto.OpenFont(xu.Conn(), fontId, "cursor")
+	xproto.CreateGlyphCursor(xu.Conn(), cursorId, fontId, fontId,
 		cursor, cursor+1,
 		foreRed, foreGreen, foreBlue,
 		backRed, backGreen, backBlue)
-	xu.Conn().CloseFont(fontId)
+	xproto.CloseFont(xu.Conn(), fontId)
 
 	return cursorId
 }

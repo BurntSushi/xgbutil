@@ -13,14 +13,14 @@ package xevent
 import (
 	"fmt"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 )
 
 type KeyPressEvent struct {
-	*xgb.KeyPressEvent
+	*xproto.KeyPressEvent
 }
 
-const KeyPress = xgb.KeyPress
+const KeyPress = xproto.KeyPress
 
 func (ev *KeyPressEvent) Bytes() []byte { return nil }
 
@@ -29,10 +29,10 @@ func (ev KeyPressEvent) String() string {
 }
 
 type KeyReleaseEvent struct {
-	*xgb.KeyReleaseEvent
+	*xproto.KeyReleaseEvent
 }
 
-const KeyRelease = xgb.KeyRelease
+const KeyRelease = xproto.KeyRelease
 
 func (ev *KeyReleaseEvent) Bytes() []byte { return nil }
 
@@ -41,10 +41,10 @@ func (ev KeyReleaseEvent) String() string {
 }
 
 type ButtonPressEvent struct {
-	*xgb.ButtonPressEvent
+	*xproto.ButtonPressEvent
 }
 
-const ButtonPress = xgb.ButtonPress
+const ButtonPress = xproto.ButtonPress
 
 func (ev *ButtonPressEvent) Bytes() []byte { return nil }
 
@@ -53,10 +53,10 @@ func (ev ButtonPressEvent) String() string {
 }
 
 type ButtonReleaseEvent struct {
-	*xgb.ButtonReleaseEvent
+	*xproto.ButtonReleaseEvent
 }
 
-const ButtonRelease = xgb.ButtonRelease
+const ButtonRelease = xproto.ButtonRelease
 
 func (ev *ButtonReleaseEvent) Bytes() []byte { return nil }
 
@@ -65,10 +65,10 @@ func (ev ButtonReleaseEvent) String() string {
 }
 
 type MotionNotifyEvent struct {
-	*xgb.MotionNotifyEvent
+	*xproto.MotionNotifyEvent
 }
 
-const MotionNotify = xgb.MotionNotify
+const MotionNotify = xproto.MotionNotify
 
 func (ev *MotionNotifyEvent) Bytes() []byte { return nil }
 
@@ -77,10 +77,10 @@ func (ev MotionNotifyEvent) String() string {
 }
 
 type EnterNotifyEvent struct {
-	*xgb.EnterNotifyEvent
+	*xproto.EnterNotifyEvent
 }
 
-const EnterNotify = xgb.EnterNotify
+const EnterNotify = xproto.EnterNotify
 
 func (ev *EnterNotifyEvent) Bytes() []byte { return nil }
 
@@ -89,10 +89,10 @@ func (ev EnterNotifyEvent) String() string {
 }
 
 type LeaveNotifyEvent struct {
-	*xgb.LeaveNotifyEvent
+	*xproto.LeaveNotifyEvent
 }
 
-const LeaveNotify = xgb.LeaveNotify
+const LeaveNotify = xproto.LeaveNotify
 
 func (ev *LeaveNotifyEvent) Bytes() []byte { return nil }
 
@@ -101,10 +101,10 @@ func (ev LeaveNotifyEvent) String() string {
 }
 
 type FocusInEvent struct {
-	*xgb.FocusInEvent
+	*xproto.FocusInEvent
 }
 
-const FocusIn = xgb.FocusIn
+const FocusIn = xproto.FocusIn
 
 func (ev *FocusInEvent) Bytes() []byte { return nil }
 
@@ -113,10 +113,10 @@ func (ev FocusInEvent) String() string {
 }
 
 type FocusOutEvent struct {
-	*xgb.FocusOutEvent
+	*xproto.FocusOutEvent
 }
 
-const FocusOut = xgb.FocusOut
+const FocusOut = xproto.FocusOut
 
 func (ev *FocusOutEvent) Bytes() []byte { return nil }
 
@@ -125,10 +125,10 @@ func (ev FocusOutEvent) String() string {
 }
 
 type KeymapNotifyEvent struct {
-	*xgb.KeymapNotifyEvent
+	*xproto.KeymapNotifyEvent
 }
 
-const KeymapNotify = xgb.KeymapNotify
+const KeymapNotify = xproto.KeymapNotify
 
 func (ev *KeymapNotifyEvent) Bytes() []byte { return nil }
 
@@ -137,10 +137,10 @@ func (ev KeymapNotifyEvent) String() string {
 }
 
 type ExposeEvent struct {
-	*xgb.ExposeEvent
+	*xproto.ExposeEvent
 }
 
-const Expose = xgb.Expose
+const Expose = xproto.Expose
 
 func (ev *ExposeEvent) Bytes() []byte { return nil }
 
@@ -149,10 +149,10 @@ func (ev ExposeEvent) String() string {
 }
 
 type GraphicsExposureEvent struct {
-	*xgb.GraphicsExposureEvent
+	*xproto.GraphicsExposureEvent
 }
 
-const GraphicsExposure = xgb.GraphicsExposure
+const GraphicsExposure = xproto.GraphicsExposure
 
 func (ev *GraphicsExposureEvent) Bytes() []byte { return nil }
 
@@ -161,10 +161,10 @@ func (ev GraphicsExposureEvent) String() string {
 }
 
 type NoExposureEvent struct {
-	*xgb.NoExposureEvent
+	*xproto.NoExposureEvent
 }
 
-const NoExposure = xgb.NoExposure
+const NoExposure = xproto.NoExposure
 
 func (ev *NoExposureEvent) Bytes() []byte { return nil }
 
@@ -173,10 +173,10 @@ func (ev NoExposureEvent) String() string {
 }
 
 type VisibilityNotifyEvent struct {
-	*xgb.VisibilityNotifyEvent
+	*xproto.VisibilityNotifyEvent
 }
 
-const VisibilityNotify = xgb.VisibilityNotify
+const VisibilityNotify = xproto.VisibilityNotify
 
 func (ev *VisibilityNotifyEvent) Bytes() []byte { return nil }
 
@@ -185,10 +185,10 @@ func (ev VisibilityNotifyEvent) String() string {
 }
 
 type CreateNotifyEvent struct {
-	*xgb.CreateNotifyEvent
+	*xproto.CreateNotifyEvent
 }
 
-const CreateNotify = xgb.CreateNotify
+const CreateNotify = xproto.CreateNotify
 
 func (ev *CreateNotifyEvent) Bytes() []byte { return nil }
 
@@ -197,10 +197,10 @@ func (ev CreateNotifyEvent) String() string {
 }
 
 type DestroyNotifyEvent struct {
-	*xgb.DestroyNotifyEvent
+	*xproto.DestroyNotifyEvent
 }
 
-const DestroyNotify = xgb.DestroyNotify
+const DestroyNotify = xproto.DestroyNotify
 
 func (ev *DestroyNotifyEvent) Bytes() []byte { return nil }
 
@@ -209,10 +209,10 @@ func (ev DestroyNotifyEvent) String() string {
 }
 
 type UnmapNotifyEvent struct {
-	*xgb.UnmapNotifyEvent
+	*xproto.UnmapNotifyEvent
 }
 
-const UnmapNotify = xgb.UnmapNotify
+const UnmapNotify = xproto.UnmapNotify
 
 func (ev *UnmapNotifyEvent) Bytes() []byte { return nil }
 
@@ -221,10 +221,10 @@ func (ev UnmapNotifyEvent) String() string {
 }
 
 type MapNotifyEvent struct {
-	*xgb.MapNotifyEvent
+	*xproto.MapNotifyEvent
 }
 
-const MapNotify = xgb.MapNotify
+const MapNotify = xproto.MapNotify
 
 func (ev *MapNotifyEvent) Bytes() []byte { return nil }
 
@@ -233,10 +233,10 @@ func (ev MapNotifyEvent) String() string {
 }
 
 type MapRequestEvent struct {
-	*xgb.MapRequestEvent
+	*xproto.MapRequestEvent
 }
 
-const MapRequest = xgb.MapRequest
+const MapRequest = xproto.MapRequest
 
 func (ev *MapRequestEvent) Bytes() []byte { return nil }
 
@@ -245,10 +245,10 @@ func (ev MapRequestEvent) String() string {
 }
 
 type ReparentNotifyEvent struct {
-	*xgb.ReparentNotifyEvent
+	*xproto.ReparentNotifyEvent
 }
 
-const ReparentNotify = xgb.ReparentNotify
+const ReparentNotify = xproto.ReparentNotify
 
 func (ev *ReparentNotifyEvent) Bytes() []byte { return nil }
 
@@ -257,10 +257,10 @@ func (ev ReparentNotifyEvent) String() string {
 }
 
 type ConfigureRequestEvent struct {
-	*xgb.ConfigureRequestEvent
+	*xproto.ConfigureRequestEvent
 }
 
-const ConfigureRequest = xgb.ConfigureRequest
+const ConfigureRequest = xproto.ConfigureRequest
 
 func (ev *ConfigureRequestEvent) Bytes() []byte { return nil }
 
@@ -269,10 +269,10 @@ func (ev ConfigureRequestEvent) String() string {
 }
 
 type GravityNotifyEvent struct {
-	*xgb.GravityNotifyEvent
+	*xproto.GravityNotifyEvent
 }
 
-const GravityNotify = xgb.GravityNotify
+const GravityNotify = xproto.GravityNotify
 
 func (ev *GravityNotifyEvent) Bytes() []byte { return nil }
 
@@ -281,10 +281,10 @@ func (ev GravityNotifyEvent) String() string {
 }
 
 type ResizeRequestEvent struct {
-	*xgb.ResizeRequestEvent
+	*xproto.ResizeRequestEvent
 }
 
-const ResizeRequest = xgb.ResizeRequest
+const ResizeRequest = xproto.ResizeRequest
 
 func (ev *ResizeRequestEvent) Bytes() []byte { return nil }
 
@@ -293,10 +293,10 @@ func (ev ResizeRequestEvent) String() string {
 }
 
 type CirculateNotifyEvent struct {
-	*xgb.CirculateNotifyEvent
+	*xproto.CirculateNotifyEvent
 }
 
-const CirculateNotify = xgb.CirculateNotify
+const CirculateNotify = xproto.CirculateNotify
 
 func (ev *CirculateNotifyEvent) Bytes() []byte { return nil }
 
@@ -305,10 +305,10 @@ func (ev CirculateNotifyEvent) String() string {
 }
 
 type CirculateRequestEvent struct {
-	*xgb.CirculateRequestEvent
+	*xproto.CirculateRequestEvent
 }
 
-const CirculateRequest = xgb.CirculateRequest
+const CirculateRequest = xproto.CirculateRequest
 
 func (ev *CirculateRequestEvent) Bytes() []byte { return nil }
 
@@ -317,10 +317,10 @@ func (ev CirculateRequestEvent) String() string {
 }
 
 type PropertyNotifyEvent struct {
-	*xgb.PropertyNotifyEvent
+	*xproto.PropertyNotifyEvent
 }
 
-const PropertyNotify = xgb.PropertyNotify
+const PropertyNotify = xproto.PropertyNotify
 
 func (ev *PropertyNotifyEvent) Bytes() []byte { return nil }
 
@@ -329,10 +329,10 @@ func (ev PropertyNotifyEvent) String() string {
 }
 
 type SelectionClearEvent struct {
-	*xgb.SelectionClearEvent
+	*xproto.SelectionClearEvent
 }
 
-const SelectionClear = xgb.SelectionClear
+const SelectionClear = xproto.SelectionClear
 
 func (ev *SelectionClearEvent) Bytes() []byte { return nil }
 
@@ -341,10 +341,10 @@ func (ev SelectionClearEvent) String() string {
 }
 
 type SelectionRequestEvent struct {
-	*xgb.SelectionRequestEvent
+	*xproto.SelectionRequestEvent
 }
 
-const SelectionRequest = xgb.SelectionRequest
+const SelectionRequest = xproto.SelectionRequest
 
 func (ev *SelectionRequestEvent) Bytes() []byte { return nil }
 
@@ -353,10 +353,10 @@ func (ev SelectionRequestEvent) String() string {
 }
 
 type SelectionNotifyEvent struct {
-	*xgb.SelectionNotifyEvent
+	*xproto.SelectionNotifyEvent
 }
 
-const SelectionNotify = xgb.SelectionNotify
+const SelectionNotify = xproto.SelectionNotify
 
 func (ev *SelectionNotifyEvent) Bytes() []byte { return nil }
 
@@ -365,10 +365,10 @@ func (ev SelectionNotifyEvent) String() string {
 }
 
 type ColormapNotifyEvent struct {
-	*xgb.ColormapNotifyEvent
+	*xproto.ColormapNotifyEvent
 }
 
-const ColormapNotify = xgb.ColormapNotify
+const ColormapNotify = xproto.ColormapNotify
 
 func (ev *ColormapNotifyEvent) Bytes() []byte { return nil }
 
@@ -377,10 +377,10 @@ func (ev ColormapNotifyEvent) String() string {
 }
 
 type MappingNotifyEvent struct {
-	*xgb.MappingNotifyEvent
+	*xproto.MappingNotifyEvent
 }
 
-const MappingNotify = xgb.MappingNotify
+const MappingNotify = xproto.MappingNotify
 
 func (ev *MappingNotifyEvent) Bytes() []byte { return nil }
 

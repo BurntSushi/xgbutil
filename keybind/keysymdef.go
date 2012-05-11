@@ -12,10 +12,10 @@
 */
 package keybind
 
-import "github.com/BurntSushi/xgb"
+import "github.com/BurntSushi/xgb/xproto"
 
 func init() {
-	strKeysyms = make(map[xgb.Keysym]string, len(keysyms))
+	strKeysyms = make(map[xproto.Keysym]string, len(keysyms))
 	for kstr, keysym := range keysyms {
 		// If we already have this keysym as a key, skip it.
 		// (Prefer the first. This may be bad.)
@@ -79,9 +79,9 @@ var weirdKeysyms = map[string]rune{
 }
 
 // strKeysyms is the reverse of keysyms
-var strKeysyms map[xgb.Keysym]string
+var strKeysyms map[xproto.Keysym]string
 
-var keysyms map[string]xgb.Keysym = map[string]xgb.Keysym{
+var keysyms map[string]xproto.Keysym = map[string]xproto.Keysym{
 	"VoidSymbol":                  0xffffff,
 	"BackSpace":                   0xff08,
 	"Tab":                         0xff09,

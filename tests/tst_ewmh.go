@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	// "os" 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 	"time"
 )
 
@@ -40,8 +40,8 @@ func main() {
 		fmt.Printf("Window manager: %s\n", wmName)
 	}
 
-	pager := xgb.Id(0x160001e)
-	middle := xgb.Id(0x3200016)
+	pager := xproto.Window(0x160001e)
+	middle := xproto.Window(0x3200016)
 	geom, _ := ewmh.DesktopGeometryGet(X)
 	desktops, _ := ewmh.DesktopNamesGet(X)
 	curdesk, _ := ewmh.CurrentDesktopGet(X)

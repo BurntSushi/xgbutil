@@ -4,9 +4,9 @@
 */
 package keybind
 
-import "github.com/BurntSushi/xgb"
-
 import (
+	"github.com/BurntSushi/xgb/xproto"
+
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
 )
@@ -15,7 +15,7 @@ type KeyPressFun xevent.KeyPressFun
 
 // connect is essentially 'Connect' for either KeyPress or KeyRelease events.
 func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
-	evtype int, win xgb.Id, keyStr string) {
+	evtype int, win xproto.Window, keyStr string) {
 
 	// Get the mods/key first
 	mods, keycode := ParseString(xu, keyStr)
@@ -44,16 +44,17 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
 	xu.AttachKeyBindCallback(evtype, win, mods, keycode, callback)
 }
 
-func DeduceKeyInfo(state uint16, detail xgb.Keycode) (uint16, xgb.Keycode) {
+func DeduceKeyInfo(state uint16,
+	detail xproto.Keycode) (uint16, xproto.Keycode) {
+
 	mods, kc := state, detail
 	for _, m := range xgbutil.IgnoreMods {
 		mods &= ^m
 	}
-
 	return mods, kc
 }
 
-func (callback KeyPressFun) Connect(xu *xgbutil.XUtil, win xgb.Id,
+func (callback KeyPressFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
 	keyStr string) {
 
 	connect(xu, callback, xevent.KeyPress, win, keyStr)
@@ -65,7 +66,7 @@ func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type KeyReleaseFun xevent.KeyReleaseFun
 
-func (callback KeyReleaseFun) Connect(xu *xgbutil.XUtil, win xgb.Id,
+func (callback KeyReleaseFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
 	keyStr string) {
 
 	connect(xu, callback, xevent.KeyRelease, win, keyStr)

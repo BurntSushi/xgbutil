@@ -9,6 +9,7 @@ package xevent
 
 import (
 	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 )
@@ -75,7 +76,7 @@ func Main(xu *xgbutil.XUtil) error {
 			}
 
 			switch event := everr.Event.(type) {
-			case xgb.KeyPressEvent:
+			case xproto.KeyPressEvent:
 				e := KeyPressEvent{&event}
 
 				// If we're redirecting key events, this is the place to do it!
@@ -85,7 +86,7 @@ func Main(xu *xgbutil.XUtil) error {
 
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, KeyPress, e.Event)
-			case xgb.KeyReleaseEvent:
+			case xproto.KeyReleaseEvent:
 				e := KeyReleaseEvent{&event}
 
 				// If we're redirecting key events, this is the place to do it!
@@ -95,15 +96,15 @@ func Main(xu *xgbutil.XUtil) error {
 
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, KeyRelease, e.Event)
-			case xgb.ButtonPressEvent:
+			case xproto.ButtonPressEvent:
 				e := ButtonPressEvent{&event}
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, ButtonPress, e.Event)
-			case xgb.ButtonReleaseEvent:
+			case xproto.ButtonReleaseEvent:
 				e := ButtonReleaseEvent{&event}
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, ButtonRelease, e.Event)
-			case xgb.MotionNotifyEvent:
+			case xproto.MotionNotifyEvent:
 				e := MotionNotifyEvent{&event}
 
 				// Peek at the next events, if it's just another
@@ -116,7 +117,7 @@ func Main(xu *xgbutil.XUtil) error {
 				// off, restart the process of finding a motion notify.
 				// Otherwise, we're done and we move on with the current
 				// motion notify.
-				var laste xgb.MotionNotifyEvent
+				var laste xproto.MotionNotifyEvent
 				for {
 					xu.Sync()
 					Read(xu, false)
@@ -126,9 +127,9 @@ func Main(xu *xgbutil.XUtil) error {
 						if ee.Err != nil {
 							continue
 						}
-						if motNot, ok := ee.Event.(xgb.MotionNotifyEvent); ok {
-							if motNot.Event == e.Event {
-								laste = motNot
+						if mn, ok := ee.Event.(xproto.MotionNotifyEvent); ok {
+							if mn.Event == e.Event {
+								laste = mn
 								xu.DequeueAt(i)
 								found = true
 								break
@@ -150,96 +151,96 @@ func Main(xu *xgbutil.XUtil) error {
 
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, MotionNotify, e.Event)
-			case xgb.EnterNotifyEvent:
+			case xproto.EnterNotifyEvent:
 				e := EnterNotifyEvent{&event}
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, EnterNotify, e.Event)
-			case xgb.LeaveNotifyEvent:
+			case xproto.LeaveNotifyEvent:
 				e := LeaveNotifyEvent{&event}
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, LeaveNotify, e.Event)
-			case xgb.FocusInEvent:
+			case xproto.FocusInEvent:
 				e := FocusInEvent{&event}
 				xu.RunCallbacks(e, FocusIn, e.Event)
-			case xgb.FocusOutEvent:
+			case xproto.FocusOutEvent:
 				e := FocusOutEvent{&event}
 				xu.RunCallbacks(e, FocusOut, e.Event)
-			case xgb.KeymapNotifyEvent:
+			case xproto.KeymapNotifyEvent:
 				e := KeymapNotifyEvent{&event}
 				xu.RunCallbacks(e, KeymapNotify, xgbutil.NoWindow)
-			case xgb.ExposeEvent:
+			case xproto.ExposeEvent:
 				e := ExposeEvent{&event}
 				xu.RunCallbacks(e, Expose, e.Window)
-			case xgb.GraphicsExposureEvent:
+			case xproto.GraphicsExposureEvent:
 				e := GraphicsExposureEvent{&event}
-				xu.RunCallbacks(e, GraphicsExposure, xgb.Id(e.Drawable))
-			case xgb.NoExposureEvent:
+				xu.RunCallbacks(e, GraphicsExposure, xproto.Window(e.Drawable))
+			case xproto.NoExposureEvent:
 				e := NoExposureEvent{&event}
-				xu.RunCallbacks(e, NoExposure, xgb.Id(e.Drawable))
-			case xgb.VisibilityNotifyEvent:
+				xu.RunCallbacks(e, NoExposure, xproto.Window(e.Drawable))
+			case xproto.VisibilityNotifyEvent:
 				e := VisibilityNotifyEvent{&event}
 				xu.RunCallbacks(e, VisibilityNotify, e.Window)
-			case xgb.CreateNotifyEvent:
+			case xproto.CreateNotifyEvent:
 				e := CreateNotifyEvent{&event}
 				xu.RunCallbacks(e, CreateNotify, e.Window)
-			case xgb.DestroyNotifyEvent:
+			case xproto.DestroyNotifyEvent:
 				e := DestroyNotifyEvent{&event}
 				xu.RunCallbacks(e, DestroyNotify, e.Window)
-			case xgb.UnmapNotifyEvent:
+			case xproto.UnmapNotifyEvent:
 				e := UnmapNotifyEvent{&event}
 				xu.RunCallbacks(e, UnmapNotify, e.Window)
-			case xgb.MapNotifyEvent:
+			case xproto.MapNotifyEvent:
 				e := MapNotifyEvent{&event}
 				xu.RunCallbacks(e, MapNotify, e.Window)
-			case xgb.MapRequestEvent:
+			case xproto.MapRequestEvent:
 				e := MapRequestEvent{&event}
 				xu.RunCallbacks(e, MapRequest, e.Window)
 				xu.RunCallbacks(e, MapRequest, e.Parent)
-			case xgb.ReparentNotifyEvent:
+			case xproto.ReparentNotifyEvent:
 				e := ReparentNotifyEvent{&event}
 				xu.RunCallbacks(e, ReparentNotify, e.Window)
-			case xgb.ConfigureNotifyEvent:
+			case xproto.ConfigureNotifyEvent:
 				e := ConfigureNotifyEvent{&event}
 				xu.RunCallbacks(e, ConfigureNotify, e.Window)
-			case xgb.ConfigureRequestEvent:
+			case xproto.ConfigureRequestEvent:
 				e := ConfigureRequestEvent{&event}
 				xu.RunCallbacks(e, ConfigureRequest, e.Window)
 				xu.RunCallbacks(e, ConfigureRequest, e.Parent)
-			case xgb.GravityNotifyEvent:
+			case xproto.GravityNotifyEvent:
 				e := GravityNotifyEvent{&event}
 				xu.RunCallbacks(e, GravityNotify, e.Window)
-			case xgb.ResizeRequestEvent:
+			case xproto.ResizeRequestEvent:
 				e := ResizeRequestEvent{&event}
 				xu.RunCallbacks(e, ResizeRequest, e.Window)
-			case xgb.CirculateNotifyEvent:
+			case xproto.CirculateNotifyEvent:
 				e := CirculateNotifyEvent{&event}
 				xu.RunCallbacks(e, CirculateNotify, e.Window)
-			case xgb.CirculateRequestEvent:
+			case xproto.CirculateRequestEvent:
 				e := CirculateRequestEvent{&event}
 				xu.RunCallbacks(e, CirculateRequest, e.Window)
-			case xgb.PropertyNotifyEvent:
+			case xproto.PropertyNotifyEvent:
 				e := PropertyNotifyEvent{&event}
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, PropertyNotify, e.Window)
-			case xgb.SelectionClearEvent:
+			case xproto.SelectionClearEvent:
 				e := SelectionClearEvent{&event}
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, SelectionClear, e.Owner)
-			case xgb.SelectionRequestEvent:
+			case xproto.SelectionRequestEvent:
 				e := SelectionRequestEvent{&event}
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, SelectionRequest, e.Requestor)
-			case xgb.SelectionNotifyEvent:
+			case xproto.SelectionNotifyEvent:
 				e := SelectionNotifyEvent{&event}
 				xu.TimeSet(e.Time)
 				xu.RunCallbacks(e, SelectionNotify, e.Requestor)
-			case xgb.ColormapNotifyEvent:
+			case xproto.ColormapNotifyEvent:
 				e := ColormapNotifyEvent{&event}
 				xu.RunCallbacks(e, ColormapNotify, e.Window)
-			case xgb.ClientMessageEvent:
+			case xproto.ClientMessageEvent:
 				e := ClientMessageEvent{&event}
 				xu.RunCallbacks(e, ClientMessage, e.Window)
-			case xgb.MappingNotifyEvent:
+			case xproto.MappingNotifyEvent:
 				e := MappingNotifyEvent{&event}
 				xu.RunCallbacks(e, MappingNotify, xgbutil.NoWindow)
 			default:
@@ -258,19 +259,19 @@ func Main(xu *xgbutil.XUtil) error {
 // SendRootEvent takes a type implementing the xgb.Event interface, converts it
 // to raw X bytes, and sends it off using the SendEvent request.
 func SendRootEvent(xu *xgbutil.XUtil, ev xgb.Event, evMask uint32) {
-	xu.Conn().SendEvent(false, xu.RootWin(), evMask, string(ev.Bytes()))
+	xproto.SendEvent(xu.Conn(), false, xu.RootWin(), evMask, string(ev.Bytes()))
 }
 
 // ReplayPointer is a quick alias to AllowEvents with 'ReplayPointer' mode.
 func ReplayPointer(xu *xgbutil.XUtil) {
-	xu.Conn().AllowEvents(xgb.AllowReplayPointer, 0)
+	xproto.AllowEvents(xu.Conn(), xproto.AllowReplayPointer, 0)
 }
 
 // Detach removes *everything* associated with a particular
 // window, including key and mouse bindings.
 // This should be used on a window that can no longer receive events. (i.e.,
 // it was destroyed.)
-func Detach(xu *xgbutil.XUtil, win xgb.Id) {
+func Detach(xu *xgbutil.XUtil, win xproto.Window) {
 	xu.DetachWindow(win)
 	xu.DetachKeyBindWindow(KeyPress, win)
 	xu.DetachKeyBindWindow(KeyRelease, win)

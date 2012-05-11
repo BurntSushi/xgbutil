@@ -49,7 +49,7 @@
 package ewmh
 
 import (
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
@@ -58,16 +58,16 @@ import (
 
 // ClientEvent is a convenience function that sends ClientMessage events
 // to the root window as specified by the EWMH spec.
-func ClientEvent(xu *xgbutil.XUtil, window xgb.Id, message_type string,
+func ClientEvent(xu *xgbutil.XUtil, window xproto.Window, messageType string,
 	data ...interface{}) error {
 
-	mstype, err := xprop.Atm(xu, message_type)
+	mstype, err := xprop.Atm(xu, messageType)
 	if err != nil {
 		return err
 	}
 
-	evMask := (xgb.EventMaskSubstructureNotify |
-		xgb.EventMaskSubstructureRedirect)
+	evMask := (xproto.EventMaskSubstructureNotify |
+		xproto.EventMaskSubstructureRedirect)
 	cm, err := xevent.NewClientMessage(32, window, mstype, data...)
 	if err != nil {
 		return err
@@ -78,62 +78,62 @@ func ClientEvent(xu *xgbutil.XUtil, window xgb.Id, message_type string,
 }
 
 // _NET_ACTIVE_WINDOW get
-func ActiveWindowGet(xu *xgbutil.XUtil) (xgb.Id, error) {
-	return xprop.PropValId(xprop.GetProperty(xu, xu.RootWin(),
+func ActiveWindowGet(xu *xgbutil.XUtil) (xproto.Window, error) {
+	return xprop.PropValWindow(xprop.GetProperty(xu, xu.RootWin(),
 		"_NET_ACTIVE_WINDOW"))
 }
 
 // _NET_ACTIVE_WINDOW set
-func ActiveWindowSet(xu *xgbutil.XUtil, win xgb.Id) error {
+func ActiveWindowSet(xu *xgbutil.XUtil, win xproto.Window) error {
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_ACTIVE_WINDOW", "WINDOW",
 		int(win))
 }
 
 // _NET_ACTIVE_WINDOW req
-func ActiveWindowReq(xu *xgbutil.XUtil, win xgb.Id) error {
+func ActiveWindowReq(xu *xgbutil.XUtil, win xproto.Window) error {
 	return ActiveWindowReqExtra(xu, win, 2, 0, 0)
 }
 
 // _NET_ACTIVE_WINDOW req extra
-func ActiveWindowReqExtra(xu *xgbutil.XUtil, win xgb.Id, source int,
-	time xgb.Timestamp, current_active xgb.Id) error {
+func ActiveWindowReqExtra(xu *xgbutil.XUtil, win xproto.Window, source int,
+	time xproto.Timestamp, currentActive xproto.Window) error {
 
 	return ClientEvent(xu, win, "_NET_ACTIVE_WINDOW", source, int(time),
-		int(current_active))
+		int(currentActive))
 }
 
 // _NET_CLIENT_LIST get
-func ClientListGet(xu *xgbutil.XUtil) ([]xgb.Id, error) {
-	return xprop.PropValIds(xprop.GetProperty(xu, xu.RootWin(),
+func ClientListGet(xu *xgbutil.XUtil) ([]xproto.Window, error) {
+	return xprop.PropValWindows(xprop.GetProperty(xu, xu.RootWin(),
 		"_NET_CLIENT_LIST"))
 }
 
 // _NET_CLIENT_LIST set
-func ClientListSet(xu *xgbutil.XUtil, wins []xgb.Id) error {
+func ClientListSet(xu *xgbutil.XUtil, wins []xproto.Window) error {
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_CLIENT_LIST", "WINDOW",
-		xprop.IdToInt(wins)...)
+		xprop.WindowToInt(wins)...)
 }
 
 // _NET_CLIENT_LIST_STACKING get
-func ClientListStackingGet(xu *xgbutil.XUtil) ([]xgb.Id, error) {
-	return xprop.PropValIds(xprop.GetProperty(xu, xu.RootWin(),
+func ClientListStackingGet(xu *xgbutil.XUtil) ([]xproto.Window, error) {
+	return xprop.PropValWindows(xprop.GetProperty(xu, xu.RootWin(),
 		"_NET_CLIENT_LIST_STACKING"))
 }
 
 // _NET_CLIENT_LIST_STACKING set
-func ClientListStackingSet(xu *xgbutil.XUtil, wins []xgb.Id) error {
+func ClientListStackingSet(xu *xgbutil.XUtil, wins []xproto.Window) error {
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_CLIENT_LIST_STACKING",
-		"WINDOW", xprop.IdToInt(wins)...)
+		"WINDOW", xprop.WindowToInt(wins)...)
 }
 
 // _NET_CLOSE_WINDOW req
-func CloseWindow(xu *xgbutil.XUtil, win xgb.Id) error {
+func CloseWindow(xu *xgbutil.XUtil, win xproto.Window) error {
 	return CloseWindowExtra(xu, win, 0, 2)
 }
 
 // _NET_CLOSE_WINDOW req extra
-func CloseWindowExtra(xu *xgbutil.XUtil, win xgb.Id, time xgb.Timestamp,
-	source int) error {
+func CloseWindowExtra(xu *xgbutil.XUtil, win xproto.Window,
+	time xproto.Timestamp, source int) error {
 
 	return ClientEvent(xu, win, "_NET_CLOSE_WINDOW", int(time), source)
 }
@@ -157,7 +157,7 @@ func CurrentDesktopReq(xu *xgbutil.XUtil, desk int) error {
 
 // _NET_CURRENT_DESKTOP req extra
 func CurrentDesktopReqExtra(xu *xgbutil.XUtil, desk int,
-	time xgb.Timestamp) error {
+	time xproto.Timestamp) error {
 
 	return ClientEvent(xu, xu.RootWin(), "_NET_CURRENT_DESKTOP", desk,
 		int(time))
@@ -319,7 +319,9 @@ type FrameExtents struct {
 }
 
 // _NET_FRAME_EXTENTS get
-func FrameExtentsGet(xu *xgbutil.XUtil, win xgb.Id) (*FrameExtents, error) {
+func FrameExtentsGet(xu *xgbutil.XUtil,
+	win xproto.Window) (*FrameExtents, error) {
+
 	raw, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_NET_FRAME_EXTENTS"))
 	if err != nil {
@@ -335,7 +337,7 @@ func FrameExtentsGet(xu *xgbutil.XUtil, win xgb.Id) (*FrameExtents, error) {
 }
 
 // _NET_FRAME_EXTENTS set
-func FrameExtentsSet(xu *xgbutil.XUtil, win xgb.Id,
+func FrameExtentsSet(xu *xgbutil.XUtil, win xproto.Window,
 	extents *FrameExtents) error {
 	raw := make([]int, 4)
 	raw[0] = extents.Left
@@ -350,27 +352,29 @@ func FrameExtentsSet(xu *xgbutil.XUtil, win xgb.Id,
 // If 'w' or 'h' are 0, then they are not sent.
 // If you need to resize a window without moving it, use the ReqExtra variant,
 // or Resize.
-func MoveresizeWindow(xu *xgbutil.XUtil, win xgb.Id, x, y, w, h int) error {
-	return MoveresizeWindowExtra(xu, win, x, y, w, h, xgb.GravityBitForget,
+func MoveresizeWindow(xu *xgbutil.XUtil, win xproto.Window,
+	x, y, w, h int) error {
+
+	return MoveresizeWindowExtra(xu, win, x, y, w, h, xproto.GravityBitForget,
 		2, true, true)
 }
 
 // _NET_MOVERESIZE_WINDOW req resize only
-func ResizeWindow(xu *xgbutil.XUtil, win xgb.Id, w, h int) error {
-	return MoveresizeWindowExtra(xu, win, 0, 0, w, h, xgb.GravityBitForget,
+func ResizeWindow(xu *xgbutil.XUtil, win xproto.Window, w, h int) error {
+	return MoveresizeWindowExtra(xu, win, 0, 0, w, h, xproto.GravityBitForget,
 		2, false, false)
 }
 
 // _NET_MOVERESIZE_WINDOW req move only
-func MoveWindow(xu *xgbutil.XUtil, win xgb.Id, x, y int) error {
-	return MoveresizeWindowExtra(xu, win, x, y, 0, 0, xgb.GravityBitForget,
+func MoveWindow(xu *xgbutil.XUtil, win xproto.Window, x, y int) error {
+	return MoveresizeWindowExtra(xu, win, x, y, 0, 0, xproto.GravityBitForget,
 		2, true, true)
 }
 
 // _NET_MOVERESIZE_WINDOW req extra
 // If 'w' or 'h' are 0, then they are not sent.
 // To not set 'x' or 'y', 'usex' or 'usey' need to be set to false.
-func MoveresizeWindowExtra(xu *xgbutil.XUtil, win xgb.Id, x, y, w, h,
+func MoveresizeWindowExtra(xu *xgbutil.XUtil, win xproto.Window, x, y, w, h,
 	gravity, source int, usex, usey bool) error {
 
 	flags := gravity
@@ -409,22 +413,22 @@ func NumberOfDesktopsReq(xu *xgbutil.XUtil, numDesks int) error {
 }
 
 // _NET_REQUEST_FRAME_EXTENTS req
-func RequestFrameExtents(xu *xgbutil.XUtil, win xgb.Id) error {
+func RequestFrameExtents(xu *xgbutil.XUtil, win xproto.Window) error {
 	return ClientEvent(xu, win, "_NET_REQUEST_FRAME_EXTENTS")
 }
 
 // _NET_RESTACK_WINDOW req
 // The shortcut here is to just raise the window to the top of the window stack.
-func RestackWindow(xu *xgbutil.XUtil, win xgb.Id) error {
-	return RestackWindowExtra(xu, win, xgb.StackModeAbove, 0, 2)
+func RestackWindow(xu *xgbutil.XUtil, win xproto.Window) error {
+	return RestackWindowExtra(xu, win, xproto.StackModeAbove, 0, 2)
 }
 
 // _NET_RESTACK_WINDOW req extra
-func RestackWindowExtra(xu *xgbutil.XUtil, win xgb.Id, stack_mode int,
-	sibling xgb.Id, source int) error {
+func RestackWindowExtra(xu *xgbutil.XUtil, win xproto.Window, stackMode int,
+	sibling xproto.Window, source int) error {
 
 	return ClientEvent(xu, win, "_NET_RESTACK_WINDOW", source, int(sibling),
-		stack_mode)
+		stackMode)
 }
 
 // _NET_SHOWING_DESKTOP get
@@ -484,27 +488,31 @@ func SupportedSet(xu *xgbutil.XUtil, atomNames []string) error {
 }
 
 // _NET_SUPPORTING_WM_CHECK get
-func SupportingWmCheckGet(xu *xgbutil.XUtil, win xgb.Id) (xgb.Id, error) {
-	return xprop.PropValId(xprop.GetProperty(xu, win,
+func SupportingWmCheckGet(xu *xgbutil.XUtil,
+	win xproto.Window) (xproto.Window, error) {
+
+	return xprop.PropValWindow(xprop.GetProperty(xu, win,
 		"_NET_SUPPORTING_WM_CHECK"))
 }
 
 // _NET_SUPPORTING_WM_CHECK set
-func SupportingWmCheckSet(xu *xgbutil.XUtil, win xgb.Id, wm_win xgb.Id) error {
+func SupportingWmCheckSet(xu *xgbutil.XUtil, win xproto.Window,
+	wmWin xproto.Window) error {
+
 	return xprop.ChangeProp32(xu, win, "_NET_SUPPORTING_WM_CHECK", "WINDOW",
-		int(wm_win))
+		int(wmWin))
 }
 
 // _NET_VIRTUAL_ROOTS get
-func VirtualRootsGet(xu *xgbutil.XUtil) ([]xgb.Id, error) {
-	return xprop.PropValIds(xprop.GetProperty(xu, xu.RootWin(),
+func VirtualRootsGet(xu *xgbutil.XUtil) ([]xproto.Window, error) {
+	return xprop.PropValWindows(xprop.GetProperty(xu, xu.RootWin(),
 		"_NET_VIRTUAL_ROOTS"))
 }
 
 // _NET_VIRTUAL_ROOTS set
-func VirtualRootsSet(xu *xgbutil.XUtil, wins []xgb.Id) error {
+func VirtualRootsSet(xu *xgbutil.XUtil, wins []xproto.Window) error {
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_VIRTUAL_ROOTS", "WINDOW",
-		xprop.IdToInt(wins)...)
+		xprop.WindowToInt(wins)...)
 }
 
 // _NET_VISIBLE_DESKTOPS get
@@ -524,13 +532,15 @@ func VisibleDesktopsSet(xu *xgbutil.XUtil, desktops []int) error {
 }
 
 // _NET_WM_ALLOWED_ACTIONS get
-func WmAllowedActionsGet(xu *xgbutil.XUtil, win xgb.Id) ([]string, error) {
+func WmAllowedActionsGet(xu *xgbutil.XUtil,
+	win xproto.Window) ([]string, error) {
+
 	raw, err := xprop.GetProperty(xu, win, "_NET_WM_ALLOWED_ACTIONS")
 	return xprop.PropValAtoms(xu, raw, err)
 }
 
 // _NET_WM_ALLOWED_ACTIONS set
-func WmAllowedActionsSet(xu *xgbutil.XUtil, win xgb.Id,
+func WmAllowedActionsSet(xu *xgbutil.XUtil, win xproto.Window,
 	atomNames []string) error {
 
 	atoms, err := xprop.StrToAtoms(xu, atomNames)
@@ -543,22 +553,24 @@ func WmAllowedActionsSet(xu *xgbutil.XUtil, win xgb.Id,
 }
 
 // _NET_WM_DESKTOP get
-func WmDesktopGet(xu *xgbutil.XUtil, win xgb.Id) (int, error) {
+func WmDesktopGet(xu *xgbutil.XUtil, win xproto.Window) (int, error) {
 	return xprop.PropValNum(xprop.GetProperty(xu, win, "_NET_WM_DESKTOP"))
 }
 
 // _NET_WM_DESKTOP set
-func WmDesktopSet(xu *xgbutil.XUtil, win xgb.Id, desk int) error {
+func WmDesktopSet(xu *xgbutil.XUtil, win xproto.Window, desk int) error {
 	return xprop.ChangeProp32(xu, win, "_NET_WM_DESKTOP", "CARDINAL", desk)
 }
 
 // _NET_WM_DESKTOP req
-func WmDesktopReq(xu *xgbutil.XUtil, win xgb.Id, desk int) error {
+func WmDesktopReq(xu *xgbutil.XUtil, win xproto.Window, desk int) error {
 	return WmDesktopReqExtra(xu, win, desk, 2)
 }
 
 // _NET_WM_DESKTOP req extra
-func WmDesktopReqExtra(xu *xgbutil.XUtil, win xgb.Id, desk, source int) error {
+func WmDesktopReqExtra(xu *xgbutil.XUtil, win xproto.Window, desk,
+	source int) error {
+
 	return ClientEvent(xu, win, "_NET_WM_DESKTOP", desk, source)
 }
 
@@ -574,7 +586,7 @@ type WmFullscreenMonitors struct {
 
 // _NET_WM_FULLSCREEN_MONITORS get
 func WmFullscreenMonitorsGet(xu *xgbutil.XUtil,
-	win xgb.Id) (*WmFullscreenMonitors, error) {
+	win xproto.Window) (*WmFullscreenMonitors, error) {
 
 	raw, err := xprop.PropValNums(
 		xprop.GetProperty(xu, win, "_NET_WM_FULLSCREEN_MONITORS"))
@@ -591,7 +603,7 @@ func WmFullscreenMonitorsGet(xu *xgbutil.XUtil,
 }
 
 // _NET_WM_FULLSCREEN_MONITORS set
-func WmFullscreenMonitorsSet(xu *xgbutil.XUtil, win xgb.Id,
+func WmFullscreenMonitorsSet(xu *xgbutil.XUtil, win xproto.Window,
 	edges *WmFullscreenMonitors) error {
 
 	raw := make([]int, 4)
@@ -605,14 +617,14 @@ func WmFullscreenMonitorsSet(xu *xgbutil.XUtil, win xgb.Id,
 }
 
 // _NET_WM_FULLSCREEN_MONITORS req
-func WmFullscreenMonitorsReq(xu *xgbutil.XUtil, win xgb.Id,
+func WmFullscreenMonitorsReq(xu *xgbutil.XUtil, win xproto.Window,
 	edges *WmFullscreenMonitors) error {
 
 	return WmFullscreenMonitorsReqExtra(xu, win, edges, 2)
 }
 
 // _NET_WM_FULLSCREEN_MONITORS req extra
-func WmFullscreenMonitorsReqExtra(xu *xgbutil.XUtil, win xgb.Id,
+func WmFullscreenMonitorsReqExtra(xu *xgbutil.XUtil, win xproto.Window,
 	edges *WmFullscreenMonitors, source int) error {
 
 	return ClientEvent(xu, win, "_NET_WM_FULLSCREEN_MONITORS",
@@ -620,7 +632,7 @@ func WmFullscreenMonitorsReqExtra(xu *xgbutil.XUtil, win xgb.Id,
 }
 
 // _NET_WM_HANDLED_ICONS get
-func WmHandledIconsGet(xu *xgbutil.XUtil, win xgb.Id) (bool, error) {
+func WmHandledIconsGet(xu *xgbutil.XUtil, win xproto.Window) (bool, error) {
 	reply, err := xprop.GetProperty(xu, win, "_NET_WM_HANDLED_ICONS")
 	if err != nil {
 		return false, err
@@ -656,7 +668,7 @@ type WmIcon struct {
 }
 
 // _NET_WM_ICON get
-func WmIconGet(xu *xgbutil.XUtil, win xgb.Id) ([]WmIcon, error) {
+func WmIconGet(xu *xgbutil.XUtil, win xproto.Window) ([]WmIcon, error) {
 	icon, err := xprop.PropValNums(xprop.GetProperty(xu, win, "_NET_WM_ICON"))
 	if err != nil {
 		return nil, err
@@ -682,7 +694,7 @@ func WmIconGet(xu *xgbutil.XUtil, win xgb.Id) ([]WmIcon, error) {
 }
 
 // _NET_WM_ICON set
-func WmIconSet(xu *xgbutil.XUtil, win xgb.Id, icons []WmIcon) error {
+func WmIconSet(xu *xgbutil.XUtil, win xproto.Window, icons []WmIcon) error {
 	raw := make([]int, 0, 10000) // start big
 	for _, icon := range icons {
 		raw = append(raw, icon.Width, icon.Height)
@@ -702,7 +714,9 @@ type WmIconGeometry struct {
 }
 
 // _NET_WM_ICON_GEOMETRY get
-func WmIconGeometryGet(xu *xgbutil.XUtil, win xgb.Id) (*WmIconGeometry, error) {
+func WmIconGeometryGet(xu *xgbutil.XUtil,
+	win xproto.Window) (*WmIconGeometry, error) {
+
 	geom, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_NET_WM_ICON_GEOMETRY"))
 	if err != nil {
@@ -718,7 +732,7 @@ func WmIconGeometryGet(xu *xgbutil.XUtil, win xgb.Id) (*WmIconGeometry, error) {
 }
 
 // _NET_WM_ICON_GEOMETRY set
-func WmIconGeometrySet(xu *xgbutil.XUtil, win xgb.Id,
+func WmIconGeometrySet(xu *xgbutil.XUtil, win xproto.Window,
 	geom *WmIconGeometry) error {
 
 	rawGeom := make([]int, 4)
@@ -732,12 +746,12 @@ func WmIconGeometrySet(xu *xgbutil.XUtil, win xgb.Id,
 }
 
 // _NET_WM_ICON_NAME get
-func WmIconNameGet(xu *xgbutil.XUtil, win xgb.Id) (string, error) {
+func WmIconNameGet(xu *xgbutil.XUtil, win xproto.Window) (string, error) {
 	return xprop.PropValStr(xprop.GetProperty(xu, win, "_NET_WM_ICON_NAME"))
 }
 
 // _NET_WM_ICON_NAME set
-func WmIconNameSet(xu *xgbutil.XUtil, win xgb.Id, name string) error {
+func WmIconNameSet(xu *xgbutil.XUtil, win xproto.Window, name string) error {
 	return xprop.ChangeProp(xu, win, 8, "_NET_WM_ICON_NAME", "UTF8_STRING",
 		[]byte(name))
 }
@@ -760,25 +774,25 @@ const (
 )
 
 // _NET_WM_MOVERESIZE req
-func WmMoveresize(xu *xgbutil.XUtil, win xgb.Id, direction int) error {
+func WmMoveresize(xu *xgbutil.XUtil, win xproto.Window, direction int) error {
 	return WmMoveresizeExtra(xu, win, direction, 0, 0, 0, 2)
 }
 
 // _NET_WM_MOVERESIZE req extra
-func WmMoveresizeExtra(xu *xgbutil.XUtil, win xgb.Id, direction, x_root, y_root,
-	button, source int) error {
+func WmMoveresizeExtra(xu *xgbutil.XUtil, win xproto.Window, direction,
+	xRoot, yRoot, button, source int) error {
 
 	return ClientEvent(xu, win, "_NET_WM_MOVERESIZE",
-		x_root, y_root, direction, button, source)
+		xRoot, yRoot, direction, button, source)
 }
 
 // _NET_WM_NAME get
-func WmNameGet(xu *xgbutil.XUtil, win xgb.Id) (string, error) {
+func WmNameGet(xu *xgbutil.XUtil, win xproto.Window) (string, error) {
 	return xprop.PropValStr(xprop.GetProperty(xu, win, "_NET_WM_NAME"))
 }
 
 // _NET_WM_NAME set
-func WmNameSet(xu *xgbutil.XUtil, win xgb.Id, name string) error {
+func WmNameSet(xu *xgbutil.XUtil, win xproto.Window, name string) error {
 	return xprop.ChangeProp(xu, win, 8, "_NET_WM_NAME", "UTF8_STRING",
 		[]byte(name))
 }
@@ -795,7 +809,7 @@ type WmOpaqueRegion struct {
 
 // _NET_WM_OPAQUE_REGION get
 func WmOpaqueRegionGet(xu *xgbutil.XUtil,
-	win xgb.Id) ([]WmOpaqueRegion, error) {
+	win xproto.Window) ([]WmOpaqueRegion, error) {
 
 	raw, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_NET_WM_OPAQUE_REGION"))
@@ -816,7 +830,7 @@ func WmOpaqueRegionGet(xu *xgbutil.XUtil,
 }
 
 // _NET_WM_OPAQUE_REGION set
-func WmOpaqueRegionSet(xu *xgbutil.XUtil, win xgb.Id,
+func WmOpaqueRegionSet(xu *xgbutil.XUtil, win xproto.Window,
 	regions []WmOpaqueRegion) error {
 
 	raw := make([]int, len(regions)*4)
@@ -833,30 +847,30 @@ func WmOpaqueRegionSet(xu *xgbutil.XUtil, win xgb.Id,
 }
 
 // _NET_WM_PID get
-func WmPidGet(xu *xgbutil.XUtil, win xgb.Id) (int, error) {
+func WmPidGet(xu *xgbutil.XUtil, win xproto.Window) (int, error) {
 	return xprop.PropValNum(xprop.GetProperty(xu, win, "_NET_WM_PID"))
 }
 
 // _NET_WM_PID set
-func WmPidSet(xu *xgbutil.XUtil, win xgb.Id, pid int) error {
+func WmPidSet(xu *xgbutil.XUtil, win xproto.Window, pid int) error {
 	return xprop.ChangeProp32(xu, win, "_NET_WM_PID", "CARDINAL", pid)
 }
 
 // _NET_WM_PING req
-func WmPing(xu *xgbutil.XUtil, win xgb.Id, response bool) error {
+func WmPing(xu *xgbutil.XUtil, win xproto.Window, response bool) error {
 	return WmPingExtra(xu, win, response, 0)
 }
 
 // _NET_WM_PING req extra
-func WmPingExtra(xu *xgbutil.XUtil, win xgb.Id, response bool,
-	time xgb.Timestamp) error {
+func WmPingExtra(xu *xgbutil.XUtil, win xproto.Window, response bool,
+	time xproto.Timestamp) error {
 
 	pingAtom, err := xprop.Atm(xu, "_NET_WM_PING")
 	if err != nil {
 		return err
 	}
 
-	var evWindow xgb.Id
+	var evWindow xproto.Window
 	if response {
 		evWindow = xu.RootWin()
 	} else {
@@ -876,13 +890,15 @@ const (
 )
 
 // _NET_WM_STATE get
-func WmStateGet(xu *xgbutil.XUtil, win xgb.Id) ([]string, error) {
+func WmStateGet(xu *xgbutil.XUtil, win xproto.Window) ([]string, error) {
 	raw, err := xprop.GetProperty(xu, win, "_NET_WM_STATE")
 	return xprop.PropValAtoms(xu, raw, err)
 }
 
 // _NET_WM_STATE set
-func WmStateSet(xu *xgbutil.XUtil, win xgb.Id, atomNames []string) error {
+func WmStateSet(xu *xgbutil.XUtil, win xproto.Window,
+	atomNames []string) error {
+
 	atoms, err := xprop.StrToAtoms(xu, atomNames)
 	if err != nil {
 		return err
@@ -892,17 +908,17 @@ func WmStateSet(xu *xgbutil.XUtil, win xgb.Id, atomNames []string) error {
 }
 
 // _NET_WM_STATE req
-func WmStateReq(xu *xgbutil.XUtil, win xgb.Id, action int,
+func WmStateReq(xu *xgbutil.XUtil, win xproto.Window, action int,
 	atomName string) error {
 
 	return WmStateReqExtra(xu, win, action, atomName, "", 2)
 }
 
 // _NET_WM_STATE req extra
-func WmStateReqExtra(xu *xgbutil.XUtil, win xgb.Id, action int,
+func WmStateReqExtra(xu *xgbutil.XUtil, win xproto.Window, action int,
 	first string, second string, source int) (err error) {
 
-	var atom1, atom2 xgb.Id
+	var atom1, atom2 xproto.Atom
 
 	atom1, err = xprop.Atom(xu, first, false)
 	if err != nil {
@@ -932,7 +948,7 @@ type WmStrut struct {
 }
 
 // _NET_WM_STRUT get
-func WmStrutGet(xu *xgbutil.XUtil, win xgb.Id) (*WmStrut, error) {
+func WmStrutGet(xu *xgbutil.XUtil, win xproto.Window) (*WmStrut, error) {
 	struts, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_NET_WM_STRUT"))
 	if err != nil {
@@ -948,7 +964,7 @@ func WmStrutGet(xu *xgbutil.XUtil, win xgb.Id) (*WmStrut, error) {
 }
 
 // _NET_WM_STRUT set
-func WmStrutSet(xu *xgbutil.XUtil, win xgb.Id, struts *WmStrut) error {
+func WmStrutSet(xu *xgbutil.XUtil, win xproto.Window, struts *WmStrut) error {
 	rawStruts := make([]int, 4)
 	rawStruts[0] = struts.Left
 	rawStruts[1] = struts.Right
@@ -970,7 +986,9 @@ type WmStrutPartial struct {
 }
 
 // _NET_WM_STRUT_PARTIAL get
-func WmStrutPartialGet(xu *xgbutil.XUtil, win xgb.Id) (*WmStrutPartial, error) {
+func WmStrutPartialGet(xu *xgbutil.XUtil,
+	win xproto.Window) (*WmStrutPartial, error) {
+
 	struts, err := xprop.PropValNums(xprop.GetProperty(xu, win,
 		"_NET_WM_STRUT_PARTIAL"))
 	if err != nil {
@@ -987,7 +1005,7 @@ func WmStrutPartialGet(xu *xgbutil.XUtil, win xgb.Id) (*WmStrutPartial, error) {
 }
 
 // _NET_WM_STRUT_PARTIAL set
-func WmStrutPartialSet(xu *xgbutil.XUtil, win xgb.Id,
+func WmStrutPartialSet(xu *xgbutil.XUtil, win xproto.Window,
 	struts *WmStrutPartial) error {
 
 	rawStruts := make([]int, 4)
@@ -1009,21 +1027,21 @@ func WmStrutPartialSet(xu *xgbutil.XUtil, win xgb.Id,
 }
 
 // _NET_WM_SYNC_REQUEST req
-func WmSyncRequest(xu *xgbutil.XUtil, win xgb.Id, req_num uint64) error {
+func WmSyncRequest(xu *xgbutil.XUtil, win xproto.Window, req_num uint64) error {
 	return WmSyncRequestExtra(xu, win, req_num, 0)
 }
 
 // _NET_WM_SYNC_REQUEST req extra
-func WmSyncRequestExtra(xu *xgbutil.XUtil, win xgb.Id, req_num uint64,
-	time xgb.Timestamp) error {
+func WmSyncRequestExtra(xu *xgbutil.XUtil, win xproto.Window, reqNum uint64,
+	time xproto.Timestamp) error {
 
 	syncReq, err := xprop.Atm(xu, "_NET_WM_SYNC_REQUEST")
 	if err != nil {
 		return err
 	}
 
-	high := int(req_num >> 32)
-	low := int(req_num<<32 ^ req_num)
+	high := int(reqNum >> 32)
+	low := int(reqNum<<32 ^ reqNum)
 
 	return ClientEvent(xu, win, "WM_PROTOCOLS", int(syncReq), int(time),
 		low, high)
@@ -1032,7 +1050,7 @@ func WmSyncRequestExtra(xu *xgbutil.XUtil, win xgb.Id, req_num uint64,
 // _NET_WM_SYNC_REQUEST_COUNTER get 
 // I'm pretty sure this needs 64 bit integers, but I'm not quite sure
 // how to go about that yet. Any ideas?
-func WmSyncRequestCounter(xu *xgbutil.XUtil, win xgb.Id) (int, error) {
+func WmSyncRequestCounter(xu *xgbutil.XUtil, win xproto.Window) (int, error) {
 	return xprop.PropValNum(xprop.GetProperty(xu, win,
 		"_NET_WM_SYNC_REQUEST_COUNTER"))
 }
@@ -1040,7 +1058,7 @@ func WmSyncRequestCounter(xu *xgbutil.XUtil, win xgb.Id) (int, error) {
 // _NET_WM_SYNC_REQUEST_COUNTER set
 // I'm pretty sure this needs 64 bit integers, but I'm not quite sure
 // how to go about that yet. Any ideas?
-func WmSyncRequestCounterSet(xu *xgbutil.XUtil, win xgb.Id,
+func WmSyncRequestCounterSet(xu *xgbutil.XUtil, win xproto.Window,
 	counter int) error {
 
 	return xprop.ChangeProp32(xu, win, "_NET_WM_SYNC_REQUEST_COUNTER",
@@ -1048,47 +1066,55 @@ func WmSyncRequestCounterSet(xu *xgbutil.XUtil, win xgb.Id,
 }
 
 // _NET_WM_USER_TIME get
-func WmUserTimeGet(xu *xgbutil.XUtil, win xgb.Id) (int, error) {
+func WmUserTimeGet(xu *xgbutil.XUtil, win xproto.Window) (int, error) {
 	return xprop.PropValNum(xprop.GetProperty(xu, win, "_NET_WM_USER_TIME"))
 }
 
 // _NET_WM_USER_TIME set
-func WmUserTimeSet(xu *xgbutil.XUtil, win xgb.Id, user_time int) error {
+func WmUserTimeSet(xu *xgbutil.XUtil, win xproto.Window, userTime int) error {
 	return xprop.ChangeProp32(xu, win, "_NET_WM_USER_TIME", "CARDINAL",
-		user_time)
+		userTime)
 }
 
 // _NET_WM_USER_TIME_WINDOW get
-func WmUserTimeWindowGet(xu *xgbutil.XUtil, win xgb.Id) (xgb.Id, error) {
-	return xprop.PropValId(xprop.GetProperty(xu, win,
+func WmUserTimeWindowGet(xu *xgbutil.XUtil,
+	win xproto.Window) (xproto.Window, error) {
+
+	return xprop.PropValWindow(xprop.GetProperty(xu, win,
 		"_NET_WM_USER_TIME_WINDOW"))
 }
 
 // _NET_WM_USER_TIME set
-func WmUserTimeWindowSet(xu *xgbutil.XUtil, win xgb.Id, time_win xgb.Id) error {
+func WmUserTimeWindowSet(xu *xgbutil.XUtil, win xproto.Window,
+	timeWin xproto.Window) error {
+
 	return xprop.ChangeProp32(xu, win, "_NET_WM_USER_TIME_WINDOW", "CARDINAL",
-		int(time_win))
+		int(timeWin))
 }
 
 // _NET_WM_VISIBLE_ICON_NAME get
-func WmVisibleIconNameGet(xu *xgbutil.XUtil, win xgb.Id) (string, error) {
+func WmVisibleIconNameGet(xu *xgbutil.XUtil,
+	win xproto.Window) (string, error) {
+
 	return xprop.PropValStr(xprop.GetProperty(xu, win,
 		"_NET_WM_VISIBLE_ICON_NAME"))
 }
 
 // _NET_WM_VISIBLE_ICON_NAME set
-func WmVisibleIconNameSet(xu *xgbutil.XUtil, win xgb.Id, name string) error {
+func WmVisibleIconNameSet(xu *xgbutil.XUtil, win xproto.Window,
+	name string) error {
+
 	return xprop.ChangeProp(xu, win, 8, "_NET_WM_VISIBLE_ICON_NAME",
 		"UTF8_STRING", []byte(name))
 }
 
 // _NET_WM_VISIBLE_NAME get
-func WmVisibleNameGet(xu *xgbutil.XUtil, win xgb.Id) (string, error) {
+func WmVisibleNameGet(xu *xgbutil.XUtil, win xproto.Window) (string, error) {
 	return xprop.PropValStr(xprop.GetProperty(xu, win, "_NET_WM_VISIBLE_NAME"))
 }
 
 // _NET_WM_VISIBLE_NAME set
-func WmVisibleNameSet(xu *xgbutil.XUtil, win xgb.Id, name string) error {
+func WmVisibleNameSet(xu *xgbutil.XUtil, win xproto.Window, name string) error {
 	return xprop.ChangeProp(xu, win, 8, "_NET_WM_VISIBLE_NAME", "UTF8_STRING",
 		[]byte(name))
 }
@@ -1100,7 +1126,7 @@ func WmVisibleNameSet(xu *xgbutil.XUtil, win xgb.Id, name string) error {
 // of a client window in reparenting window managers.
 // The float returned will be in the range [0.0, 1.0] where 0.0 is completely
 // transparent and 1.0 is completely opaque.
-func WmWindowOpacityGet(xu *xgbutil.XUtil, win xgb.Id) (float64, error) {
+func WmWindowOpacityGet(xu *xgbutil.XUtil, win xproto.Window) (float64, error) {
 	intOpacity, err := xprop.PropValNum(
 		xprop.GetProperty(xu, win, "_NET_WM_WINDOW_OPACITY"))
 	if err != nil {
@@ -1111,25 +1137,28 @@ func WmWindowOpacityGet(xu *xgbutil.XUtil, win xgb.Id) (float64, error) {
 }
 
 // _NET_WM_WINDOW_OPACITY set
-func WmWindowOpacitySet(xu *xgbutil.XUtil, win xgb.Id, opacity float64) error {
+func WmWindowOpacitySet(xu *xgbutil.XUtil, win xproto.Window,
+	opacity float64) error {
+
 	return xprop.ChangeProp32(xu, win, "_NET_WM_WINDOW_OPACITY", "CARDINAL",
 		int(opacity*0xffffffff))
 }
 
 // _NET_WM_WINDOW_TYPE get
-func WmWindowTypeGet(xu *xgbutil.XUtil, win xgb.Id) ([]string, error) {
+func WmWindowTypeGet(xu *xgbutil.XUtil, win xproto.Window) ([]string, error) {
 	raw, err := xprop.GetProperty(xu, win, "_NET_WM_WINDOW_TYPE")
 	return xprop.PropValAtoms(xu, raw, err)
 }
 
 // _NET_WM_WINDOW_TYPE set
 // This will create any atoms used in 'atomNames' if they don't already exist.
-func WmWindowTypeSet(xu *xgbutil.XUtil, win xgb.Id, atomNames []string) error {
+func WmWindowTypeSet(xu *xgbutil.XUtil, win xproto.Window,
+	atomNames []string) error {
+
 	atoms, err := xprop.StrToAtoms(xu, atomNames)
 	if err != nil {
 		return err
 	}
-
 	return xprop.ChangeProp32(xu, win, "_NET_WM_WINDOW_TYPE", "ATOM", atoms...)
 }
 

@@ -55,7 +55,7 @@ if sys.argv[1] == 'evtypes':
     print 'import ('
     print '\t"fmt"'
     print
-    print '\t"github.com/BurntSushi/xgb"'
+    print '\t"github.com/BurntSushi/xgb/xproto"'
     print ')'
     print
 
@@ -66,10 +66,10 @@ if sys.argv[1] == 'evtypes':
             continue
 
         print 'type %s struct {' % e
-        print '    *xgb.%s' % e
+        print '    *xproto.%s' % e
         print '}'
         print
-        print 'const %s = xgb.%s' % (e[:-5], e[:-5])
+        print 'const %s = xproto.%s' % (e[:-5], e[:-5])
         print
         print 'func (ev *%s) Bytes() []byte { return nil }' % e
         print
@@ -88,24 +88,18 @@ elif sys.argv[1] == 'callbacks':
 */'''
     print
     print 'import ('
-    print '\t"github.com/BurntSushi/xgb"'
+    print '\t"github.com/BurntSushi/xgb/xproto"'
     print
     print '\t"github.com/BurntSushi/xgbutil"'
     print ')'
     print
-
-    # print 'type Callback interface {' 
-    # print '    Connect(xu *xgbutil.XUtil, win xgb.Id, evtype int)' 
-    # print '    Run(xu *xgbutil.XUtil, ev interface{})' 
-    # print '}' 
-    # print 
 
     for e in events:
         e = e[:-5]
         print 'type %sFun func(xu *xgbutil.XUtil, event %sEvent)' % (e, e)
         print
         print 'func (callback %sFun) '\
-                'Connect(xu *xgbutil.XUtil, win xgb.Id) {' % e
+                'Connect(xu *xgbutil.XUtil,\nwin xproto.Window) {' % e
         print '    xu.AttachCallback(%s, win, callback)' % e
         print '}'
         print

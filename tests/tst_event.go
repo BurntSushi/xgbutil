@@ -6,7 +6,7 @@ import (
 )
 
 import (
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	// "github.com/BurntSushi/xgbutil/ewmh" 
@@ -54,7 +54,7 @@ func main() {
 
 	// active, _ := ewmh.ActiveWindowGet(X) 
 
-	xwindow.Listen(X, X.RootWin(), xgb.EventMaskPropertyChange)
+	xwindow.Listen(X, X.RootWin(), xproto.EventMaskPropertyChange)
 
 	// cb := xevent.PropertyNotifyFun(MyCallback) 
 	// cb.Connect(X, X.RootWin()) 

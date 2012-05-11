@@ -3,7 +3,7 @@ package icccm
 import (
 	"fmt"
 
-	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xprop"
@@ -43,22 +43,22 @@ const (
 )
 
 // WM_NAME get
-func WmNameGet(xu *xgbutil.XUtil, win xgb.Id) (string, error) {
+func WmNameGet(xu *xgbutil.XUtil, win xproto.Window) (string, error) {
 	return xprop.PropValStr(xprop.GetProperty(xu, win, "WM_NAME"))
 }
 
 // WM_NAME set
-func WmNameSet(xu *xgbutil.XUtil, win xgb.Id, name string) error {
+func WmNameSet(xu *xgbutil.XUtil, win xproto.Window, name string) error {
 	return xprop.ChangeProp(xu, win, 8, "WM_NAME", "STRING", ([]byte)(name))
 }
 
 // WM_ICON_NAME get
-func WmIconNameGet(xu *xgbutil.XUtil, win xgb.Id) (string, error) {
+func WmIconNameGet(xu *xgbutil.XUtil, win xproto.Window) (string, error) {
 	return xprop.PropValStr(xprop.GetProperty(xu, win, "WM_ICON_NAME"))
 }
 
 // WM_ICON_NAME set
-func WmIconNameSet(xu *xgbutil.XUtil, win xgb.Id, name string) error {
+func WmIconNameSet(xu *xgbutil.XUtil, win xproto.Window, name string) error {
 	return xprop.ChangeProp(xu, win, 8, "WM_ICON_NAME", "STRING",
 		([]byte)(name))
 }
@@ -75,7 +75,7 @@ type NormalHints struct {
 
 // WM_NORMAL_HINTS get
 func WmNormalHintsGet(xu *xgbutil.XUtil,
-	win xgb.Id) (nh *NormalHints, err error) {
+	win xproto.Window) (nh *NormalHints, err error) {
 
 	lenExpect := 18
 	hints, err := xprop.PropValNums(xprop.GetProperty(xu, win,
@@ -110,7 +110,7 @@ func WmNormalHintsGet(xu *xgbutil.XUtil,
 	nh.WinGravity = hints[17]
 
 	if nh.WinGravity <= 0 {
-		nh.WinGravity = xgb.GravityNorthWest
+		nh.WinGravity = xproto.GravityNorthWest
 	}
 
 	return nh, nil
@@ -118,7 +118,9 @@ func WmNormalHintsGet(xu *xgbutil.XUtil,
 
 // WM_NORMAL_HINTS set
 // Make sure to set the flags in the NormalHints struct correctly!
-func WmNormalHintsSet(xu *xgbutil.XUtil, win xgb.Id, nh *NormalHints) error {
+func WmNormalHintsSet(xu *xgbutil.XUtil, win xproto.Window,
+	nh *NormalHints) error {
+
 	raw := []int{
 		nh.Flags,
 		nh.X, nh.Y, nh.Width, nh.Height,
@@ -139,11 +141,13 @@ func WmNormalHintsSet(xu *xgbutil.XUtil, win xgb.Id, nh *NormalHints) error {
 type Hints struct {
 	Flags                                         int
 	Input, InitialState, IconX, IconY             int
-	WindowGroup, IconPixmap, IconWindow, IconMask xgb.Id
+	WindowGroup, IconPixmap, IconWindow, IconMask xproto.Window
 }
 
 // WM_HINTS get
-func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (hints *Hints, err error) {
+func WmHintsGet(xu *xgbutil.XUtil,
+	win xproto.Window) (hints *Hints, err error) {
+
 	lenExpect := 9
 	raw, err := xprop.PropValNums(xprop.GetProperty(xu, win, "WM_HINTS"))
 	if err != nil {
@@ -159,19 +163,19 @@ func WmHintsGet(xu *xgbutil.XUtil, win xgb.Id) (hints *Hints, err error) {
 	hints.Flags = raw[0]
 	hints.Input = raw[1]
 	hints.InitialState = raw[2]
-	hints.IconPixmap = xgb.Id(raw[3])
-	hints.IconWindow = xgb.Id(raw[4])
+	hints.IconPixmap = xproto.Window(raw[3])
+	hints.IconWindow = xproto.Window(raw[4])
 	hints.IconX = raw[5]
 	hints.IconY = raw[6]
-	hints.IconMask = xgb.Id(raw[7])
-	hints.WindowGroup = xgb.Id(raw[8])
+	hints.IconMask = xproto.Window(raw[7])
+	hints.WindowGroup = xproto.Window(raw[8])
 
 	return hints, nil
 }
 
 // WM_HINTS set
 // Make sure to set the flags in the Hints struct correctly!
-func WmHintsSet(xu *xgbutil.XUtil, win xgb.Id, hints *Hints) error {
+func WmHintsSet(xu *xgbutil.XUtil, win xproto.Window, hints *Hints) error {
 	raw := []int{
 		hints.Flags, hints.Input, hints.InitialState,
 		int(hints.IconPixmap), int(hints.IconWindow),
@@ -189,7 +193,7 @@ type WmClass struct {
 }
 
 // WM_CLASS get
-func WmClassGet(xu *xgbutil.XUtil, win xgb.Id) (*WmClass, error) {
+func WmClassGet(xu *xgbutil.XUtil, win xproto.Window) (*WmClass, error) {
 	raw, err := xprop.PropValStrs(xprop.GetProperty(xu, win, "WM_CLASS"))
 	if err != nil {
 		return nil, err
@@ -207,7 +211,7 @@ func WmClassGet(xu *xgbutil.XUtil, win xgb.Id) (*WmClass, error) {
 }
 
 // WM_CLASS set
-func WmClassSet(xu *xgbutil.XUtil, win xgb.Id, class *WmClass) error {
+func WmClassSet(xu *xgbutil.XUtil, win xproto.Window, class *WmClass) error {
 	raw := make([]byte, len(class.Instance)+len(class.Class)+2)
 	copy(raw, class.Instance)
 	copy(raw[(len(class.Instance)+1):], class.Class)
@@ -216,52 +220,62 @@ func WmClassSet(xu *xgbutil.XUtil, win xgb.Id, class *WmClass) error {
 }
 
 // WM_TRANSIENT_FOR get
-func WmTransientForGet(xu *xgbutil.XUtil, win xgb.Id) (xgb.Id, error) {
-	return xprop.PropValId(xprop.GetProperty(xu, win, "WM_TRANSIENT_FOR"))
+func WmTransientForGet(xu *xgbutil.XUtil,
+	win xproto.Window) (xproto.Window, error) {
+
+	return xprop.PropValWindow(xprop.GetProperty(xu, win, "WM_TRANSIENT_FOR"))
 }
 
 // WM_TRANSIENT_FOR set
-func WmTransientForSet(xu *xgbutil.XUtil, win xgb.Id, transient xgb.Id) error {
+func WmTransientForSet(xu *xgbutil.XUtil, win xproto.Window,
+	transient xproto.Window) error {
+
 	return xprop.ChangeProp32(xu, win, "WM_TRANSIENT_FOR", "WINDOW",
 		int(transient))
 }
 
 // WM_PROTOCOLS get
-func WmProtocolsGet(xu *xgbutil.XUtil, win xgb.Id) ([]string, error) {
+func WmProtocolsGet(xu *xgbutil.XUtil, win xproto.Window) ([]string, error) {
 	raw, err := xprop.GetProperty(xu, win, "WM_PROTOCOLS")
 	return xprop.PropValAtoms(xu, raw, err)
 }
 
 // WM_PROTOCOLS set
-func WmProtocolsSet(xu *xgbutil.XUtil, win xgb.Id, atomNames []string) error {
+func WmProtocolsSet(xu *xgbutil.XUtil, win xproto.Window,
+	atomNames []string) error {
+
 	atoms, err := xprop.StrToAtoms(xu, atomNames)
 	if err != nil {
 		return err
 	}
-
 	return xprop.ChangeProp32(xu, win, "WM_PROTOCOLS", "ATOM", atoms...)
 }
 
 // WM_COLORMAP_WINDOWS get
-func WmColormapWindowsGet(xu *xgbutil.XUtil, win xgb.Id) ([]xgb.Id, error) {
-	return xprop.PropValIds(xprop.GetProperty(xu, win, "WM_COLORMAP_WINDOWS"))
+func WmColormapWindowsGet(xu *xgbutil.XUtil,
+	win xproto.Window) ([]xproto.Window, error) {
+
+	return xprop.PropValWindows(xprop.GetProperty(xu, win,
+		"WM_COLORMAP_WINDOWS"))
 }
 
 // WM_COLORMAP_WINDOWS set
-func WmColormapWindowsSet(xu *xgbutil.XUtil, win xgb.Id,
-	windows []xgb.Id) error {
+func WmColormapWindowsSet(xu *xgbutil.XUtil, win xproto.Window,
+	windows []xproto.Window) error {
 
 	return xprop.ChangeProp32(xu, win, "WM_COLORMAP_WINDOWS", "WINDOW",
-		xprop.IdToInt(windows)...)
+		xprop.WindowToInt(windows)...)
 }
 
 // WM_CLIENT_MACHINE get
-func WmClientMachineGet(xu *xgbutil.XUtil, win xgb.Id) (string, error) {
+func WmClientMachineGet(xu *xgbutil.XUtil, win xproto.Window) (string, error) {
 	return xprop.PropValStr(xprop.GetProperty(xu, win, "WM_CLIENT_MACHINE"))
 }
 
 // WM_CLIENT_MACHINE set
-func WmClientMachineSet(xu *xgbutil.XUtil, win xgb.Id, client string) error {
+func WmClientMachineSet(xu *xgbutil.XUtil, win xproto.Window,
+	client string) error {
+
 	return xprop.ChangeProp(xu, win, 8, "WM_CLIENT_MACHINE", "STRING",
 		([]byte)(client))
 }
@@ -271,11 +285,11 @@ func WmClientMachineSet(xu *xgbutil.XUtil, win xgb.Id, client string) error {
 // and the icon window (probably not used).
 type WmState struct {
 	State int
-	Icon  xgb.Id
+	Icon  xproto.Window
 }
 
 // WM_STATE get
-func WmStateGet(xu *xgbutil.XUtil, win xgb.Id) (*WmState, error) {
+func WmStateGet(xu *xgbutil.XUtil, win xproto.Window) (*WmState, error) {
 	raw, err := xprop.PropValNums(xprop.GetProperty(xu, win, "WM_STATE"))
 	if err != nil {
 		return nil, err
@@ -288,12 +302,12 @@ func WmStateGet(xu *xgbutil.XUtil, win xgb.Id) (*WmState, error) {
 
 	return &WmState{
 		State: raw[0],
-		Icon:  xgb.Id(raw[1]),
+		Icon:  xproto.Window(raw[1]),
 	}, nil
 }
 
 // WM_STATE set
-func WmStateSet(xu *xgbutil.XUtil, win xgb.Id, state *WmState) error {
+func WmStateSet(xu *xgbutil.XUtil, win xproto.Window, state *WmState) error {
 	raw := []int{
 		state.State,
 		int(state.Icon),
@@ -309,7 +323,7 @@ type IconSize struct {
 }
 
 // WM_ICON_SIZE get
-func WmIconSizeGet(xu *xgbutil.XUtil, win xgb.Id) (*IconSize, error) {
+func WmIconSizeGet(xu *xgbutil.XUtil, win xproto.Window) (*IconSize, error) {
 	raw, err := xprop.PropValNums(xprop.GetProperty(xu, win, "WM_ICON_SIZE"))
 	if err != nil {
 		return nil, err
@@ -328,7 +342,9 @@ func WmIconSizeGet(xu *xgbutil.XUtil, win xgb.Id) (*IconSize, error) {
 }
 
 // WM_ICON_SIZE set
-func WmIconSizeSet(xu *xgbutil.XUtil, win xgb.Id, icondim *IconSize) error {
+func WmIconSizeSet(xu *xgbutil.XUtil, win xproto.Window,
+	icondim *IconSize) error {
+
 	raw := []int{
 		icondim.MinWidth, icondim.MinHeight,
 		icondim.MaxWidth, icondim.MaxHeight,

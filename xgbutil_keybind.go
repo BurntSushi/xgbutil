@@ -4,12 +4,12 @@
 */
 package xgbutil
 
-import "github.com/BurntSushi/xgb"
+import "github.com/BurntSushi/xgb/xproto"
 
 // KeyBindCallback operates in the spirit of Callback, except that it works
 // specifically on key bindings.
 type KeyBindCallback interface {
-	Connect(xu *XUtil, win xgb.Id, keyStr string)
+	Connect(xu *XUtil, win xproto.Window, keyStr string)
 	Run(xu *XUtil, ev interface{})
 }
 
@@ -18,36 +18,36 @@ type KeyBindCallback interface {
 // (event type, window id, modifier, keycode).
 type KeyBindKey struct {
 	Evtype int
-	Win    xgb.Id
+	Win    xproto.Window
 	Mod    uint16
-	Code   xgb.Keycode
+	Code   xproto.Keycode
 }
 
 type KeyboardMapping struct {
-	*xgb.GetKeyboardMappingReply
+	*xproto.GetKeyboardMappingReply
 }
 
 type ModifierMapping struct {
-	*xgb.GetModifierMappingReply
+	*xproto.GetModifierMappingReply
 }
 
 // RedirectKeyEvents, when set to a window id (greater than 0), will force
 // *all* Key{Press,Release} to callbacks attached to the specified window.
 // This is close to emulating a Keyboard grab without the racing.
-func (xu *XUtil) RedirectKeyEvents(wid xgb.Id) {
+func (xu *XUtil) RedirectKeyEvents(wid xproto.Window) {
 	xu.keyRedirect = wid
 }
 
 // RedirectKeyGet gets the window that key events are being redirected to.
 // If 0, then no redirection occurs.
-func (xu *XUtil) RedirectKeyGet() xgb.Id {
+func (xu *XUtil) RedirectKeyGet() xproto.Window {
 	return xu.keyRedirect
 }
 
 // AttackKeyBindCallback associates an (event, window, mods, keycode)
 // with a callback.
-func (xu *XUtil) AttachKeyBindCallback(evtype int, win xgb.Id,
-	mods uint16, keycode xgb.Keycode, fun KeyBindCallback) {
+func (xu *XUtil) AttachKeyBindCallback(evtype int, win xproto.Window,
+	mods uint16, keycode xproto.Keycode, fun KeyBindCallback) {
 
 	// Create key
 	key := KeyBindKey{evtype, win, mods, keycode}
@@ -75,7 +75,7 @@ func (xu *XUtil) KeyBindKeys() []KeyBindKey {
 // UpdateKeyBindKey takes a key bind key and a new key code.
 // It will then remove the old key from keybinds and keygrabs,
 // and add the new key with the old key's data into keybinds and keygrabs.
-func (xu *XUtil) UpdateKeyBindKey(key KeyBindKey, newKc xgb.Keycode) {
+func (xu *XUtil) UpdateKeyBindKey(key KeyBindKey, newKc xproto.Keycode) {
 	newKey := KeyBindKey{key.Evtype, key.Win, key.Mod, newKc}
 
 	// Save old info
@@ -94,7 +94,7 @@ func (xu *XUtil) UpdateKeyBindKey(key KeyBindKey, newKc xgb.Keycode) {
 // RunKeyBindCallbacks executes every callback corresponding to a
 // particular event/window/mod/key tuple.
 func (xu *XUtil) RunKeyBindCallbacks(event interface{}, evtype int,
-	win xgb.Id, mods uint16, keycode xgb.Keycode) {
+	win xproto.Window, mods uint16, keycode xproto.Keycode) {
 	// Create key
 	key := KeyBindKey{evtype, win, mods, keycode}
 
@@ -106,7 +106,7 @@ func (xu *XUtil) RunKeyBindCallbacks(event interface{}, evtype int,
 // ConnectedKeyBind checks to see if there are any key binds for a particular
 // event type already in play. This is to work around comparing function
 // pointers (not allowed in Go), which would be used in 'Connected'.
-func (xu *XUtil) ConnectedKeyBind(evtype int, win xgb.Id) bool {
+func (xu *XUtil) ConnectedKeyBind(evtype int, win xproto.Window) bool {
 	// Since we can't create a full key, loop through all key binds
 	// and check if evtype and window match.
 	for key, _ := range xu.keybinds {
@@ -122,7 +122,7 @@ func (xu *XUtil) ConnectedKeyBind(evtype int, win xgb.Id) bool {
 // window and event type (either KeyPress or KeyRelease)
 // Also decrements the counter in the corresponding 'keygrabs' map
 // appropriately.
-func (xu *XUtil) DetachKeyBindWindow(evtype int, win xgb.Id) {
+func (xu *XUtil) DetachKeyBindWindow(evtype int, win xproto.Window) {
 	// Since we can't create a full key, loop through all key binds
 	// and check if evtype and window match.
 	for key, _ := range xu.keybinds {
@@ -136,8 +136,8 @@ func (xu *XUtil) DetachKeyBindWindow(evtype int, win xgb.Id) {
 // KeyBindGrabs returns the number of grabs on a particular
 // event/window/mods/keycode combination. Namely, this combination
 // uniquely identifies a grab. If it's repeated, we get BadAccess.
-func (xu *XUtil) KeyBindGrabs(evtype int, win xgb.Id, mods uint16,
-	keycode xgb.Keycode) int {
+func (xu *XUtil) KeyBindGrabs(evtype int, win xproto.Window, mods uint16,
+	keycode xproto.Keycode) int {
 
 	key := KeyBindKey{evtype, win, mods, keycode}
 	return xu.keygrabs[key] // returns 0 if key does not exist
@@ -149,7 +149,7 @@ func (xu *XUtil) KeyMapGet() *KeyboardMapping {
 }
 
 // KeyMapSet simply updates XUtil.keymap
-func (xu *XUtil) KeyMapSet(keyMapReply *xgb.GetKeyboardMappingReply) {
+func (xu *XUtil) KeyMapSet(keyMapReply *xproto.GetKeyboardMappingReply) {
 	xu.keymap = &KeyboardMapping{keyMapReply}
 }
 
@@ -159,6 +159,6 @@ func (xu *XUtil) ModMapGet() *ModifierMapping {
 }
 
 // ModMapSet simply updates XUtil.modmap
-func (xu *XUtil) ModMapSet(modMapReply *xgb.GetModifierMappingReply) {
+func (xu *XUtil) ModMapSet(modMapReply *xproto.GetModifierMappingReply) {
 	xu.modmap = &ModifierMapping{modMapReply}
 }

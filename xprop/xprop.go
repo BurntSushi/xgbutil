@@ -11,21 +11,22 @@ import (
 	"fmt"
 
 	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
+
 	"github.com/BurntSushi/xgbutil"
 )
 
 // GetProperty abstracts the messiness of calling xgb.GetProperty.
-func GetProperty(xu *xgbutil.XUtil, win xgb.Id, atom string) (
-	*xgb.GetPropertyReply, error) {
+func GetProperty(xu *xgbutil.XUtil, win xproto.Window, atom string) (
+	*xproto.GetPropertyReply, error) {
 
 	atomId, err := Atm(xu, atom)
 	if err != nil {
 		return nil, err
 	}
 
-	reply, err := xu.Conn().GetProperty(false, win, atomId,
-		xgb.GetPropertyTypeAny, 0,
-		(1<<32)-1).Reply()
+	reply, err := xproto.GetProperty(xu.Conn(), false, win, atomId,
+		xproto.GetPropertyTypeAny, 0, (1<<32)-1).Reply()
 
 	if err != nil {
 		return nil, fmt.Errorf("GetProperty: Error retrieving property '%s' "+
@@ -41,7 +42,7 @@ func GetProperty(xu *xgbutil.XUtil, win xgb.Id, atom string) (
 }
 
 // ChangeProperty abstracts the semi-nastiness of xgb.ChangeProperty.
-func ChangeProp(xu *xgbutil.XUtil, win xgb.Id, format byte, prop string,
+func ChangeProp(xu *xgbutil.XUtil, win xproto.Window, format byte, prop string,
 	typ string, data []byte) error {
 
 	propAtom, err := Atm(xu, prop)
@@ -54,14 +55,14 @@ func ChangeProp(xu *xgbutil.XUtil, win xgb.Id, format byte, prop string,
 		return err
 	}
 
-	xu.Conn().ChangeProperty(xgb.PropModeReplace, win, propAtom,
+	xproto.ChangeProperty(xu.Conn(), xproto.PropModeReplace, win, propAtom,
 		typAtom, format, uint32(len(data)/(int(format)/8)), data)
 	return nil
 }
 
 // ChangeProperty32 makes changing 32 bit formatted properties easier
 // by constructing the raw X data for you.
-func ChangeProp32(xu *xgbutil.XUtil, win xgb.Id, prop string, typ string,
+func ChangeProp32(xu *xgbutil.XUtil, win xproto.Window, prop string, typ string,
 	data ...int) error {
 
 	buf := make([]byte, len(data)*4)
@@ -75,7 +76,7 @@ func ChangeProp32(xu *xgbutil.XUtil, win xgb.Id, prop string, typ string,
 // Atm is a short alias for Atom in the common case of interning an atom.
 // Namely, interning the atom always succeeds. (If the atom does not already
 // exist, a new one is created.)
-func Atm(xu *xgbutil.XUtil, name string) (xgb.Id, error) {
+func Atm(xu *xgbutil.XUtil, name string) (xproto.Atom, error) {
 	aid, err := Atom(xu, name, false)
 	if err != nil {
 		return 0, err
@@ -88,13 +89,15 @@ func Atm(xu *xgbutil.XUtil, name string) (xgb.Id, error) {
 }
 
 // Atom interns an atom and panics if there is any error.
-func Atom(xu *xgbutil.XUtil, name string, only_if_exists bool) (xgb.Id, error) {
+func Atom(xu *xgbutil.XUtil, name string,
+	onlyIfExists bool) (xproto.Atom, error) {
+
 	// Check the cache first
 	if aid, ok := xu.AtomGet(name); ok {
 		return aid, nil
 	}
 
-	reply, err := xu.Conn().InternAtom(only_if_exists,
+	reply, err := xproto.InternAtom(xu.Conn(), onlyIfExists,
 		uint16(len(name)), name).Reply()
 	if err != nil {
 		return 0, fmt.Errorf("Atom: Error interning atom '%s': %s", name, err)
@@ -107,13 +110,13 @@ func Atom(xu *xgbutil.XUtil, name string, only_if_exists bool) (xgb.Id, error) {
 }
 
 // AtomName fetches a string representation of an ATOM given its integer id.
-func AtomName(xu *xgbutil.XUtil, aid xgb.Id) (string, error) {
+func AtomName(xu *xgbutil.XUtil, aid xproto.Atom) (string, error) {
 	// Check the cache first
 	if atomName, ok := xu.AtomNameGet(aid); ok {
 		return string(atomName), nil
 	}
 
-	reply, err := xu.Conn().GetAtomName(aid).Reply()
+	reply, err := xproto.GetAtomName(xu.Conn(), aid).Reply()
 	if err != nil {
 		return "", fmt.Errorf("AtomName: Error fetching name for ATOM "+
 			"id '%d': %s", aid, err)
@@ -126,37 +129,45 @@ func AtomName(xu *xgbutil.XUtil, aid xgb.Id) (string, error) {
 	return atomName, nil
 }
 
-// IdTo32 is a covenience function for converting []xgb.Id to []uint32.
-func IdToInt(ids []xgb.Id) (ids32 []int) {
-	ids32 = make([]int, len(ids))
+// WindowToInt is a covenience function for converting []xproto.Window
+// to []uint32.
+func WindowToInt(ids []xproto.Window) []int {
+	ids32 := make([]int, len(ids))
 	for i, v := range ids {
 		ids32[i] = int(v)
 	}
-	return
+	return ids32
+}
+
+// AtomToInt is a covenience function for converting []xproto.Atom
+// to []uint32.
+func AtomToInt(ids []xproto.Atom) []int {
+	ids32 := make([]int, len(ids))
+	for i, v := range ids {
+		ids32[i] = int(v)
+	}
+	return ids32
 }
 
 // StrToAtoms is a convenience function for converting
 // []string to []uint32 atoms.
 // NOTE: If an atom name in the list doesn't exist, it will be created.
-func StrToAtoms(xu *xgbutil.XUtil,
-	atomNames []string) (atoms []int, err error) {
-
-	atoms = make([]int, len(atomNames))
+func StrToAtoms(xu *xgbutil.XUtil, atomNames []string) ([]int, error) {
+	var err error
+	atoms := make([]int, len(atomNames))
 	for i, atomName := range atomNames {
 		a, err := Atom(xu, atomName, false)
 		if err != nil {
 			return nil, err
 		}
-
 		atoms[i] = int(a)
 	}
-	return
+	return atoms, err
 }
 
 // PropValAtom transforms a GetPropertyReply struct into an ATOM name.
 // The property reply must be in 32 bit format.
-// This is a method of an XUtil struct, unlike the other 'PropVal...' functions.
-func PropValAtom(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply,
+func PropValAtom(xu *xgbutil.XUtil, reply *xproto.GetPropertyReply,
 	err error) (string, error) {
 
 	if err != nil {
@@ -167,13 +178,13 @@ func PropValAtom(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply,
 			reply.Format)
 	}
 
-	return AtomName(xu, xgb.Id(xgb.Get32(reply.Value)))
+	return AtomName(xu, xproto.Atom(xgb.Get32(reply.Value)))
 }
 
 // PropValAtoms is the same as PropValAtom, except that it returns a slice
 // of atom names. Also must be 32 bit format.
 // This is a method of an XUtil struct, unlike the other 'PropVal...' functions.
-func PropValAtoms(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply,
+func PropValAtoms(xu *xgbutil.XUtil, reply *xproto.GetPropertyReply,
 	err error) ([]string, error) {
 
 	if err != nil {
@@ -187,21 +198,22 @@ func PropValAtoms(xu *xgbutil.XUtil, reply *xgb.GetPropertyReply,
 	ids := make([]string, reply.ValueLen)
 	vals := reply.Value
 	for i := 0; len(vals) >= 4; i++ {
-		ids[i], err = AtomName(xu, xgb.Id(xgb.Get32(vals)))
+		ids[i], err = AtomName(xu, xproto.Atom(xgb.Get32(vals)))
 		if err != nil {
 			return nil, err
 		}
 
 		vals = vals[4:]
 	}
-
 	return ids, nil
 }
 
-// PropValId transforms a GetPropertyReply struct into an X resource
-// identifier (typically a window id). 
+// PropValWindow transforms a GetPropertyReply struct into an X resource
+// window identifier.
 // The property reply must be in 32 bit format.
-func PropValId(reply *xgb.GetPropertyReply, err error) (xgb.Id, error) {
+func PropValWindow(reply *xproto.GetPropertyReply,
+	err error) (xproto.Window, error) {
+
 	if err != nil {
 		return 0, err
 	}
@@ -209,13 +221,14 @@ func PropValId(reply *xgb.GetPropertyReply, err error) (xgb.Id, error) {
 		return 0, fmt.Errorf("PropValId: Expected format 32 but got %d",
 			reply.Format)
 	}
-
-	return xgb.Id(xgb.Get32(reply.Value)), nil
+	return xproto.Window(xgb.Get32(reply.Value)), nil
 }
 
-// PropValIds is the same as PropValId, except that it returns a slice
+// PropValWindows is the same as PropValWindow, except that it returns a slice
 // of identifiers. Also must be 32 bit format.
-func PropValIds(reply *xgb.GetPropertyReply, err error) ([]xgb.Id, error) {
+func PropValWindows(reply *xproto.GetPropertyReply,
+	err error) ([]xproto.Window, error) {
+
 	if err != nil {
 		return nil, err
 	}
@@ -224,19 +237,18 @@ func PropValIds(reply *xgb.GetPropertyReply, err error) ([]xgb.Id, error) {
 			reply.Format)
 	}
 
-	ids := make([]xgb.Id, reply.ValueLen)
+	ids := make([]xproto.Window, reply.ValueLen)
 	vals := reply.Value
 	for i := 0; len(vals) >= 4; i++ {
-		ids[i] = xgb.Id(xgb.Get32(vals))
+		ids[i] = xproto.Window(xgb.Get32(vals))
 		vals = vals[4:]
 	}
-
 	return ids, nil
 }
 
 // PropValNum transforms a GetPropertyReply struct into an unsigned
 // integer. Useful when the property value is a single integer.
-func PropValNum(reply *xgb.GetPropertyReply, err error) (int, error) {
+func PropValNum(reply *xproto.GetPropertyReply, err error) (int, error) {
 	if err != nil {
 		return 0, err
 	}
@@ -244,13 +256,12 @@ func PropValNum(reply *xgb.GetPropertyReply, err error) (int, error) {
 		return 0, fmt.Errorf("PropValNum: Expected format 32 but got %d",
 			reply.Format)
 	}
-
 	return int(xgb.Get32(reply.Value)), nil
 }
 
 // PropValNums is the same as PropValNum, except that it returns a slice
 // of integers. Also must be 32 bit format.
-func PropValNums(reply *xgb.GetPropertyReply, err error) ([]int, error) {
+func PropValNums(reply *xproto.GetPropertyReply, err error) ([]int, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -265,14 +276,13 @@ func PropValNums(reply *xgb.GetPropertyReply, err error) ([]int, error) {
 		nums[i] = int(xgb.Get32(vals))
 		vals = vals[4:]
 	}
-
 	return nums, nil
 }
 
 // PropValStr transforms a GetPropertyReply struct into a string.
 // Useful when the property value is a null terminated string represented
 // by integers. Also must be 8 bit format.
-func PropValStr(reply *xgb.GetPropertyReply, err error) (string, error) {
+func PropValStr(reply *xproto.GetPropertyReply, err error) (string, error) {
 	if err != nil {
 		return "", err
 	}
@@ -280,14 +290,13 @@ func PropValStr(reply *xgb.GetPropertyReply, err error) (string, error) {
 		return "", fmt.Errorf("PropValStr: Expected format 8 but got %d",
 			reply.Format)
 	}
-
 	return string(reply.Value), nil
 }
 
 // PropValStrs is the same as PropValStr, except that it returns a slice
 // of strings. The raw byte string is a sequence of null terminated strings,
 // which is translated into a slice of strings.
-func PropValStrs(reply *xgb.GetPropertyReply, err error) ([]string, error) {
+func PropValStrs(reply *xproto.GetPropertyReply, err error) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -304,6 +313,5 @@ func PropValStrs(reply *xgb.GetPropertyReply, err error) ([]string, error) {
 			sstart = i + 1
 		}
 	}
-
 	return strs, nil
 }

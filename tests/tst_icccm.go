@@ -1,7 +1,7 @@
 package main
 
 import "fmt"
-import "github.com/BurntSushi/xgb"
+import "github.com/BurntSushi/xgb/xproto"
 
 import (
 	"github.com/BurntSushi/xgbutil"
@@ -61,7 +61,7 @@ func main() {
 	wmState, err := icccm.WmStateGet(X, active)
 	showTest("WM_STATE get", wmState, err)
 
-	wmState.Icon = xgb.Id(8365538)
+	wmState.Icon = xproto.Window(8365538)
 	wmState.State = icccm.StateNormal
 	err = icccm.WmStateSet(X, active, wmState)
 	wmState, _ = icccm.WmStateGet(X, active)
