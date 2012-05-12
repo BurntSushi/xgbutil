@@ -266,15 +266,3 @@ func SendRootEvent(xu *xgbutil.XUtil, ev xgb.Event, evMask uint32) {
 func ReplayPointer(xu *xgbutil.XUtil) {
 	xproto.AllowEvents(xu.Conn(), xproto.AllowReplayPointer, 0)
 }
-
-// Detach removes *everything* associated with a particular
-// window, including key and mouse bindings.
-// This should be used on a window that can no longer receive events. (i.e.,
-// it was destroyed.)
-func Detach(xu *xgbutil.XUtil, win xproto.Window) {
-	xu.DetachWindow(win)
-	xu.DetachKeyBindWindow(KeyPress, win)
-	xu.DetachKeyBindWindow(KeyRelease, win)
-	xu.DetachMouseBindWindow(ButtonPress, win)
-	xu.DetachMouseBindWindow(ButtonRelease, win)
-}
