@@ -110,3 +110,16 @@ func RunKeyReleaseCallbacks(xu *xgbutil.XUtil, ev xevent.KeyReleaseEvent) {
 
 	xu.RunKeyBindCallbacks(ev, xevent.KeyRelease, ev.Event, mods, kc)
 }
+
+// Detach removes all handlers for the provided window and event type
+// combination. This will also issue an ungrab request for each grab that
+// drops to zero.
+func Detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
+	mkeys := xu.KeyBindKeys()
+	xu.DetachKeyBindWindow(evtype, win)
+	for _, key := range mkeys {
+		if xu.KeyBindGrabs(key.Evtype, key.Win, key.Mod, key.Code) == 0 {
+			Ungrab(xu, key.Win, key.Mod, key.Code)
+		}
+	}
+}

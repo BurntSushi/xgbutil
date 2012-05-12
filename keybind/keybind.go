@@ -14,7 +14,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 )
 
-var modifiers []uint16 = []uint16{ // order matters!
+var Modifiers []uint16 = []uint16{ // order matters!
 	xproto.ModMaskShift, xproto.ModMaskLock, xproto.ModMaskControl,
 	xproto.ModMask1, xproto.ModMask2, xproto.ModMask3,
 	xproto.ModMask4, xproto.ModMask5,
@@ -64,12 +64,12 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 		for newKc := int(min); newKc <= int(max); newKc++ {
 			for column = 0; byte(column) < keyMap.KeysymsPerKeycode; column++ {
 				// use new key map
-				newSym = keysymGetWithMap(xu, xuKeyMap, xproto.Keycode(newKc),
+				newSym = KeysymGetWithMap(xu, xuKeyMap, xproto.Keycode(newKc),
 					column)
 
 				// uses old key map
 				oldKc = keycodeGet(xu, newSym)
-				oldSym = keysymGet(xu, xproto.Keycode(newKc), column)
+				oldSym = KeysymGet(xu, xproto.Keycode(newKc), column)
 
 				// If the old and new keysyms are the same, ignore!
 				// Also ignore if either keysym is VoidSymbol
@@ -232,7 +232,7 @@ func keycodeGet(xu *xgbutil.XUtil, keysym xproto.Keysym) xproto.Keycode {
 	var c byte
 	for kc := int(min); kc <= int(max); kc++ {
 		for c = 0; c < keyMap.KeysymsPerKeycode; c++ {
-			if keysym == keysymGet(xu, xproto.Keycode(kc), c) {
+			if keysym == KeysymGet(xu, xproto.Keycode(kc), c) {
 				return xproto.Keycode(kc)
 			}
 		}
@@ -244,7 +244,7 @@ func keycodeGet(xu *xgbutil.XUtil, keysym xproto.Keysym) xproto.Keycode {
 // If no matching single rune is found, the empty string is returned.
 // (Since the idea of this function is to facilate in translating keys pressed
 // to characters on the screen.)
-func keysymToStr(keysym xproto.Keysym) string {
+func KeysymToStr(keysym xproto.Keysym) string {
 	symStr, ok := strKeysyms[keysym]
 	if !ok {
 		return ""
@@ -258,18 +258,18 @@ func keysymToStr(keysym xproto.Keysym) string {
 	return symStr
 }
 
-// keysymGet is a shortcut alias for 'keysymGetWithMap' using the current
+// KeysymGet is a shortcut alias for 'KeysymGetWithMap' using the current
 // keymap stored in XUtil.
 // keybind.Initialize MUST have been called before using this function.
-func keysymGet(xu *xgbutil.XUtil, keycode xproto.Keycode,
+func KeysymGet(xu *xgbutil.XUtil, keycode xproto.Keycode,
 	column byte) xproto.Keysym {
 
-	return keysymGetWithMap(xu, xu.KeyMapGet(), keycode, column)
+	return KeysymGetWithMap(xu, xu.KeyMapGet(), keycode, column)
 }
 
-// keysymGetWithMap uses the given key map and finds a keysym associated
+// KeysymGetWithMap uses the given key map and finds a keysym associated
 // with the given keycode in the current X environment.
-func keysymGetWithMap(xu *xgbutil.XUtil, keyMap *xgbutil.KeyboardMapping,
+func KeysymGetWithMap(xu *xgbutil.XUtil, keyMap *xgbutil.KeyboardMapping,
 	keycode xproto.Keycode, column byte) xproto.Keysym {
 
 	min, _ := minMaxKeycodeGet(xu)
@@ -286,52 +286,11 @@ func ModGet(xu *xgbutil.XUtil, keycode xproto.Keycode) uint16 {
 	var i byte
 	for i = 0; int(i) < len(modMap.Keycodes); i++ {
 		if modMap.Keycodes[i] == keycode {
-			return modifiers[i/modMap.KeycodesPerModifier]
+			return Modifiers[i/modMap.KeycodesPerModifier]
 		}
 	}
 
 	return 0
-}
-
-// XModMap should replicate the output of 'xmodmap'.
-// This is mainly a sanity check, and may serve as an example of how to
-// use modifier mappings.
-func XModMap(xu *xgbutil.XUtil) {
-	fmt.Println("Replicating `xmodmap`...")
-	modMap := xu.ModMapGet()
-	kPerMod := int(modMap.KeycodesPerModifier)
-
-	// some nice names for the modifiers like xmodmap
-	nice := []string{
-		"shift", "lock", "control", "mod1", "mod2", "mod3", "mod4", "mod5",
-	}
-
-	var row int
-	var comma string
-	for mmi, _ := range modifiers[:len(modifiers)-1] { // skip 'ModMaskAny'
-		row = mmi * kPerMod
-		comma = ""
-
-		fmt.Printf("%s\t\t", nice[mmi])
-		for _, kc := range modMap.Keycodes[row : row+kPerMod] {
-			if kc != 0 {
-				// This trickery is where things get really complicated.
-				// We throw our hands up in the air if the first two columns
-				// in our key map give us nothing.
-				// But how do we know which column is the right one? I'm not
-				// sure. This is what makes going from key code -> english
-				// so difficult. The answer is probably buried somewhere
-				// in the implementation of XLookupString in xlib. *shiver*
-				ksym := keysymGet(xu, kc, 0)
-				if ksym == 0 {
-					ksym = keysymGet(xu, kc, 1)
-				}
-				fmt.Printf("%s %s (0x%X)", comma, strKeysyms[ksym], kc)
-				comma = ","
-			}
-		}
-		fmt.Printf("\n")
-	}
 }
 
 // Grabs a key with mods on a particular window.

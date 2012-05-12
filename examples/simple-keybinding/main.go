@@ -64,12 +64,10 @@ func main() {
 	// This time, we'll show an example of a KeyRelease binding.
 	err = keybind.KeyReleaseFun(
 		func(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {
-			// Use xgbutil.DetachKeyBindWindow to detach the root window
+			// Use keybind.Detach to detach the root window
 			// from all KeyPress *and* KeyRelease handlers.
-			// Note that xevent.Detach will detach a window from *all* event
-			// handlers.
-			X.DetachKeyBindWindow(xevent.KeyPress, X.RootWin())
-			X.DetachKeyBindWindow(xevent.KeyRelease, X.RootWin())
+			keybind.Detach(X, xevent.KeyPress, X.RootWin())
+			keybind.Detach(X, xevent.KeyRelease, X.RootWin())
 
 			log.Printf("Detached all Key{Press,Release}Events from the "+
 				"root window (%d).", X.RootWin())

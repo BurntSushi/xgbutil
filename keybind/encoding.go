@@ -23,10 +23,10 @@ import (
 func interpretSymList(xu *xgbutil.XUtil, keycode xproto.Keycode) (
 	k1 string, k2 string, k3 string, k4 string) {
 
-	ks1 := keysymGet(xu, keycode, 0)
-	ks2 := keysymGet(xu, keycode, 1)
-	ks3 := keysymGet(xu, keycode, 2)
-	ks4 := keysymGet(xu, keycode, 3)
+	ks1 := KeysymGet(xu, keycode, 0)
+	ks2 := KeysymGet(xu, keycode, 1)
+	ks3 := KeysymGet(xu, keycode, 2)
+	ks4 := KeysymGet(xu, keycode, 3)
 
 	// follow the rules, third paragraph
 	switch {
@@ -40,10 +40,10 @@ func interpretSymList(xu *xgbutil.XUtil, keycode xproto.Keycode) (
 	}
 
 	// Now convert keysyms to strings, so we can do alphabetic shit.
-	k1 = keysymToStr(ks1)
-	k2 = keysymToStr(ks2)
-	k3 = keysymToStr(ks3)
-	k4 = keysymToStr(ks4)
+	k1 = KeysymToStr(ks1)
+	k2 = KeysymToStr(ks2)
+	k3 = KeysymToStr(ks3)
+	k4 = KeysymToStr(ks4)
 
 	// follow the rules, fourth paragraph
 	if k2 == "" {

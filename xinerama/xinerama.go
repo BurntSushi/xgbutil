@@ -39,6 +39,10 @@ func (hds Heads) Swap(i int, j int) {
 
 // Heads returns the list of heads in a physical ordering.
 // Namely, left to right then top to bottom. (Defined by (X, Y).)
+// Xinerama must have been initialized, otherwise the xinerama.QueryScreens
+// request will panic.
+// (At present moment, xgbutil initializes Xinerama automatically during
+// initial connection.)
 func PhysicalHeads(xu *xgbutil.XUtil) (Heads, error) {
 	xinfo, err := xinerama.QueryScreens(xu.Conn()).Reply()
 	if err != nil {

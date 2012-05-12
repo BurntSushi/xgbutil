@@ -5,6 +5,8 @@
 package mousebind
 
 import (
+	"fmt"
+
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
@@ -14,15 +16,30 @@ import (
 // connect is essentially 'Connect' for either ButtonPress or
 // ButtonRelease events.
 func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback, evtype int,
-	win xproto.Window, buttonStr string, propagate bool, grab bool) {
+	win xproto.Window, buttonStr string, sync bool, grab bool) error {
 
 	// Get the mods/button first
-	mods, button := ParseString(xu, buttonStr)
+	mods, button, err := ParseString(xu, buttonStr)
+	if err != nil {
+		return err
+	}
 
 	// Only do the grab if we haven't yet on this window.
 	// And if we WANT a grab...
 	if grab && xu.MouseBindGrabs(evtype, win, mods, button) == 0 {
-		Grab(xu, win, mods, button, propagate)
+		err := GrabChecked(xu, win, mods, button, sync)
+		if err != nil {
+			// If a bad access, let's be nice and give a good error message.
+			switch err.(type) {
+			case xproto.AccessError:
+				return fmt.Errorf("Got a bad access error when trying to bind "+
+					"'%s'. This usually means another client has already "+
+					"grabbed this mouse binding.", buttonStr)
+			default:
+				return fmt.Errorf("Could not bind '%s' because: %s",
+					buttonStr, err)
+			}
+		}
 	}
 
 	// If we've never grabbed anything on this window before, we need to
@@ -42,6 +59,8 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback, evtype int,
 
 	// Finally, attach the callback.
 	xu.AttachMouseBindCallback(evtype, win, mods, button, callback)
+
+	return nil
 }
 
 func DeduceButtonInfo(state uint16,
@@ -73,10 +92,14 @@ func DeduceButtonInfo(state uint16,
 
 type ButtonPressFun xevent.ButtonPressFun
 
+// If 'sync' is True, then no further events can be processed until the
+// grabbing client allows them to be. (Which is done via AllowEvents. Thus,
+// if sync is True, you *must* make some call to AllowEvents at some
+// point, or else your client will lock.)
 func (callback ButtonPressFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
-	buttonStr string, propagate bool, grab bool) {
+	buttonStr string, sync bool, grab bool) error {
 
-	connect(xu, callback, xevent.ButtonPress, win, buttonStr, propagate, grab)
+	return connect(xu, callback, xevent.ButtonPress, win, buttonStr, sync, grab)
 }
 
 func (callback ButtonPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -85,10 +108,15 @@ func (callback ButtonPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 
 type ButtonReleaseFun xevent.ButtonReleaseFun
 
+// If 'sync' is True, then no further events can be processed until the
+// grabbing client allows them to be. (Which is done via AllowEvents. Thus,
+// if sync is True, you *must* make some call to AllowEvents at some
+// point, or else your client will lock.)
 func (callback ButtonReleaseFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
-	buttonStr string, propagate bool, grab bool) {
+	buttonStr string, sync bool, grab bool) error {
 
-	connect(xu, callback, xevent.ButtonRelease, win, buttonStr, propagate, grab)
+	return connect(xu, callback, xevent.ButtonRelease, win, buttonStr,
+		sync, grab)
 }
 
 func (callback ButtonReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -111,4 +139,17 @@ func RunButtonReleaseCallbacks(xu *xgbutil.XUtil,
 	mods, button := DeduceButtonInfo(ev.State, ev.Detail)
 
 	xu.RunMouseBindCallbacks(ev, xevent.ButtonRelease, ev.Event, mods, button)
+}
+
+// Detach removes all handlers for the provided window and event type
+// combination. This will also issue an ungrab request for each grab that
+// drops to zero.
+func Detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
+	mkeys := xu.MouseBindKeys()
+	xu.DetachMouseBindWindow(evtype, win)
+	for _, key := range mkeys {
+		if xu.MouseBindGrabs(key.Evtype, key.Win, key.Mod, key.Button) == 0 {
+			Ungrab(xu, key.Win, key.Mod, key.Button)
+		}
+	}
 }

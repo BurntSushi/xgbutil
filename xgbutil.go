@@ -226,6 +226,13 @@ func (xu *XUtil) Quitting() bool {
 	return xu.quit
 }
 
+// ExtInitialized returns true if an extension has been initialized.
+// This is useful for determining whether an extension is available or not.
+func (xu *XUtil) ExtInitialized(extName string) bool {
+	_, ok := xu.Conn().Extensions[extName]
+	return ok
+}
+
 // Sync forces XGB to catch up with all events/requests and synchronize.
 // This is done by issuing a benign round trip request to X.
 func (xu *XUtil) Sync() {

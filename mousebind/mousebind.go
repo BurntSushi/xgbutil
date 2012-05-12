@@ -36,7 +36,7 @@ func Initialize(xu *xgbutil.XUtil) {
 // "Mod" could also be one of {button1, button2, button3, button4, button5}.
 // (Actually, the parser is slightly more forgiving than what this comment
 //  leads you to believe.)
-func ParseString(xu *xgbutil.XUtil, str string) (uint16, xproto.Button) {
+func ParseString(xu *xgbutil.XUtil, str string) (uint16, xproto.Button, error) {
 	mods, button := uint16(0), xproto.Button(0)
 	for _, part := range strings.Split(str, "-") {
 		switch strings.ToLower(part) {
@@ -74,32 +74,32 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, xproto.Button) {
 				if err == nil {
 					button = xproto.Button(possible)
 				} else {
-					xgbutil.Logger.Printf("We could not convert '%s' to a "+
-						"valid 8-bit integer. Assuming 0.", part)
+					return 0, 0, fmt.Errorf("Could not convert '%s' to a "+
+						"valid 8-bit integer.", part)
 				}
 			}
 		}
 	}
 
 	if button == 0 {
-		xgbutil.Logger.Printf("We could not find a valid button in the "+
-			"string '%s'. Things probably will not work right.", str)
+		return 0, 0, fmt.Errorf("Could not find a valid button in the "+
+			"string '%s'. Mouse binding failed.", str)
 	}
 
-	return mods, button
+	return mods, button, nil
 }
 
-// Grabs a button with mods on a particular window.
+// Grab grabs a button with mods on a particular window.
 // Will also grab all combinations of modifiers found in xgbutil.IgnoreMods
-// If 'propagate' is True, then no further events can be processed until the
+// If 'sync' is True, then no further events can be processed until the
 // grabbing client allows them to be. (Which is done via AllowEvents. Thus,
-// if propagate is True, you *must* make some call to AllowEvents at some
+// if sync is True, you *must* make some call to AllowEvents at some
 // point, or else your client will lock.)
 func Grab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
-	button xproto.Button, propagate bool) {
+	button xproto.Button, sync bool) {
 
 	var pSync byte = xproto.GrabModeAsync
-	if propagate {
+	if sync {
 		pSync = xproto.GrabModeSync
 	}
 
@@ -109,7 +109,34 @@ func Grab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
 	}
 }
 
-// Ungrab undoes Grab. It will handle all combinations od modifiers found
+// GrabChecked grabs a button with mods on a particular window. It does the
+// same thing as Grab, but issues a checked request and returns an error
+// on failure.
+// Will also grab all combinations of modifiers found in xgbutil.IgnoreMods
+// If 'sync' is True, then no further events can be processed until the
+// grabbing client allows them to be. (Which is done via AllowEvents. Thus,
+// if sync is True, you *must* make some call to AllowEvents at some
+// point, or else your client will lock.)
+func GrabChecked(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
+	button xproto.Button, sync bool) error {
+
+	var pSync byte = xproto.GrabModeAsync
+	if sync {
+		pSync = xproto.GrabModeSync
+	}
+
+	var err error
+	for _, m := range xgbutil.IgnoreMods {
+		err = xproto.GrabButtonChecked(xu.Conn(), true, win, pointerMasks,
+			pSync, xproto.GrabModeAsync, 0, 0, byte(button), mods|m).Check()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Ungrab undoes Grab. It will handle all combinations of modifiers found
 // in xgbutil.IgnoreMods.
 func Ungrab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
 	button xproto.Button) {

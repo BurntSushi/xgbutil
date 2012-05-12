@@ -10,7 +10,7 @@ import "github.com/BurntSushi/xgb/xproto"
 // specifically on mouse bindings.
 type MouseBindCallback interface {
 	Connect(xu *XUtil, win xproto.Window, buttonStr string,
-		propagate bool, grab bool)
+		propagate bool, grab bool) error
 	Run(xu *XUtil, ev interface{})
 }
 
@@ -99,6 +99,7 @@ func (xu *XUtil) DetachMouseBindWindow(evtype int, win xproto.Window) {
 // uniquely identifies a grab. If it's repeated, we get BadAccess.
 func (xu *XUtil) MouseBindGrabs(evtype int, win xproto.Window, mods uint16,
 	button xproto.Button) int {
+
 	key := MouseBindKey{evtype, win, mods, button}
 	return xu.mousegrabs[key] // returns 0 if key does not exist
 }
