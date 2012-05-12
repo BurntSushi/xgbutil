@@ -46,6 +46,11 @@ func main() {
 	// because we aren't trying to make a grab.
 	xevent.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			// keybind.LookupString does the magic of implementing parts of
+			// the X Keyboard Encoding to determine an english representation
+			// of the modifiers/keycode tuple.
+			// N.B. It's working for me, but probably isn't 100% correct in
+			// all environments yet.
 			log.Println("Key:", keybind.LookupString(X, e.State, e.Detail))
 		}).Connect(X, win.Id)
 

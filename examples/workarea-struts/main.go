@@ -71,7 +71,7 @@ func main() {
 		}
 
 		// Apply the struts to our heads.
-		// This modifiers 'heads' in place.
+		// This modifies 'heads' in place.
 		xrect.ApplyStrut(heads, rgeom.Width(), rgeom.Height(),
 			strut.Left, strut.Right, strut.Top, strut.Bottom,
 			strut.LeftStartY, strut.LeftEndY,
