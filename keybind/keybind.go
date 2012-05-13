@@ -29,8 +29,8 @@ func Initialize(xu *xgbutil.XUtil) {
 
 	// Give us an initial mapping state...
 	keyMap, modMap := MapsGet(xu)
-	xu.KeyMapSet(keyMap)
-	xu.ModMapSet(modMap)
+	KeyMapSet(xu, keyMap)
+	ModMapSet(xu, modMap)
 }
 
 // updateMaps runs in response to MappingNotify events.
@@ -89,16 +89,16 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 		// key codes. (Note that each key binding may be associated with
 		// multiple callbacks.)
 		// We must ungrab everything first, in case two keys are being swapped.
-		for _, key := range xu.KeyBindKeys() {
+		for _, key := range keyBindKeys(xu) {
 			if _, ok := changes[key.Code]; ok {
 				Ungrab(xu, key.Win, key.Mod, key.Code)
 			}
 		}
 		// Okay, now grab.
-		for _, key := range xu.KeyBindKeys() {
+		for _, key := range keyBindKeys(xu) {
 			if newKc, ok := changes[key.Code]; ok {
 				Grab(xu, key.Win, key.Mod, newKc)
-				xu.UpdateKeyBindKey(key, newKc)
+				updateKeyBindKey(xu, key, newKc)
 			}
 		}
 	}
@@ -114,8 +114,8 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 	// for the deets.)
 
 	// Finally update our view of the mappings.
-	xu.KeyMapSet(keyMap)
-	xu.ModMapSet(modMap)
+	KeyMapSet(xu, keyMap)
+	ModMapSet(xu, modMap)
 }
 
 // minMaxKeycodeGet a simple accessor to the X setup info to return the
@@ -220,14 +220,14 @@ func StrToKeycode(xu *xgbutil.XUtil, str string) xproto.Keycode {
 
 // keysymsPer gets the number of keysyms per keycode for the current key map.
 func keysymsPer(xu *xgbutil.XUtil) int {
-	return int(xu.KeyMapGet().KeysymsPerKeycode)
+	return int(KeyMapGet(xu).KeysymsPerKeycode)
 }
 
 // Given a keysym, find the keycode mapped to it in the current X environment.
 // keybind.Initialize MUST have been called before using this function.
 func keycodeGet(xu *xgbutil.XUtil, keysym xproto.Keysym) xproto.Keycode {
 	min, max := minMaxKeycodeGet(xu)
-	keyMap := xu.KeyMapGet()
+	keyMap := KeyMapGet(xu)
 
 	var c byte
 	for kc := int(min); kc <= int(max); kc++ {
@@ -264,7 +264,7 @@ func KeysymToStr(keysym xproto.Keysym) string {
 func KeysymGet(xu *xgbutil.XUtil, keycode xproto.Keycode,
 	column byte) xproto.Keysym {
 
-	return KeysymGetWithMap(xu, xu.KeyMapGet(), keycode, column)
+	return KeysymGetWithMap(xu, KeyMapGet(xu), keycode, column)
 }
 
 // KeysymGetWithMap uses the given key map and finds a keysym associated
@@ -281,7 +281,7 @@ func KeysymGetWithMap(xu *xgbutil.XUtil, keyMap *xgbutil.KeyboardMapping,
 // ModGet finds the modifier currently associated with a given keycode.
 // If a modifier doesn't exist for this keycode, then 0 is returned.
 func ModGet(xu *xgbutil.XUtil, keycode xproto.Keycode) uint16 {
-	modMap := xu.ModMapGet()
+	modMap := ModMapGet(xu)
 
 	var i byte
 	for i = 0; int(i) < len(modMap.Keycodes); i++ {

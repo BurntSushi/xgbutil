@@ -29,6 +29,9 @@ type MouseBindKey struct {
 func (xu *XUtil) AttachMouseBindCallback(evtype int, win xproto.Window,
 	mods uint16, button xproto.Button, fun MouseBindCallback) {
 
+	xu.mousebindsLck.Lock()
+	defer xu.mousebindsLck.Unlock()
+
 	// Create key
 	key := MouseBindKey{evtype, win, mods, button}
 
@@ -43,6 +46,9 @@ func (xu *XUtil) AttachMouseBindCallback(evtype int, win xproto.Window,
 
 // MouseBindKeys returns a copy of all the keys in the 'mousebinds' map.
 func (xu *XUtil) MouseBindKeys() []MouseBindKey {
+	xu.mousebindsLck.RLock()
+	defer xu.mousebindsLck.RUnlock()
+
 	keys := make([]MouseBindKey, len(xu.mousebinds))
 	i := 0
 	for key, _ := range xu.mousebinds {
@@ -52,14 +58,25 @@ func (xu *XUtil) MouseBindKeys() []MouseBindKey {
 	return keys
 }
 
+// MouseBindCallbacks returns a slice of callbacks for a particular key.
+func (xu *XUtil) MouseBindCallbacks(key MouseBindKey) []MouseBindCallback {
+	xu.mousebindsLck.RLock()
+	defer xu.mousebindsLck.RUnlock()
+
+	cbs := make([]MouseBindCallback, len(xu.mousebinds[key]))
+	for i, cb := range xu.mousebinds[key] {
+		cbs[i] = cb
+	}
+	return cbs
+}
+
 // RunMouseBindCallbacks executes every callback corresponding to a
 // particular event/window/mod/button tuple.
 func (xu *XUtil) RunMouseBindCallbacks(event interface{}, evtype int,
 	win xproto.Window, mods uint16, button xproto.Button) {
-	// Create key
-	key := MouseBindKey{evtype, win, mods, button}
 
-	for _, cb := range xu.mousebinds[key] {
+	key := MouseBindKey{evtype, win, mods, button}
+	for _, cb := range xu.MouseBindCallbacks(key) {
 		cb.Run(xu, event)
 	}
 }
@@ -68,6 +85,9 @@ func (xu *XUtil) RunMouseBindCallbacks(event interface{}, evtype int,
 // event type already in play. This is to work around comparing function
 // pointers (not allowed in Go), which would be used in 'Connected'.
 func (xu *XUtil) ConnectedMouseBind(evtype int, win xproto.Window) bool {
+	xu.mousebindsLck.RLock()
+	defer xu.mousebindsLck.RUnlock()
+
 	// Since we can't create a full key, loop through all mouse binds
 	// and check if evtype and window match.
 	for key, _ := range xu.mousebinds {
@@ -84,6 +104,9 @@ func (xu *XUtil) ConnectedMouseBind(evtype int, win xproto.Window) bool {
 // Also decrements the counter in the corresponding 'mousegrabs' map
 // appropriately.
 func (xu *XUtil) DetachMouseBindWindow(evtype int, win xproto.Window) {
+	xu.mousebindsLck.Lock()
+	defer xu.mousebindsLck.Unlock()
+
 	// Since we can't create a full key, loop through all mouse binds
 	// and check if evtype and window match.
 	for key, _ := range xu.mousebinds {
@@ -99,6 +122,9 @@ func (xu *XUtil) DetachMouseBindWindow(evtype int, win xproto.Window) {
 // uniquely identifies a grab. If it's repeated, we get BadAccess.
 func (xu *XUtil) MouseBindGrabs(evtype int, win xproto.Window, mods uint16,
 	button xproto.Button) int {
+
+	xu.mousebindsLck.RLock()
+	defer xu.mousebindsLck.RUnlock()
 
 	key := MouseBindKey{evtype, win, mods, button}
 	return xu.mousegrabs[key] // returns 0 if key does not exist

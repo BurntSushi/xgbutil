@@ -41,7 +41,7 @@ func main() {
 	// N.B. This approach works by issuing a passive grab on the window
 	// specified. To respond to Key{Press,Release} events without a grab, use
 	// the xevent.Key{Press,Release}Fun callback function types instead.
-	err = cb1.Connect(X, X.RootWin(), "Mod4-j")
+	err = cb1.Connect(X, X.RootWin(), "Mod4-j", true)
 
 	// A keybinding can fail if the key string could not be parsed, or if you're
 	// trying to bind a key that has already been grabbed by another client.
@@ -53,7 +53,7 @@ func main() {
 	err = keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
 			log.Println("A second handler always happens after the first.")
-		}).Connect(X, X.RootWin(), "Mod4-j")
+		}).Connect(X, X.RootWin(), "Mod4-j", true)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func main() {
 
 			log.Printf("Detached all Key{Press,Release}Events from the "+
 				"root window (%d).", X.RootWin())
-		}).Connect(X, X.RootWin(), "Mod4-Shift-q")
+		}).Connect(X, X.RootWin(), "Mod4-Shift-q", true)
 	if err != nil {
 		log.Fatal(err)
 	}

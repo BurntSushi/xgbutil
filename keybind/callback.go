@@ -13,11 +13,12 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 )
 
-type KeyPressFun xevent.KeyPressFun
-
 // connect is essentially 'Connect' for either KeyPress or KeyRelease events.
+// Namely, it parses the key string, issues a grab request if necessary,
+// sets up the appropriate event handlers for the main event loop, and attaches
+// the callback to the keybinding state.
 func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
-	evtype int, win xproto.Window, keyStr string) error {
+	evtype int, win xproto.Window, keyStr string, grab bool) error {
 
 	// Get the mods/key first
 	mods, keycode, err := ParseString(xu, keyStr)
@@ -26,7 +27,7 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
 	}
 
 	// Only do the grab if we haven't yet on this window.
-	if xu.KeyBindGrabs(evtype, win, mods, keycode) == 0 {
+	if grab && keyBindGrabs(xu, evtype, win, mods, keycode) == 0 {
 		err := GrabChecked(xu, win, mods, keycode)
 		if err != nil {
 			// If a bad access, let's be nice and give a good error message.
@@ -46,23 +47,26 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
 	// make sure we can respond to it in the main event loop.
 	var allCb xgbutil.Callback
 	if evtype == xevent.KeyPress {
-		allCb = xevent.KeyPressFun(RunKeyPressCallbacks)
+		allCb = xevent.KeyPressFun(runKeyPressCallbacks)
 	} else {
-		allCb = xevent.KeyReleaseFun(RunKeyReleaseCallbacks)
+		allCb = xevent.KeyReleaseFun(runKeyReleaseCallbacks)
 	}
 
 	// If this is the first Key{Press|Release}Event on this window,
 	// then we need to listen to Key{Press|Release} events in the main loop.
-	if !xu.ConnectedKeyBind(evtype, win) {
+	if !connectedKeyBind(xu, evtype, win) {
 		allCb.Connect(xu, win)
 	}
 
 	// Finally, attach the callback.
-	xu.AttachKeyBindCallback(evtype, win, mods, keycode, callback)
+	attachKeyBindCallback(xu, evtype, win, mods, keycode, callback)
 
 	return nil
 }
 
+// DeduceKeyInfo AND's the "ignored modifiers" out of the state returned by
+// a Key{Press,Release} event. This is useful to connect a (state, keycode)
+// tuple from an event with a tuple specified by the user.
 func DeduceKeyInfo(state uint16,
 	detail xproto.Keycode) (uint16, xproto.Keycode) {
 
@@ -73,10 +77,14 @@ func DeduceKeyInfo(state uint16,
 	return mods, kc
 }
 
-func (callback KeyPressFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
-	keyStr string) error {
+// KeyPressFun represents a function that is called when a particular key
+// binding is fired.
+type KeyPressFun xevent.KeyPressFun
 
-	return connect(xu, callback, xevent.KeyPress, win, keyStr)
+func (callback KeyPressFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
+	keyStr string, grab bool) error {
+
+	return connect(xu, callback, xevent.KeyPress, win, keyStr, grab)
 }
 
 func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -86,39 +94,39 @@ func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 type KeyReleaseFun xevent.KeyReleaseFun
 
 func (callback KeyReleaseFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
-	keyStr string) error {
+	keyStr string, grab bool) error {
 
-	return connect(xu, callback, xevent.KeyRelease, win, keyStr)
+	return connect(xu, callback, xevent.KeyRelease, win, keyStr, grab)
 }
 
 func (callback KeyReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
 	callback(xu, event.(xevent.KeyReleaseEvent))
 }
 
-// RunKeyPressCallbacks infers the window, keycode and modifiers from a
+// runKeyPressCallbacks infers the window, keycode and modifiers from a
 // KeyPressEvent and runs the corresponding callbacks.
-func RunKeyPressCallbacks(xu *xgbutil.XUtil, ev xevent.KeyPressEvent) {
+func runKeyPressCallbacks(xu *xgbutil.XUtil, ev xevent.KeyPressEvent) {
 	mods, kc := DeduceKeyInfo(ev.State, ev.Detail)
 
-	xu.RunKeyBindCallbacks(ev, xevent.KeyPress, ev.Event, mods, kc)
+	runKeyBindCallbacks(xu, ev, xevent.KeyPress, ev.Event, mods, kc)
 }
 
-// RunKeyReleaseCallbacks infers the window, keycode and modifiers from a
+// runKeyReleaseCallbacks infers the window, keycode and modifiers from a
 // KeyPressEvent and runs the corresponding callbacks.
-func RunKeyReleaseCallbacks(xu *xgbutil.XUtil, ev xevent.KeyReleaseEvent) {
+func runKeyReleaseCallbacks(xu *xgbutil.XUtil, ev xevent.KeyReleaseEvent) {
 	mods, kc := DeduceKeyInfo(ev.State, ev.Detail)
 
-	xu.RunKeyBindCallbacks(ev, xevent.KeyRelease, ev.Event, mods, kc)
+	runKeyBindCallbacks(xu, ev, xevent.KeyRelease, ev.Event, mods, kc)
 }
 
 // Detach removes all handlers for the provided window and event type
 // combination. This will also issue an ungrab request for each grab that
 // drops to zero.
 func Detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
-	mkeys := xu.KeyBindKeys()
-	xu.DetachKeyBindWindow(evtype, win)
+	mkeys := keyBindKeys(xu)
+	detachKeyBindWindow(xu, evtype, win)
 	for _, key := range mkeys {
-		if xu.KeyBindGrabs(key.Evtype, key.Win, key.Mod, key.Code) == 0 {
+		if keyBindGrabs(xu, key.Evtype, key.Win, key.Mod, key.Code) == 0 {
 			Ungrab(xu, key.Win, key.Mod, key.Code)
 		}
 	}

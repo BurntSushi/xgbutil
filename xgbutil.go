@@ -3,6 +3,7 @@ package xgbutil
 import (
 	"log"
 	"os"
+	"sync"
 
 	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/xinerama"
@@ -37,10 +38,12 @@ type XUtil struct {
 
 	// atoms is a cache of atom names to resource identifiers. This minimizes
 	// round trips to the X server, since atom identifiers never change.
-	atoms map[string]xproto.Atom
+	atoms    map[string]xproto.Atom
+	atomsLck *sync.RWMutex
 
 	// atomNames is a cache just like 'atoms', but in the reverse direction.
-	atomNames map[xproto.Atom]string
+	atomNames    map[xproto.Atom]string
+	atomNamesLck *sync.RWMutex
 
 	// evqueue is the queue that stores the results of xgb.WaitForEvent.
 	// Namely, each value is either an Event *or* an Error.
@@ -51,40 +54,48 @@ type XUtil struct {
 	// to callback functions.
 	// This is the data structure that stores all callback functions, where
 	// a callback function is always attached to a (event, window) tuple.
-	callbacks map[int]map[xproto.Window][]Callback // evcode -> win -> callbacks
+	callbacks    map[int]map[xproto.Window][]Callback
+	callbacksLck *sync.RWMutex
 
 	// eventTime is the last time recorded by an event. It is automatically
 	// updated if xgbutil's main event loop is used.
 	eventTime xproto.Timestamp
 
-	// keymap corresponds to xgbutil's current conception of the keyboard
+	// Keymap corresponds to xgbutil's current conception of the keyboard
 	// mapping. It is automatically kept up-to-date if xgbutil's event loop
 	// is used.
-	keymap *KeyboardMapping
+	// It is exported for use in the keybind package. It should not be
+	// accessed directly. Instead, use keybind.KeyMapGet.
+	Keymap *KeyboardMapping
 
-	// modmap corresponds to xgbutil's current conception of the modifier key
+	// Modmap corresponds to xgbutil's current conception of the modifier key
 	// mapping. It is automatically kept up-to-date if xgbutil's event loop
 	// is used.
-	modmap *ModifierMapping
+	// It is exported for use in the keybind package. It should not be
+	// accessed directly. Instead, use keybind.ModMapGet.
+	Modmap *ModifierMapping
 
 	// keyRedirect corresponds to a window identifier that, when set,
 	// automatically receives *all* keyboard events. This is a sort-of
 	// synthetic grab and is helpful in avoiding race conditions.
 	keyRedirect xproto.Window
 
-	// keybinds is the data structure storing all callbacks for key bindings.
+	// Keybinds is the data structure storing all callbacks for key bindings.
 	// This is extremely similar to the general notion of event callbacks,
 	// but adds extra support to make handling key bindings easier. (Like
 	// specifying human readable key sequences to bind to.)
 	// KeyBindKey is a struct representing the 4-tuple
 	// (event-type, window-id, modifiers, keycode).
-	keybinds map[KeyBindKey][]KeyBindCallback
+	// It is exported for use in the keybind package. Do not access it directly.
+	Keybinds    map[KeyBindKey][]KeyBindCallback
+	KeybindsLck *sync.RWMutex
 
-	// keygrabs is a frequency count of the number of callbacks associated
+	// Keygrabs is a frequency count of the number of callbacks associated
 	// with a particular KeyBindKey. This is necessary because we can only
 	// grab a particular key *once*, but we may want to attach several callbacks
 	// to a single keypress.
-	keygrabs map[KeyBindKey]int
+	// It is exported for use in the keybind package. Do not access it directly.
+	Keygrabs map[KeyBindKey]int
 
 	// mousebinds is the data structure storing all callbacks for mouse
 	// bindings.This is extremely similar to the general notion of event
@@ -92,7 +103,8 @@ type XUtil struct {
 	// (Like specifying human readable mouse sequences to bind to.)
 	// MouseBindKey is a struct representing the 4-tuple
 	// (event-type, window-id, modifiers, button).
-	mousebinds map[MouseBindKey][]MouseBindCallback
+	mousebinds    map[MouseBindKey][]MouseBindCallback
+	mousebindsLck *sync.RWMutex
 
 	// mousegrabs is a frequency count of the number of callbacks associated
 	// with a particular MouseBindKey. This is necessary because we can only
@@ -161,14 +173,19 @@ func NewConnDisplay(display string) (*XUtil, error) {
 		root:          screen.Root,
 		eventTime:     xproto.Timestamp(0), // last event time
 		atoms:         make(map[string]xproto.Atom, 50),
+		atomsLck:      &sync.RWMutex{},
 		atomNames:     make(map[xproto.Atom]string, 50),
+		atomNamesLck:  &sync.RWMutex{},
 		callbacks:     make(map[int]map[xproto.Window][]Callback, 33),
-		keymap:        nil, // we don't have anything yet
-		modmap:        nil,
+		callbacksLck:  &sync.RWMutex{},
+		Keymap:        nil, // we don't have anything yet
+		Modmap:        nil,
 		keyRedirect:   0,
-		keybinds:      make(map[KeyBindKey][]KeyBindCallback, 10),
-		keygrabs:      make(map[KeyBindKey]int, 10),
+		Keybinds:      make(map[KeyBindKey][]KeyBindCallback, 10),
+		KeybindsLck:   &sync.RWMutex{},
+		Keygrabs:      make(map[KeyBindKey]int, 10),
 		mousebinds:    make(map[MouseBindKey][]MouseBindCallback, 10),
+		mousebindsLck: &sync.RWMutex{},
 		mousegrabs:    make(map[MouseBindKey]int, 10),
 		mouseDrag:     false,
 		mouseDragStep: nil,
@@ -288,6 +305,9 @@ func (xu *XUtil) Dummy() xproto.Window {
 // package.
 // See the Callback type for an example of attaching event handlers.
 func (xu *XUtil) AttachCallback(evtype int, win xproto.Window, fun Callback) {
+	xu.callbacksLck.Lock()
+	defer xu.callbacksLck.Unlock()
+
 	if _, ok := xu.callbacks[evtype]; !ok {
 		xu.callbacks[evtype] = make(map[xproto.Window][]Callback, 20)
 	}
@@ -304,6 +324,9 @@ func (xu *XUtil) AttachCallback(evtype int, win xproto.Window, fun Callback) {
 func (xu *XUtil) RunCallbacks(event interface{}, evtype int,
 	win xproto.Window) {
 
+	xu.callbacksLck.RLock()
+	defer xu.callbacksLck.RUnlock()
+
 	for _, cb := range xu.callbacks[evtype][win] {
 		cb.Run(xu, event)
 	}
@@ -313,15 +336,35 @@ func (xu *XUtil) RunCallbacks(event interface{}, evtype int,
 // This function should not be used, since it only cleans up Callback and not
 // key and mouse bindings. Instead, use xevent.Detach instead.
 func (xu *XUtil) DetachWindow(win xproto.Window) {
+	xu.callbacksLck.Lock()
+	defer xu.callbacksLck.Unlock()
+
 	for evtype, _ := range xu.callbacks {
 		delete(xu.callbacks[evtype], win)
 	}
+}
+
+// RedirectKeyEvents, when set to a window id (greater than 0), will force
+// *all* Key{Press,Release} to callbacks attached to the specified window.
+// This is close to emulating a Keyboard grab without the racing.
+// To stop redirecting key events, use window identifier '0'.
+func (xu *XUtil) RedirectKeyEvents(wid xproto.Window) {
+	xu.keyRedirect = wid
+}
+
+// RedirectKeyGet gets the window that key events are being redirected to.
+// If 0, then no redirection occurs.
+func (xu *XUtil) RedirectKeyGet() xproto.Window {
+	return xu.keyRedirect
 }
 
 // AtomGet retrieves an atom identifier from a cache if it exists.
 // This function should not be used. It is exported for use in the xprop
 // package. Instead, to intern an atom, use xprop.Atom or xprop.Atm.
 func (xu *XUtil) AtomGet(name string) (xproto.Atom, bool) {
+	xu.atomsLck.RLock()
+	defer xu.atomsLck.RUnlock()
+
 	aid, ok := xu.atoms[name]
 	return aid, ok
 }
@@ -331,6 +374,10 @@ func (xu *XUtil) AtomGet(name string) (xproto.Atom, bool) {
 // package. Instead, to get the name of an atom, use xprop.AtomName.
 func (xu *XUtil) AtomNameGet(aid xproto.Atom) (string, bool) {
 	name, ok := xu.atomNames[aid]
+
+	xu.atomNamesLck.RLock()
+	defer xu.atomNamesLck.RUnlock()
+
 	return name, ok
 }
 
@@ -338,6 +385,11 @@ func (xu *XUtil) AtomNameGet(aid xproto.Atom) (string, bool) {
 // This function should not be used. It is exported for use in the xprop
 // package.
 func (xu *XUtil) CacheAtom(name string, aid xproto.Atom) {
+	xu.atomsLck.Lock()
+	xu.atomNamesLck.Lock()
+	defer xu.atomsLck.Unlock()
+	defer xu.atomNamesLck.Unlock()
+
 	xu.atoms[name] = aid
 	xu.atomNames[aid] = name
 }
