@@ -66,8 +66,7 @@ func main() {
 		func(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {
 			// Use keybind.Detach to detach the root window
 			// from all KeyPress *and* KeyRelease handlers.
-			keybind.Detach(X, xevent.KeyPress, X.RootWin())
-			keybind.Detach(X, xevent.KeyRelease, X.RootWin())
+			keybind.Detach(X, X.RootWin())
 
 			log.Printf("Detached all Key{Press,Release}Events from the "+
 				"root window (%d).", X.RootWin())

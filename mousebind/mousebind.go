@@ -90,7 +90,7 @@ func ParseString(xu *xgbutil.XUtil, str string) (uint16, xproto.Button, error) {
 }
 
 // Grab grabs a button with mods on a particular window.
-// Will also grab all combinations of modifiers found in xgbutil.IgnoreMods
+// Will also grab all combinations of modifiers found in xevent.IgnoreMods
 // If 'sync' is True, then no further events can be processed until the
 // grabbing client allows them to be. (Which is done via AllowEvents. Thus,
 // if sync is True, you *must* make some call to AllowEvents at some
@@ -103,7 +103,7 @@ func Grab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
 		pSync = xproto.GrabModeSync
 	}
 
-	for _, m := range xgbutil.IgnoreMods {
+	for _, m := range xevent.IgnoreMods {
 		xproto.GrabButton(xu.Conn(), true, win, pointerMasks, pSync,
 			xproto.GrabModeAsync, 0, 0, byte(button), mods|m)
 	}
@@ -112,7 +112,7 @@ func Grab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
 // GrabChecked grabs a button with mods on a particular window. It does the
 // same thing as Grab, but issues a checked request and returns an error
 // on failure.
-// Will also grab all combinations of modifiers found in xgbutil.IgnoreMods
+// Will also grab all combinations of modifiers found in xevent.IgnoreMods
 // If 'sync' is True, then no further events can be processed until the
 // grabbing client allows them to be. (Which is done via AllowEvents. Thus,
 // if sync is True, you *must* make some call to AllowEvents at some
@@ -126,7 +126,7 @@ func GrabChecked(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
 	}
 
 	var err error
-	for _, m := range xgbutil.IgnoreMods {
+	for _, m := range xevent.IgnoreMods {
 		err = xproto.GrabButtonChecked(xu.Conn(), true, win, pointerMasks,
 			pSync, xproto.GrabModeAsync, 0, 0, byte(button), mods|m).Check()
 		if err != nil {
@@ -137,11 +137,11 @@ func GrabChecked(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
 }
 
 // Ungrab undoes Grab. It will handle all combinations of modifiers found
-// in xgbutil.IgnoreMods.
+// in xevent.IgnoreMods.
 func Ungrab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
 	button xproto.Button) {
 
-	for _, m := range xgbutil.IgnoreMods {
+	for _, m := range xevent.IgnoreMods {
 		xproto.UngrabButton(xu.Conn(), byte(button), win, mods|m)
 	}
 }

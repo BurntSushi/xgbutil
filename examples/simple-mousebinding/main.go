@@ -68,8 +68,8 @@ func main() {
 		func(X *xgbutil.XUtil, e xevent.ButtonReleaseEvent) {
 			// Use mousebind.Detach to detach the root window
 			// from all ButtonPress *and* ButtonRelease handlers.
-			mousebind.Detach(X, xevent.ButtonPress, X.RootWin())
-			mousebind.Detach(X, xevent.ButtonRelease, X.RootWin())
+			mousebind.Detach(X, X.RootWin())
+			mousebind.Detach(X, X.RootWin())
 
 			log.Printf("Detached all Button{Press,Release}Events from the "+
 				"root window (%d).", X.RootWin())

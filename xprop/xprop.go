@@ -73,62 +73,6 @@ func ChangeProp32(xu *xgbutil.XUtil, win xproto.Window, prop string, typ string,
 	return ChangeProp(xu, win, 32, prop, typ, buf)
 }
 
-// Atm is a short alias for Atom in the common case of interning an atom.
-// Namely, interning the atom always succeeds. (If the atom does not already
-// exist, a new one is created.)
-func Atm(xu *xgbutil.XUtil, name string) (xproto.Atom, error) {
-	aid, err := Atom(xu, name, false)
-	if err != nil {
-		return 0, err
-	}
-	if aid == 0 {
-		return 0, fmt.Errorf("Atm: '%s' returned an identifier of 0.", name)
-	}
-
-	return aid, err
-}
-
-// Atom interns an atom and panics if there is any error.
-func Atom(xu *xgbutil.XUtil, name string,
-	onlyIfExists bool) (xproto.Atom, error) {
-
-	// Check the cache first
-	if aid, ok := xu.AtomGet(name); ok {
-		return aid, nil
-	}
-
-	reply, err := xproto.InternAtom(xu.Conn(), onlyIfExists,
-		uint16(len(name)), name).Reply()
-	if err != nil {
-		return 0, fmt.Errorf("Atom: Error interning atom '%s': %s", name, err)
-	}
-
-	// If we're here, it means we didn't have this atom cached. So cache it!
-	xu.CacheAtom(name, reply.Atom)
-
-	return reply.Atom, nil
-}
-
-// AtomName fetches a string representation of an ATOM given its integer id.
-func AtomName(xu *xgbutil.XUtil, aid xproto.Atom) (string, error) {
-	// Check the cache first
-	if atomName, ok := xu.AtomNameGet(aid); ok {
-		return string(atomName), nil
-	}
-
-	reply, err := xproto.GetAtomName(xu.Conn(), aid).Reply()
-	if err != nil {
-		return "", fmt.Errorf("AtomName: Error fetching name for ATOM "+
-			"id '%d': %s", aid, err)
-	}
-
-	// If we're here, it means we didn't have ths ATOM id cached. So cache it.
-	atomName := string(reply.Name)
-	xu.CacheAtom(atomName, aid)
-
-	return atomName, nil
-}
-
 // WindowToInt is a covenience function for converting []xproto.Window
 // to []uint32.
 func WindowToInt(ids []xproto.Window) []int {

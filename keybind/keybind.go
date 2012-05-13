@@ -25,7 +25,7 @@ var Modifiers []uint16 = []uint16{ // order matters!
 // i.e., update state of the world on a MappingNotify.
 func Initialize(xu *xgbutil.XUtil) {
 	// Listen to mapping notify events
-	xevent.MappingNotifyFun(updateMaps).Connect(xu, xgbutil.NoWindow)
+	xevent.MappingNotifyFun(updateMaps).Connect(xu, xevent.NoWindow)
 
 	// Give us an initial mapping state...
 	keyMap, modMap := MapsGet(xu)
@@ -298,7 +298,7 @@ func ModGet(xu *xgbutil.XUtil, keycode xproto.Keycode) uint16 {
 func Grab(xu *xgbutil.XUtil, win xproto.Window,
 	mods uint16, key xproto.Keycode) {
 
-	for _, m := range xgbutil.IgnoreMods {
+	for _, m := range xevent.IgnoreMods {
 		xproto.GrabKey(xu.Conn(), true, win, mods|m, key,
 			xproto.GrabModeAsync, xproto.GrabModeAsync)
 	}
@@ -308,7 +308,7 @@ func GrabChecked(xu *xgbutil.XUtil, win xproto.Window,
 	mods uint16, key xproto.Keycode) error {
 
 	var err error
-	for _, m := range xgbutil.IgnoreMods {
+	for _, m := range xevent.IgnoreMods {
 		err = xproto.GrabKeyChecked(xu.Conn(), true, win, mods|m, key,
 			xproto.GrabModeAsync, xproto.GrabModeAsync).Check()
 		if err != nil {
@@ -323,7 +323,7 @@ func GrabChecked(xu *xgbutil.XUtil, win xproto.Window,
 func Ungrab(xu *xgbutil.XUtil, win xproto.Window,
 	mods uint16, key xproto.Keycode) {
 
-	for _, m := range xgbutil.IgnoreMods {
+	for _, m := range xevent.IgnoreMods {
 		xproto.UngrabKey(xu.Conn(), key, win, mods|m)
 	}
 }
@@ -360,7 +360,7 @@ func DummyGrab(xu *xgbutil.XUtil) error {
 	}
 
 	// Now redirect all key events to the dummy window to prevent races
-	xu.RedirectKeyEvents(xu.Dummy())
+	xevent.RedirectKeyEvents(xu, xu.Dummy())
 
 	return nil
 }
@@ -370,5 +370,5 @@ func DummyUngrab(xu *xgbutil.XUtil) {
 	UngrabKeyboard(xu)
 
 	// Stop redirecting all key events
-	xu.RedirectKeyEvents(0)
+	xevent.RedirectKeyEvents(xu, 0)
 }

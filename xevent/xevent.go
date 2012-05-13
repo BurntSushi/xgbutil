@@ -7,292 +7,181 @@ import (
 	"github.com/BurntSushi/xgbutil"
 )
 
-// Read reads one or more events and queues them in XUtil.
-// If 'block' is True, then call 'WaitForEvent' before sucking up
-// all events that have been queued by XGB.
-func Read(xu *xgbutil.XUtil, block bool) {
-	if block {
-		ev, err := xu.Conn().WaitForEvent()
-		if ev == nil && err == nil {
-			xgbutil.Logger.Fatal("BUG: Could not read an event or an error.")
-		}
-		xu.Enqueue(xgbutil.NewEventOrError(ev, err))
-	}
+// Sometimes we need to specify NO WINDOW when a window is typically
+// expected. (Like connecting to MappingNotify or KeymapNotify events.)
+// Use this value to do that.
+var NoWindow xproto.Window = 0
 
-	// Clean up anything that's in the queue
-	for {
-		ev, err := xu.Conn().PollForEvent()
-
-		// No events left...
-		if ev == nil && err == nil {
-			break
-		}
-
-		// We're good, queue it up
-		xu.Enqueue(xgbutil.NewEventOrError(ev, err))
-	}
+// IgnoreMods is a list of X modifiers that we don't want interfering
+// with our mouse or key bindings. In particular, for each mouse or key binding 
+// issued, there is a seperate mouse or key binding made for each of the 
+// modifiers specified.
+var IgnoreMods []uint16 = []uint16{
+	0,
+	xproto.ModMaskLock,                   // Num lock
+	xproto.ModMask2,                      // Caps lock
+	xproto.ModMaskLock | xproto.ModMask2, // Caps and Num lock
 }
 
-// Main starts the main X event loop. It will read events and call appropriate
-// callback functions. 
-// N.B. If you have multiple X connections in the same program, you should be
-// able to run this in different goroutines concurrently. However, only
-// *one* of these should run for *each* connection.
-func Main(xu *xgbutil.XUtil) {
-	mainEventLoop(xu, nil)
-}
-
-// MainPing starts the main X event loop, and returns a ping channel.
-// A benign value will be sent to the ping channel every time an event/error is
-// dequeued.
-// This is useful if your event loop needs to draw from other sources. e.g.,
+// Enqueue queues up an event read from X.
+// Note that an event read may return an error, in which case, this queue
+// entry will be an error and not an event.
 //
-//	ping := xevent.MainPing()
-//	for {
-//		select {
-//		case <-ping:
-//		case val <- someOtherChannel:
-//			// do some work with val
-//		}
-//	}
+//	ev, err := XUtilValue.Conn().WaitForEvent()
+//	xevent.Enqueue(XUtilValue, ev, err)
 //
-// Note that an unbuffered channel is returned, which implies that any work
-// done in 'val' will delay further X event processing.
-// N.B. If you have multiple X connections in the same program, you should be
-// able to run this in different goroutines concurrently. However, only
-// *one* of these should run for *each* connection.
-func MainPing(xu *xgbutil.XUtil) chan struct{} {
-	ping := make(chan struct{}, 0)
-	go func() {
-		mainEventLoop(xu, ping)
-	}()
-	return ping
+// You probably shouldn't have to enqueue events yourself. This is done
+// automatically if you're using xevent.Main{Ping} and/or xevent.Read.
+func Enqueue(xu *xgbutil.XUtil, ev xgb.Event, err xgb.Error) {
+	xu.EvqueueLck.Lock()
+	defer xu.EvqueueLck.Unlock()
+
+	xu.Evqueue = append(xu.Evqueue, xgbutil.EventOrError{
+		Event: ev,
+		Err:   err,
+	})
 }
 
-// mainEventLoop runs the main event loop with an optional ping channel.
-func mainEventLoop(xu *xgbutil.XUtil, ping chan struct{}) {
-	for {
-		if xu.Quitting() {
-			break
-		}
+// Dequeue pops an event/error from the queue and returns it.
+// The queue item is unwrapped and returned as multiple return values.
+// Only one of the return values can be nil.
+func Dequeue(xu *xgbutil.XUtil) (xgb.Event, xgb.Error) {
+	xu.EvqueueLck.Lock()
+	defer xu.EvqueueLck.Unlock()
 
-		// Gobble up as many events as possible (into the queue).
-		// If there are no events, we block.
-		Read(xu, true)
+	everr := xu.Evqueue[0]
+	xu.Evqueue = xu.Evqueue[1:]
+	return everr.Event, everr.Err
+}
 
-		// Now process every event/error in the queue.
-		processEventQueue(xu, ping)
+// DequeueAt removes a particular item from the queue.
+// This is primarily useful when attempting to compress events.
+func DequeueAt(xu *xgbutil.XUtil, i int) {
+	xu.EvqueueLck.Lock()
+	defer xu.EvqueueLck.Unlock()
+
+	xu.Evqueue = append(xu.Evqueue[:i], xu.Evqueue[i+1:]...)
+}
+
+// QueueEmpty returns whether the event queue is empty or not.
+func Empty(xu *xgbutil.XUtil) bool {
+	xu.EvqueueLck.RLock()
+	defer xu.EvqueueLck.RUnlock()
+
+	return len(xu.Evqueue) == 0
+}
+
+// QueuePeek returns a *copy* of the current queue so we can examine it.
+// This can be useful when trying to determine if a particular kind of
+// event will be processed in the future.
+func Peek(xu *xgbutil.XUtil) []xgbutil.EventOrError {
+	xu.EvqueueLck.RLock()
+	defer xu.EvqueueLck.RUnlock()
+
+	cpy := make([]xgbutil.EventOrError, len(xu.Evqueue))
+	for i, everr := range xu.Evqueue {
+		cpy[i] = everr
+	}
+	return cpy
+}
+
+// ErrorHandlerSet sets the default error handler for errors that come
+// into the main event loop. (This may be removed in the future in favor
+// of a particular callback interface like events, but these sorts of errors
+// aren't handled often in practice, so maybe not.)
+// This is only called for errors returned from unchecked (asynchronous error
+// handling) requests.
+// The default error handler just emits them to stderr.
+func ErrorHandlerSet(xu *xgbutil.XUtil, fun xgbutil.ErrorHandlerFun) {
+	xu.ErrorHandler = fun
+}
+
+// ErrorHandlerGet retrieves the default error handler.
+func ErrorHandlerGet(xu *xgbutil.XUtil) xgbutil.ErrorHandlerFun {
+	return xu.ErrorHandler
+}
+
+// RedirectKeyEvents, when set to a window id (greater than 0), will force
+// *all* Key{Press,Release} to callbacks attached to the specified window.
+// This is close to emulating a Keyboard grab without the racing.
+// To stop redirecting key events, use window identifier '0'.
+func RedirectKeyEvents(xu *xgbutil.XUtil, wid xproto.Window) {
+	xu.KeyRedirect = wid
+}
+
+// RedirectKeyGet gets the window that key events are being redirected to.
+// If 0, then no redirection occurs.
+func RedirectKeyGet(xu *xgbutil.XUtil) xproto.Window {
+	return xu.KeyRedirect
+}
+
+// Quit elegantly exits out of the main event loop.
+// "Elegantly" in this case means that it finishes processing the current
+// event, and breaks out of the loop afterwards.
+// There is no particular reason to use this instead of something like os.Exit
+// other than you might have code to run after the main event loop exits to
+// "clean up."
+func Quit(xu *xgbutil.XUtil) {
+	xu.Quit = true
+}
+
+// Quitting returns whether it's time to quit.
+// This is only used in the main event loop in xevent.
+func Quitting(xu *xgbutil.XUtil) bool {
+	return xu.Quit
+}
+
+// attachCallback associates a (event, window) tuple with an event.
+func attachCallback(xu *xgbutil.XUtil, evtype int, win xproto.Window,
+	fun xgbutil.Callback) {
+
+	xu.CallbacksLck.Lock()
+	defer xu.CallbacksLck.Unlock()
+
+	if _, ok := xu.Callbacks[evtype]; !ok {
+		xu.Callbacks[evtype] = make(map[xproto.Window][]xgbutil.Callback, 20)
+	}
+	if _, ok := xu.Callbacks[evtype][win]; !ok {
+		xu.Callbacks[evtype][win] = make([]xgbutil.Callback, 0)
+	}
+	xu.Callbacks[evtype][win] = append(xu.Callbacks[evtype][win], fun)
+}
+
+// RunCallbacks executes every callback corresponding to a
+// particular event/window tuple.
+func runCallbacks(xu *xgbutil.XUtil, event interface{}, evtype int,
+	win xproto.Window) {
+
+	xu.CallbacksLck.RLock()
+	defer xu.CallbacksLck.RUnlock()
+
+	for _, cb := range xu.Callbacks[evtype][win] {
+		cb.Run(xu, event)
 	}
 }
 
-// processEventQueue processes every item in the event/error queue.
-func processEventQueue(xu *xgbutil.XUtil, ping chan struct{}) {
-	for !xu.QueueEmpty() {
-		if xu.Quitting() {
-			return
-		}
+// Detach removes all callbacks associated with a particular window.
+// Note that if you're also using the keybind and mousebind packages, a complete
+// detachment should look like:
+//
+//	keybind.Detach(XUtilValue, window-id)
+//	mousebind.Detach(XUtilValue, window-id)
+//	xevent.Detach(XUtilValue, window-id)
+//
+// If a window is no longer receiving events, these methods should be called.
+// Otherwise, the memory used to store the handler info for that window will
+// never be released.
+func Detach(xu *xgbutil.XUtil, win xproto.Window) {
+	xu.CallbacksLck.Lock()
+	defer xu.CallbacksLck.Unlock()
 
-		// We technically send the ping *before* the next event is dequeued.
-		// This is so the queue doesn't present a misrepresentation of which
-		// events haven't been processed yet.
-		if ping != nil {
-			ping <- struct{}{}
-		}
-		everr := xu.Dequeue()
-
-		// If we gobbled up an error, send it to the error event handler
-		// and move on the next event/error.
-		if everr.Err != nil {
-			xu.ErrorHandlerGet()(everr.Err)
-			continue
-		}
-
-		// We know there isn't an error. If there isn't an event either,
-		// then there's a bug somewhere.
-		if everr.Event == nil {
-			xgbutil.Logger.Fatal("BUG: Expected an event but got nil.")
-		}
-
-		switch event := everr.Event.(type) {
-		case xproto.KeyPressEvent:
-			e := KeyPressEvent{&event}
-
-			// If we're redirecting key events, this is the place to do it!
-			if wid := xu.RedirectKeyGet(); wid > 0 {
-				e.Event = wid
-			}
-
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, KeyPress, e.Event)
-		case xproto.KeyReleaseEvent:
-			e := KeyReleaseEvent{&event}
-
-			// If we're redirecting key events, this is the place to do it!
-			if wid := xu.RedirectKeyGet(); wid > 0 {
-				e.Event = wid
-			}
-
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, KeyRelease, e.Event)
-		case xproto.ButtonPressEvent:
-			e := ButtonPressEvent{&event}
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, ButtonPress, e.Event)
-		case xproto.ButtonReleaseEvent:
-			e := ButtonReleaseEvent{&event}
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, ButtonRelease, e.Event)
-		case xproto.MotionNotifyEvent:
-			e := MotionNotifyEvent{&event}
-
-			// Peek at the next events, if it's just another
-			// MotionNotify, let's compress!
-			// This is actually pretty nasty. The key here is to flush
-			// the buffer so we have an updated list of events.
-			// Then we read those events into our queue, but don't block
-			// while we do. Finally, we look through the queue and start
-			// popping off motion notifies that match 'e'. If we pop one
-			// off, restart the process of finding a motion notify.
-			// Otherwise, we're done and we move on with the current
-			// motion notify.
-			var laste xproto.MotionNotifyEvent
-			for {
-				xu.Sync()
-				Read(xu, false)
-
-				found := false
-				for i, ee := range xu.QueuePeek() {
-					if ee.Err != nil {
-						continue
-					}
-					if mn, ok := ee.Event.(xproto.MotionNotifyEvent); ok {
-						if mn.Event == e.Event {
-							laste = mn
-							xu.DequeueAt(i)
-							found = true
-							break
-						}
-					}
-				}
-				if !found {
-					break
-				}
-			}
-
-			if laste.Root != 0 {
-				e.Time = laste.Time
-				e.RootX = laste.RootX
-				e.RootY = laste.RootY
-				e.EventX = laste.EventX
-				e.EventY = laste.EventY
-			}
-
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, MotionNotify, e.Event)
-		case xproto.EnterNotifyEvent:
-			e := EnterNotifyEvent{&event}
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, EnterNotify, e.Event)
-		case xproto.LeaveNotifyEvent:
-			e := LeaveNotifyEvent{&event}
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, LeaveNotify, e.Event)
-		case xproto.FocusInEvent:
-			e := FocusInEvent{&event}
-			xu.RunCallbacks(e, FocusIn, e.Event)
-		case xproto.FocusOutEvent:
-			e := FocusOutEvent{&event}
-			xu.RunCallbacks(e, FocusOut, e.Event)
-		case xproto.KeymapNotifyEvent:
-			e := KeymapNotifyEvent{&event}
-			xu.RunCallbacks(e, KeymapNotify, xgbutil.NoWindow)
-		case xproto.ExposeEvent:
-			e := ExposeEvent{&event}
-			xu.RunCallbacks(e, Expose, e.Window)
-		case xproto.GraphicsExposureEvent:
-			e := GraphicsExposureEvent{&event}
-			xu.RunCallbacks(e, GraphicsExposure, xproto.Window(e.Drawable))
-		case xproto.NoExposureEvent:
-			e := NoExposureEvent{&event}
-			xu.RunCallbacks(e, NoExposure, xproto.Window(e.Drawable))
-		case xproto.VisibilityNotifyEvent:
-			e := VisibilityNotifyEvent{&event}
-			xu.RunCallbacks(e, VisibilityNotify, e.Window)
-		case xproto.CreateNotifyEvent:
-			e := CreateNotifyEvent{&event}
-			xu.RunCallbacks(e, CreateNotify, e.Window)
-		case xproto.DestroyNotifyEvent:
-			e := DestroyNotifyEvent{&event}
-			xu.RunCallbacks(e, DestroyNotify, e.Window)
-		case xproto.UnmapNotifyEvent:
-			e := UnmapNotifyEvent{&event}
-			xu.RunCallbacks(e, UnmapNotify, e.Window)
-		case xproto.MapNotifyEvent:
-			e := MapNotifyEvent{&event}
-			xu.RunCallbacks(e, MapNotify, e.Window)
-		case xproto.MapRequestEvent:
-			e := MapRequestEvent{&event}
-			xu.RunCallbacks(e, MapRequest, e.Window)
-			xu.RunCallbacks(e, MapRequest, e.Parent)
-		case xproto.ReparentNotifyEvent:
-			e := ReparentNotifyEvent{&event}
-			xu.RunCallbacks(e, ReparentNotify, e.Window)
-		case xproto.ConfigureNotifyEvent:
-			e := ConfigureNotifyEvent{&event}
-			xu.RunCallbacks(e, ConfigureNotify, e.Window)
-		case xproto.ConfigureRequestEvent:
-			e := ConfigureRequestEvent{&event}
-			xu.RunCallbacks(e, ConfigureRequest, e.Window)
-			xu.RunCallbacks(e, ConfigureRequest, e.Parent)
-		case xproto.GravityNotifyEvent:
-			e := GravityNotifyEvent{&event}
-			xu.RunCallbacks(e, GravityNotify, e.Window)
-		case xproto.ResizeRequestEvent:
-			e := ResizeRequestEvent{&event}
-			xu.RunCallbacks(e, ResizeRequest, e.Window)
-		case xproto.CirculateNotifyEvent:
-			e := CirculateNotifyEvent{&event}
-			xu.RunCallbacks(e, CirculateNotify, e.Window)
-		case xproto.CirculateRequestEvent:
-			e := CirculateRequestEvent{&event}
-			xu.RunCallbacks(e, CirculateRequest, e.Window)
-		case xproto.PropertyNotifyEvent:
-			e := PropertyNotifyEvent{&event}
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, PropertyNotify, e.Window)
-		case xproto.SelectionClearEvent:
-			e := SelectionClearEvent{&event}
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, SelectionClear, e.Owner)
-		case xproto.SelectionRequestEvent:
-			e := SelectionRequestEvent{&event}
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, SelectionRequest, e.Requestor)
-		case xproto.SelectionNotifyEvent:
-			e := SelectionNotifyEvent{&event}
-			xu.TimeSet(e.Time)
-			xu.RunCallbacks(e, SelectionNotify, e.Requestor)
-		case xproto.ColormapNotifyEvent:
-			e := ColormapNotifyEvent{&event}
-			xu.RunCallbacks(e, ColormapNotify, e.Window)
-		case xproto.ClientMessageEvent:
-			e := ClientMessageEvent{&event}
-			xu.RunCallbacks(e, ClientMessage, e.Window)
-		case xproto.MappingNotifyEvent:
-			e := MappingNotifyEvent{&event}
-			xu.RunCallbacks(e, MappingNotify, xgbutil.NoWindow)
-		default:
-			if event != nil {
-				xgbutil.Logger.Printf("ERROR: UNSUPPORTED EVENT TYPE: %T",
-					event)
-			}
-			continue
-		}
+	for evtype, _ := range xu.Callbacks {
+		delete(xu.Callbacks[evtype], win)
 	}
 }
 
 // SendRootEvent takes a type implementing the xgb.Event interface, converts it
-// to raw X bytes, and sends it off using the SendEvent request.
+// to raw X bytes, and sends it to the root window using the SendEvent request.
 func SendRootEvent(xu *xgbutil.XUtil, ev xgb.Event, evMask uint32) {
 	xproto.SendEvent(xu.Conn(), false, xu.RootWin(), evMask, string(ev.Bytes()))
 }

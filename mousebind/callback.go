@@ -67,7 +67,7 @@ func DeduceButtonInfo(state uint16,
 	detail xproto.Button) (uint16, xproto.Button) {
 
 	mods, button := state, detail
-	for _, m := range xgbutil.IgnoreMods {
+	for _, m := range xevent.IgnoreMods {
 		mods &= ^m
 	}
 
@@ -141,10 +141,30 @@ func RunButtonReleaseCallbacks(xu *xgbutil.XUtil,
 	xu.RunMouseBindCallbacks(ev, xevent.ButtonRelease, ev.Event, mods, button)
 }
 
-// Detach removes all handlers for the provided window and event type
+// Detach removes all handlers for all mouse events for the provided window id.
+// This should be called whenever a window is no longer receiving events to make
+// sure the garbage collector can release memory used to store the handler info.
+func Detach(xu *xgbutil.XUtil, win xproto.Window) {
+	detach(xu, xevent.ButtonPress, win)
+	detach(xu, xevent.ButtonRelease, win)
+}
+
+// DetachPress is the same as Detach, except it only removes handlers for
+// button *press* events.
+func DetachPress(xu *xgbutil.XUtil, win xproto.Window) {
+	detach(xu, xevent.ButtonPress, win)
+}
+
+// DetachRelease is the same as Detach, except it only removes handlers for
+// mouse *release* events.
+func DetachRelease(xu *xgbutil.XUtil, win xproto.Window) {
+	detach(xu, xevent.ButtonRelease, win)
+}
+
+// detach removes all handlers for the provided window and event type
 // combination. This will also issue an ungrab request for each grab that
 // drops to zero.
-func Detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
+func detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
 	mkeys := xu.MouseBindKeys()
 	xu.DetachMouseBindWindow(evtype, win)
 	for _, key := range mkeys {

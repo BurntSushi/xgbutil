@@ -100,7 +100,7 @@ elif sys.argv[1] == 'callbacks':
         print
         print 'func (callback %sFun) '\
                 'Connect(xu *xgbutil.XUtil,\nwin xproto.Window) {' % e
-        print '    xu.AttachCallback(%s, win, callback)' % e
+        print '    attachCallback(xu, %s, win, callback)' % e
         print '}'
         print
         print 'func (callback %sFun) ' \
@@ -108,10 +108,4 @@ elif sys.argv[1] == 'callbacks':
         print '    callback(xu, event.(%sEvent))' % e
         print '}'
         print
-elif sys.argv[1] == 'mainloop':
-    s = ' ' * 8
-    for e in events:
-        print '%scase xgb.%s:' % (s, e)
-        print '%s    e := %s{&event}' % (s, e)
-        print '%s    xu.RunCallbacks(e, %s, e.Event)' % (s, e[:-5])
 

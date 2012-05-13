@@ -71,7 +71,7 @@ func DeduceKeyInfo(state uint16,
 	detail xproto.Keycode) (uint16, xproto.Keycode) {
 
 	mods, kc := state, detail
-	for _, m := range xgbutil.IgnoreMods {
+	for _, m := range xevent.IgnoreMods {
 		mods &= ^m
 	}
 	return mods, kc
@@ -119,10 +119,30 @@ func runKeyReleaseCallbacks(xu *xgbutil.XUtil, ev xevent.KeyReleaseEvent) {
 	runKeyBindCallbacks(xu, ev, xevent.KeyRelease, ev.Event, mods, kc)
 }
 
-// Detach removes all handlers for the provided window and event type
+// Detach removes all handlers for all key events for the provided window id.
+// This should be called whenever a window is no longer receiving events to make
+// sure the garbage collector can release memory used to store the handler info.
+func Detach(xu *xgbutil.XUtil, win xproto.Window) {
+	detach(xu, xevent.KeyPress, win)
+	detach(xu, xevent.KeyRelease, win)
+}
+
+// DetachPress is the same as Detach, except it only removes handlers for
+// key *press* events.
+func DetachPress(xu *xgbutil.XUtil, win xproto.Window) {
+	detach(xu, xevent.KeyPress, win)
+}
+
+// DetachRelease is the same as Detach, except it only removes handlers for
+// key *release* events.
+func DetachRelease(xu *xgbutil.XUtil, win xproto.Window) {
+	detach(xu, xevent.KeyRelease, win)
+}
+
+// detach removes all handlers for the provided window and event type
 // combination. This will also issue an ungrab request for each grab that
 // drops to zero.
-func Detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
+func detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
 	mkeys := keyBindKeys(xu)
 	detachKeyBindWindow(xu, evtype, win)
 	for _, key := range mkeys {
