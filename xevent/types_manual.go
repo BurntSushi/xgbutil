@@ -16,9 +16,12 @@ const ClientMessage = xproto.ClientMessage
 
 // NewClientMessage takes all arguments required to build a ClientMessageEvent 
 // struct and hides the messy details.
-// The varidic parameters coincide with the "data" part of a client message.
-// Right now, this function only supports a list of up to 5 uint32s.
-// XXX: Use type assertions to support bytes and uint16s.
+// The variadic parameters coincide with the "data" part of a client message.
+// The type of the variadic parameters depends upon the value of Format.
+// If Format is 8, 'data' should have type byte.
+// If Format is 16, 'data' should have type int16.
+// If Format is 32, 'data' should have type int.
+// Any other value of Format returns an error.
 func NewClientMessage(Format byte, Window xproto.Window, Type xproto.Atom,
 	data ...interface{}) (*ClientMessageEvent, error) {
 
@@ -76,7 +79,7 @@ type ConfigureNotifyEvent struct {
 const ConfigureNotify = xproto.ConfigureNotify
 
 // NewConfigureNotify takes all arguments required to build a 
-// ConfigureNotifyEvent struct and hides the messy details.
+// ConfigureNotifyEvent struct and returns a ConfigureNotifyEvent value.
 func NewConfigureNotify(Event, Window, AboveSibling xproto.Window,
 	X, Y, Width, Height int, BorderWidth uint16,
 	OverrideRedirect bool) *ConfigureNotifyEvent {
