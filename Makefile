@@ -11,7 +11,7 @@ types_auto.go:
 	scripts/write-events evtypes > xevent/types_auto.go
 
 tags:
-	find ./ \( -name '*.go' -and -not -wholename './tests/*' \) -print0 | xargs -0 gotags > TAGS
+	find ./ \( -name '*.go' -and -not -wholename './tests/*' -and -not -wholename './examples/*' \) -print0 | xargs -0 gotags > TAGS
 
 loc:
 	find ./ -name '*.go' -and -not -wholename './tests*' -and -not -name '*keysymdef.go' -print | sort | xargs wc -l
