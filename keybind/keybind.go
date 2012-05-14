@@ -89,13 +89,13 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 		// key codes. (Note that each key binding may be associated with
 		// multiple callbacks.)
 		// We must ungrab everything first, in case two keys are being swapped.
-		for _, key := range keyBindKeys(xu) {
+		for _, key := range keyKeys(xu) {
 			if _, ok := changes[key.Code]; ok {
 				Ungrab(xu, key.Win, key.Mod, key.Code)
 			}
 		}
 		// Okay, now grab.
-		for _, key := range keyBindKeys(xu) {
+		for _, key := range keyKeys(xu) {
 			if newKc, ok := changes[key.Code]; ok {
 				Grab(xu, key.Win, key.Mod, newKc)
 				updateKeyBindKey(xu, key, newKc)

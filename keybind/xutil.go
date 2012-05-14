@@ -19,17 +19,17 @@ import (
 // with a callback.
 // This is exported for use in the keybind package. It should not be used.
 func attachKeyBindCallback(xu *xgbutil.XUtil, evtype int, win xproto.Window,
-	mods uint16, keycode xproto.Keycode, fun xgbutil.KeyBindCallback) {
+	mods uint16, keycode xproto.Keycode, fun xgbutil.CallbackKey) {
 
 	xu.KeybindsLck.Lock()
 	defer xu.KeybindsLck.Unlock()
 
 	// Create key
-	key := xgbutil.KeyBindKey{evtype, win, mods, keycode}
+	key := xgbutil.KeyKey{evtype, win, mods, keycode}
 
 	// Do we need to allocate?
 	if _, ok := xu.Keybinds[key]; !ok {
-		xu.Keybinds[key] = make([]xgbutil.KeyBindCallback, 0)
+		xu.Keybinds[key] = make([]xgbutil.CallbackKey, 0)
 	}
 
 	xu.Keybinds[key] = append(xu.Keybinds[key], fun)
@@ -38,11 +38,11 @@ func attachKeyBindCallback(xu *xgbutil.XUtil, evtype int, win xproto.Window,
 
 // keyBindKeys returns a copy of all the keys in the 'keybinds' map.
 // This is exported for use in the keybind package. It should not be used.
-func keyBindKeys(xu *xgbutil.XUtil) []xgbutil.KeyBindKey {
+func keyKeys(xu *xgbutil.XUtil) []xgbutil.KeyKey {
 	xu.KeybindsLck.RLock()
 	defer xu.KeybindsLck.RUnlock()
 
-	keys := make([]xgbutil.KeyBindKey, len(xu.Keybinds))
+	keys := make([]xgbutil.KeyKey, len(xu.Keybinds))
 	i := 0
 	for key, _ := range xu.Keybinds {
 		keys[i] = key
@@ -57,13 +57,13 @@ func keyBindKeys(xu *xgbutil.XUtil) []xgbutil.KeyBindKey {
 // Its primary purpose is to facilitate the renewal of state when xgbutil
 // receives a new keyboard mapping.
 // This is exported for use in the keybind package. It should not be used.
-func updateKeyBindKey(xu *xgbutil.XUtil, key xgbutil.KeyBindKey,
+func updateKeyBindKey(xu *xgbutil.XUtil, key xgbutil.KeyKey,
 	newKc xproto.Keycode) {
 
 	xu.KeybindsLck.Lock()
 	defer xu.KeybindsLck.Unlock()
 
-	newKey := xgbutil.KeyBindKey{key.Evtype, key.Win, key.Mod, newKc}
+	newKey := xgbutil.KeyKey{key.Evtype, key.Win, key.Mod, newKc}
 
 	// Save old info
 	oldCallbacks := xu.Keybinds[key]
@@ -84,20 +84,20 @@ func updateKeyBindKey(xu *xgbutil.XUtil, key xgbutil.KeyBindKey,
 func runKeyBindCallbacks(xu *xgbutil.XUtil, event interface{}, evtype int,
 	win xproto.Window, mods uint16, keycode xproto.Keycode) {
 
-	key := xgbutil.KeyBindKey{evtype, win, mods, keycode}
-	for _, cb := range keyBindCallbacks(xu, key) {
+	key := xgbutil.KeyKey{evtype, win, mods, keycode}
+	for _, cb := range keyCallbacks(xu, key) {
 		cb.Run(xu, event)
 	}
 }
 
 // keyBindCallbacks returns a slice of callbacks for a particular key.
-func keyBindCallbacks(xu *xgbutil.XUtil,
-	key xgbutil.KeyBindKey) []xgbutil.KeyBindCallback {
+func keyCallbacks(xu *xgbutil.XUtil,
+	key xgbutil.KeyKey) []xgbutil.CallbackKey {
 
 	xu.KeybindsLck.RLock()
 	defer xu.KeybindsLck.RUnlock()
 
-	cbs := make([]xgbutil.KeyBindCallback, len(xu.Keybinds[key]))
+	cbs := make([]xgbutil.CallbackKey, len(xu.Keybinds[key]))
 	for i, cb := range xu.Keybinds[key] {
 		cbs[i] = cb
 	}
@@ -153,7 +153,7 @@ func keyBindGrabs(xu *xgbutil.XUtil, evtype int, win xproto.Window, mods uint16,
 	xu.KeybindsLck.RLock()
 	defer xu.KeybindsLck.RUnlock()
 
-	key := xgbutil.KeyBindKey{evtype, win, mods, keycode}
+	key := xgbutil.KeyKey{evtype, win, mods, keycode}
 	return xu.Keygrabs[key] // returns 0 if key does not exist
 }
 

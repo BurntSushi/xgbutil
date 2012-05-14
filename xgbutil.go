@@ -101,7 +101,7 @@ type XUtil struct {
 	// KeyBindKey is a struct representing the 4-tuple
 	// (event-type, window-id, modifiers, keycode).
 	// It is exported for use in the keybind package. Do not access it directly.
-	Keybinds    map[KeyBindKey][]KeyBindCallback
+	Keybinds    map[KeyKey][]CallbackKey
 	KeybindsLck *sync.RWMutex
 
 	// Keygrabs is a frequency count of the number of callbacks associated
@@ -109,7 +109,7 @@ type XUtil struct {
 	// grab a particular key *once*, but we may want to attach several callbacks
 	// to a single keypress.
 	// It is exported for use in the keybind package. Do not access it directly.
-	Keygrabs map[KeyBindKey]int
+	Keygrabs map[KeyKey]int
 
 	// Mousebinds is the data structure storing all callbacks for mouse
 	// bindings.This is extremely similar to the general notion of event
@@ -118,7 +118,7 @@ type XUtil struct {
 	// MouseBindKey is a struct representing the 4-tuple
 	// (event-type, window-id, modifiers, button).
 	// It is exported for use in the mousebind package. Do not use it.
-	Mousebinds    map[MouseBindKey][]MouseBindCallback
+	Mousebinds    map[MouseKey][]CallbackMouse
 	MousebindsLck *sync.RWMutex
 
 	// Mousegrabs is a frequency count of the number of callbacks associated
@@ -126,7 +126,7 @@ type XUtil struct {
 	// grab a particular mouse button *once*, but we may want to attach
 	// several callbacks to a single button press.
 	// It is exported for use in the mousebind package. Do not use it.
-	Mousegrabs map[MouseBindKey]int
+	Mousegrabs map[MouseKey]int
 
 	// InMouseDrag is true if a drag is currently in progress.
 	// It is exported for use in the mousebind package. Do not use it.
@@ -203,12 +203,12 @@ func NewConnDisplay(display string) (*XUtil, error) {
 		Keymap:           nil, // we don't have anything yet
 		Modmap:           nil,
 		KeyRedirect:      0,
-		Keybinds:         make(map[KeyBindKey][]KeyBindCallback, 10),
+		Keybinds:         make(map[KeyKey][]CallbackKey, 10),
 		KeybindsLck:      &sync.RWMutex{},
-		Keygrabs:         make(map[KeyBindKey]int, 10),
-		Mousebinds:       make(map[MouseBindKey][]MouseBindCallback, 10),
+		Keygrabs:         make(map[KeyKey]int, 10),
+		Mousebinds:       make(map[MouseKey][]CallbackMouse, 10),
 		MousebindsLck:    &sync.RWMutex{},
-		Mousegrabs:       make(map[MouseBindKey]int, 10),
+		Mousegrabs:       make(map[MouseKey]int, 10),
 		InMouseDrag:      false,
 		MouseDragStepFun: nil,
 		MouseDragEndFun:  nil,

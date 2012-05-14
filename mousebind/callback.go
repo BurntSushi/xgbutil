@@ -15,7 +15,7 @@ import (
 
 // connect is essentially 'Connect' for either ButtonPress or
 // ButtonRelease events.
-func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback, evtype int,
+func connect(xu *xgbutil.XUtil, callback xgbutil.CallbackMouse, evtype int,
 	win xproto.Window, buttonStr string, sync bool, grab bool) error {
 
 	// Get the mods/button first
@@ -165,7 +165,7 @@ func DetachRelease(xu *xgbutil.XUtil, win xproto.Window) {
 // combination. This will also issue an ungrab request for each grab that
 // drops to zero.
 func detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
-	mkeys := mouseBindKeys(xu)
+	mkeys := mouseKeys(xu)
 	detachMouseBindWindow(xu, evtype, win)
 	for _, key := range mkeys {
 		if mouseBindGrabs(xu, key.Evtype, key.Win, key.Mod, key.Button) == 0 {

@@ -33,9 +33,9 @@ type Callback interface {
 	Run(xu *XUtil, ev interface{})
 }
 
-// KeyBindCallback works similarly to the more general Callback, but it adds
+// CallbackKey works similarly to the more general Callback, but it adds
 // parameters specific to key bindings.
-type KeyBindCallback interface {
+type CallbackKey interface {
 	// Connect modifies XUtil's state to attach an event handler to a
 	// particular key press. If grab is true, connect will request a passive
 	// grab.
@@ -47,29 +47,29 @@ type KeyBindCallback interface {
 	Run(xu *XUtil, ev interface{})
 }
 
-// MouseBindCallback works similarly to the more general Callback, but it adds
+// CallbackMouse works similarly to the more general Callback, but it adds
 // parameters specific to mouse bindings.
-type MouseBindCallback interface {
+type CallbackMouse interface {
 	Connect(xu *XUtil, win xproto.Window, buttonStr string,
 		propagate bool, grab bool) error
 	Run(xu *XUtil, ev interface{})
 }
 
-// KeyBindKey is the type of the key in the map of keybindings.
+// KeyKey is the type of the key in the map of keybindings.
 // It essentially represents the tuple
 // (event type, window id, modifier, keycode).
 // It is exported for use in the keybind package. It should not be used.
-type KeyBindKey struct {
+type KeyKey struct {
 	Evtype int
 	Win    xproto.Window
 	Mod    uint16
 	Code   xproto.Keycode
 }
 
-// MouseBindKey is the type of the key in the map of mouse bindings.
+// MouseKey is the type of the key in the map of mouse bindings.
 // It essentially represents the tuple
 // (event type, window id, modifier, button).
-type MouseBindKey struct {
+type MouseKey struct {
 	Evtype int
 	Win    xproto.Window
 	Mod    uint16

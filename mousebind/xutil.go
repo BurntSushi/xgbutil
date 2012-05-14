@@ -18,29 +18,29 @@ import (
 // attackMouseBindCallback associates an (event, window, mods, button)
 // with a callback.
 func attachMouseBindCallback(xu *xgbutil.XUtil, evtype int, win xproto.Window,
-	mods uint16, button xproto.Button, fun xgbutil.MouseBindCallback) {
+	mods uint16, button xproto.Button, fun xgbutil.CallbackMouse) {
 
 	xu.MousebindsLck.Lock()
 	defer xu.MousebindsLck.Unlock()
 
 	// Create key
-	key := xgbutil.MouseBindKey{evtype, win, mods, button}
+	key := xgbutil.MouseKey{evtype, win, mods, button}
 
 	// Do we need to allocate?
 	if _, ok := xu.Mousebinds[key]; !ok {
-		xu.Mousebinds[key] = make([]xgbutil.MouseBindCallback, 0)
+		xu.Mousebinds[key] = make([]xgbutil.CallbackMouse, 0)
 	}
 
 	xu.Mousebinds[key] = append(xu.Mousebinds[key], fun)
 	xu.Mousegrabs[key] += 1
 }
 
-// mouseBindKeys returns a copy of all the keys in the 'Mousebinds' map.
-func mouseBindKeys(xu *xgbutil.XUtil) []xgbutil.MouseBindKey {
+// mouseKeys returns a copy of all the keys in the 'Mousebinds' map.
+func mouseKeys(xu *xgbutil.XUtil) []xgbutil.MouseKey {
 	xu.MousebindsLck.RLock()
 	defer xu.MousebindsLck.RUnlock()
 
-	keys := make([]xgbutil.MouseBindKey, len(xu.Mousebinds))
+	keys := make([]xgbutil.MouseKey, len(xu.Mousebinds))
 	i := 0
 	for key, _ := range xu.Mousebinds {
 		keys[i] = key
@@ -50,13 +50,13 @@ func mouseBindKeys(xu *xgbutil.XUtil) []xgbutil.MouseBindKey {
 }
 
 // mouseBindCallbacks returns a slice of callbacks for a particular key.
-func mouseBindCallbacks(xu *xgbutil.XUtil,
-	key xgbutil.MouseBindKey) []xgbutil.MouseBindCallback {
+func mouseCallbacks(xu *xgbutil.XUtil,
+	key xgbutil.MouseKey) []xgbutil.CallbackMouse {
 
 	xu.MousebindsLck.RLock()
 	defer xu.MousebindsLck.RUnlock()
 
-	cbs := make([]xgbutil.MouseBindCallback, len(xu.Mousebinds[key]))
+	cbs := make([]xgbutil.CallbackMouse, len(xu.Mousebinds[key]))
 	for i, cb := range xu.Mousebinds[key] {
 		cbs[i] = cb
 	}
@@ -68,8 +68,8 @@ func mouseBindCallbacks(xu *xgbutil.XUtil,
 func runMouseBindCallbacks(xu *xgbutil.XUtil, event interface{}, evtype int,
 	win xproto.Window, mods uint16, button xproto.Button) {
 
-	key := xgbutil.MouseBindKey{evtype, win, mods, button}
-	for _, cb := range mouseBindCallbacks(xu, key) {
+	key := xgbutil.MouseKey{evtype, win, mods, button}
+	for _, cb := range mouseCallbacks(xu, key) {
 		cb.Run(xu, event)
 	}
 }
@@ -118,7 +118,7 @@ func mouseBindGrabs(xu *xgbutil.XUtil, evtype int, win xproto.Window,
 	xu.MousebindsLck.RLock()
 	defer xu.MousebindsLck.RUnlock()
 
-	key := xgbutil.MouseBindKey{evtype, win, mods, button}
+	key := xgbutil.MouseKey{evtype, win, mods, button}
 	return xu.Mousegrabs[key] // returns 0 if key does not exist
 }
 

@@ -17,7 +17,7 @@ import (
 // Namely, it parses the key string, issues a grab request if necessary,
 // sets up the appropriate event handlers for the main event loop, and attaches
 // the callback to the keybinding state.
-func connect(xu *xgbutil.XUtil, callback xgbutil.KeyBindCallback,
+func connect(xu *xgbutil.XUtil, callback xgbutil.CallbackKey,
 	evtype int, win xproto.Window, keyStr string, grab bool) error {
 
 	// Get the mods/key first
@@ -143,7 +143,7 @@ func DetachRelease(xu *xgbutil.XUtil, win xproto.Window) {
 // combination. This will also issue an ungrab request for each grab that
 // drops to zero.
 func detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
-	mkeys := keyBindKeys(xu)
+	mkeys := keyKeys(xu)
 	detachKeyBindWindow(xu, evtype, win)
 	for _, key := range mkeys {
 		if keyBindGrabs(xu, key.Evtype, key.Win, key.Mod, key.Code) == 0 {
