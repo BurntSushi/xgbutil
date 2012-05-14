@@ -112,3 +112,14 @@ type EventOrError struct {
 	Event xgb.Event
 	Err   xgb.Error
 }
+
+// MouseDragFun is the kind of function used on each dragging step
+// and at the end of a drag.
+type MouseDragFun func(xu *XUtil, rootX, rootY, eventX, eventY int)
+
+// MouseDragBeginFun is the kind of function used to initialize a drag.
+// The difference between this and MouseDragFun is that the begin function
+// returns a bool (of whether or not to cancel the drag) and an X resource
+// identifier corresponding to a cursor.
+type MouseDragBeginFun func(xu *XUtil, rootX, rootY,
+	eventX, eventY int) (bool, xproto.Cursor)

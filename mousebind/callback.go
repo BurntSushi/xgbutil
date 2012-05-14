@@ -26,7 +26,7 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback, evtype int,
 
 	// Only do the grab if we haven't yet on this window.
 	// And if we WANT a grab...
-	if grab && xu.MouseBindGrabs(evtype, win, mods, button) == 0 {
+	if grab && mouseBindGrabs(xu, evtype, win, mods, button) == 0 {
 		err := GrabChecked(xu, win, mods, button, sync)
 		if err != nil {
 			// If a bad access, let's be nice and give a good error message.
@@ -53,12 +53,12 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.MouseBindCallback, evtype int,
 
 	// If this is the first Button{Press|Release}Event on this window,
 	// then we need to listen to Button{Press|Release} events in the main loop.
-	if !xu.ConnectedMouseBind(evtype, win) {
+	if !connectedMouseBind(xu, evtype, win) {
 		allCb.Connect(xu, win)
 	}
 
 	// Finally, attach the callback.
-	xu.AttachMouseBindCallback(evtype, win, mods, button, callback)
+	attachMouseBindCallback(xu, evtype, win, mods, button, callback)
 
 	return nil
 }
@@ -128,7 +128,7 @@ func (callback ButtonReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
 func RunButtonPressCallbacks(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
 	mods, button := DeduceButtonInfo(ev.State, ev.Detail)
 
-	xu.RunMouseBindCallbacks(ev, xevent.ButtonPress, ev.Event, mods, button)
+	runMouseBindCallbacks(xu, ev, xevent.ButtonPress, ev.Event, mods, button)
 }
 
 // RunButtonReleaseCallbacks infers the window, keycode and modifiers from a
@@ -138,7 +138,7 @@ func RunButtonReleaseCallbacks(xu *xgbutil.XUtil,
 
 	mods, button := DeduceButtonInfo(ev.State, ev.Detail)
 
-	xu.RunMouseBindCallbacks(ev, xevent.ButtonRelease, ev.Event, mods, button)
+	runMouseBindCallbacks(xu, ev, xevent.ButtonRelease, ev.Event, mods, button)
 }
 
 // Detach removes all handlers for all mouse events for the provided window id.
@@ -165,10 +165,10 @@ func DetachRelease(xu *xgbutil.XUtil, win xproto.Window) {
 // combination. This will also issue an ungrab request for each grab that
 // drops to zero.
 func detach(xu *xgbutil.XUtil, evtype int, win xproto.Window) {
-	mkeys := xu.MouseBindKeys()
-	xu.DetachMouseBindWindow(evtype, win)
+	mkeys := mouseBindKeys(xu)
+	detachMouseBindWindow(xu, evtype, win)
 	for _, key := range mkeys {
-		if xu.MouseBindGrabs(key.Evtype, key.Win, key.Mod, key.Button) == 0 {
+		if mouseBindGrabs(xu, key.Evtype, key.Win, key.Mod, key.Button) == 0 {
 			Ungrab(xu, key.Win, key.Mod, key.Button)
 		}
 	}

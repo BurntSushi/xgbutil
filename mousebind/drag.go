@@ -34,14 +34,14 @@ func dragGrab(xu *xgbutil.XUtil, win xproto.Window, cursor xproto.Cursor) bool {
 		return false
 	}
 
-	xu.MouseDragSet(true)
+	mouseDragSet(xu, true)
 	return true
 }
 
 // dragUngrab is a shortcut for ungrabbing the pointer for a drag.
 func dragUngrab(xu *xgbutil.XUtil) {
 	UngrabPointer(xu)
-	xu.MouseDragSet(false)
+	mouseDragSet(xu, false)
 }
 
 // dragStart executes the "begin" function registered for the current drag.
@@ -51,7 +51,7 @@ func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent, win xproto.Window,
 	end xgbutil.MouseDragFun) {
 
 	// don't start a drag if one is already in progress
-	if xu.MouseDrag() {
+	if mouseDrag(xu) {
 		return
 	}
 
@@ -67,35 +67,34 @@ func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent, win xproto.Window,
 	}
 
 	// we're committed. set the drag state and start the 'begin' function
-	xu.MouseDragStepSet(step)
-	xu.MouseDragEndSet(end)
+	mouseDragStepSet(xu, step)
+	mouseDragEndSet(xu, end)
 }
 
 // dragStep executes the "step" function registered for the current drag.
 func dragStep(xu *xgbutil.XUtil, ev xevent.MotionNotifyEvent) {
 	// If for whatever reason we don't have any *piece* of a grab,
 	// we've gotta back out.
-	if !xu.MouseDrag() || xu.MouseDragStep() == nil ||
-		xu.MouseDragEnd() == nil {
+	if !mouseDrag(xu) || mouseDragStep(xu) == nil || mouseDragEnd(xu) == nil {
 		dragUngrab(xu)
-		xu.MouseDragStepSet(nil)
-		xu.MouseDragEndSet(nil)
+		mouseDragStepSet(xu, nil)
+		mouseDragEndSet(xu, nil)
 		return
 	}
 
 	// now actually run the step
-	xu.MouseDragStep()(xu, int(ev.RootX), int(ev.RootY),
+	mouseDragStep(xu)(xu, int(ev.RootX), int(ev.RootY),
 		int(ev.EventX), int(ev.EventY))
 }
 
 // dragEnd executes the "end" function registered for the current drag.
 func dragEnd(xu *xgbutil.XUtil, ev xevent.ButtonReleaseEvent) {
-	if xu.MouseDragEnd() != nil {
-		xu.MouseDragEnd()(xu, int(ev.RootX), int(ev.RootY),
+	if mouseDragEnd(xu) != nil {
+		mouseDragEnd(xu)(xu, int(ev.RootX), int(ev.RootY),
 			int(ev.EventX), int(ev.EventY))
 	}
 
 	dragUngrab(xu)
-	xu.MouseDragStepSet(nil)
-	xu.MouseDragEndSet(nil)
+	mouseDragStepSet(xu, nil)
+	mouseDragEndSet(xu, nil)
 }
