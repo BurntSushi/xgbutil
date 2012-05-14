@@ -26,6 +26,7 @@ package main
 import (
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
@@ -38,6 +39,9 @@ import (
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
+// When counter reaches 0, exit.
+var counter int32
+
 // Just iniaitlize the RNG seed for generating random background colors.
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -49,6 +53,7 @@ func init() {
 // We also set up a mouse binding so that clicking inside a window will
 // create another one.
 func newWindow(X *xgbutil.XUtil) {
+	counter++
 	win, err := xwindow.Generate(X)
 	if err != nil {
 		log.Fatal(err)
@@ -79,6 +84,11 @@ func newWindow(X *xgbutil.XUtil) {
 				xevent.Detach(X, win.Id)
 				mousebind.Detach(X, win.Id)
 				xproto.DestroyWindow(X.Conn(), win.Id)
+				counter--
+
+				if counter == 0 {
+					os.Exit(0)
+				}
 			}
 		}).Connect(X, win.Id)
 
