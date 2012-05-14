@@ -1,0 +1,16 @@
+The 'scripts' directory contains small programs that facilitate the development
+of xgbutil.
+
+Currently, there is only one script: 'write-events'.
+
+write-events
+============
+write-events is a short Python program that can automatically generates two
+Go source files in the 'xevent' package. Namely, the 'types_auto.go' and
+'callbacks.go' files. Both files contain a lot of boiler plate related to
+definitions of each X event in the core protocol.
+
+If and when xgbutil adds support for other extensions (i.e., RandR), more
+events will need to be added.
+
+'write-events' is run in when calling 'make' in the xgbutil root directory.
