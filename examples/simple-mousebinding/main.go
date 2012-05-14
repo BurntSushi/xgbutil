@@ -39,9 +39,9 @@ func main() {
 	// Also, "Mod4-1" typically corresponds to pressing down the "Super" or
 	// "Windows" key on your keyboard, and then pressing the left mouse button.
 	// The last two parameters are whether to make a synchronous grab and
-	// whether to actually issue a grab. (The parameters used here are the
-	// common case.) See the documentation for the Connect method for more
-	// details.
+	// whether to actually issue a grab, respectively.
+	// (The parameters used here are the common case.)
+	// See the documentation for the Connect method for more details.
 	err = cb1.Connect(X, X.RootWin(), "Mod4-1", false, true)
 
 	// A mouse binding can fail if the mouse string could not be parsed, or if 
