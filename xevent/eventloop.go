@@ -76,9 +76,9 @@ func Main(xu *xgbutil.XUtil) {
 // Two ping channels are returned so that your code stays thread safe by
 // default. If you'd like to achieve concurrency, simply do "other work"
 // in another goroutine or do a non-blocking receive on pingAfter.
-// N.B. If you have multiple X connections in the same program, you should be
-// able to run this in different goroutines concurrently. However, only
-// *one* of these should run for *each* connection.
+//
+// A complete example using MainPing can be found in the examples directory in
+// the xgbutil package under the name multiple-source-event-loop.
 func MainPing(xu *xgbutil.XUtil) (chan struct{}, chan struct{}) {
 	pingBefore := make(chan struct{}, 0)
 	pingAfter := make(chan struct{}, 0)
