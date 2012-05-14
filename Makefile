@@ -16,3 +16,6 @@ tags:
 loc:
 	find ./ -name '*.go' -and -not -wholename './tests*' -and -not -name '*keysymdef.go' -print | sort | xargs wc -l
 
+ex-%:
+	go run examples/$*/main.go
+
