@@ -1,7 +1,3 @@
-/*
-   A convenience function to find the name of an active EWMH compliant
-   window manager.
-*/
 package ewmh
 
 import (
@@ -13,8 +9,7 @@ import (
 // GetEwmhWM uses the EWMH spec to find if a conforming window manager
 // is currently running or not. If it is, then its name will be returned.
 // Otherwise, an error will be returned explaining why one couldn't be found.
-// (This function is safe.)
-func GetEwmhWM(xu *xgbutil.XUtil) (wmName string, err error) {
+func GetEwmhWM(xu *xgbutil.XUtil) (string, error) {
 	childCheck, err := SupportingWmCheckGet(xu, xu.RootWin())
 	if err != nil {
 		return "", fmt.Errorf("GetEwmhWM: Failed because: %s", err)
