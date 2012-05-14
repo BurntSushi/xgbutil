@@ -21,7 +21,9 @@ const MaxReqSize = (1 << 16) * 4
 // X connection, the root window, event callbacks, key/mouse bindings, etc.
 // Regrettably, many of the members are exported, even though they should not
 // be used directly by the user. They are exported for use in sub-packages.
-// (Namely, xevent, keybind and mousebind.)
+// (Namely, xevent, keybind and mousebind.) In fact, there should *never*
+// be a reason to access any members of an XUtil value directly. Any
+// interaction with an XUtil value should be through its methods.
 type XUtil struct {
 	// conn is the XGB connection object used to issue protocol requests.
 	conn *xgb.Conn
@@ -170,10 +172,10 @@ func NewConn() (*XUtil, error) {
 // If 'display' is empty, the DISPLAY environment variable is used. Otherwise
 // there are several different display formats supported:
 //
-// NewConn(":1") -> net.Dial("unix", "", "/tmp/.X11-unix/X1")
-// NewConn("/tmp/launch-123/:0") -> net.Dial("unix", "", "/tmp/launch-123/:0")
-// NewConn("hostname:2.1") -> net.Dial("tcp", "", "hostname:6002")
-// NewConn("tcp/hostname:1.0") -> net.Dial("tcp", "", "hostname:6001")
+//	NewConn(":1") -> net.Dial("unix", "", "/tmp/.X11-unix/X1")
+//	NewConn("/tmp/launch-12/:0") -> net.Dial("unix", "", "/tmp/launch-12/:0")
+//	NewConn("hostname:2.1") -> net.Dial("tcp", "", "hostname:6002")
+//	NewConn("tcp/hostname:1.0") -> net.Dial("tcp", "", "hostname:6001")
 func NewConnDisplay(display string) (*XUtil, error) {
 	c, err := xgb.NewConnDisplay(display)
 

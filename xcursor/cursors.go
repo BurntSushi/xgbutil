@@ -1,6 +1,3 @@
-/*
-   A list of all available X cursors.
-*/
 package xcursor
 
 const (

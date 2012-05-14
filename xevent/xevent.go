@@ -132,6 +132,10 @@ func Quitting(xu *xgbutil.XUtil) bool {
 }
 
 // attachCallback associates a (event, window) tuple with an event.
+// Use copy on write since we run callbacks *a lot* more than attaching them.
+// (The copy on write only applies to the slice of callbacks rather than
+// the map itself, since the initial allocation is guaranteed to come before
+// any use of it.)
 func attachCallback(xu *xgbutil.XUtil, evtype int, win xproto.Window,
 	fun xgbutil.Callback) {
 
@@ -144,18 +148,29 @@ func attachCallback(xu *xgbutil.XUtil, evtype int, win xproto.Window,
 	if _, ok := xu.Callbacks[evtype][win]; !ok {
 		xu.Callbacks[evtype][win] = make([]xgbutil.Callback, 0)
 	}
-	xu.Callbacks[evtype][win] = append(xu.Callbacks[evtype][win], fun)
+
+	// COW
+	newCallbacks := make([]xgbutil.Callback, len(xu.Callbacks[evtype][win]))
+	for i, cb := range xu.Callbacks[evtype][win] {
+		newCallbacks[i] = cb
+	}
+	newCallbacks = append(newCallbacks, fun)
+	xu.Callbacks[evtype][win] = newCallbacks
 }
 
-// RunCallbacks executes every callback corresponding to a
+// runCallbacks executes every callback corresponding to a
 // particular event/window tuple.
 func runCallbacks(xu *xgbutil.XUtil, event interface{}, evtype int,
 	win xproto.Window) {
 
+	// The callback slice for a particular (event type, window) tuple uses
+	// copy on write. So just take a pointer to whatever is there and use that.
+	// We can be sure that the slice won't change from underneathe us.
 	xu.CallbacksLck.RLock()
-	defer xu.CallbacksLck.RUnlock()
+	cbs := xu.Callbacks[evtype][win]
+	xu.CallbacksLck.RUnlock()
 
-	for _, cb := range xu.Callbacks[evtype][win] {
+	for _, cb := range cbs {
 		cb.Run(xu, event)
 	}
 }

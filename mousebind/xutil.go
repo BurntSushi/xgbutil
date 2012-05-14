@@ -15,7 +15,7 @@ import (
 	"github.com/BurntSushi/xgbutil"
 )
 
-// attackMouseBindCallback associates an (event, window, mods, button)
+// attachMouseBindCallback associates an (event, window, mods, button)
 // with a callback.
 func attachMouseBindCallback(xu *xgbutil.XUtil, evtype int, win xproto.Window,
 	mods uint16, button xproto.Button, fun xgbutil.CallbackMouse) {

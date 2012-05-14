@@ -151,15 +151,17 @@ func MapsGet(xu *xgbutil.XUtil) (*xproto.GetKeyboardMappingReply,
 	return newKeymap, newModmap
 }
 
-// ParseString takes a string of the format '[Mod[-Mod[...]]-]-KEY',
+// ParseString takes a string of the format '[Mod[-Mod[...]]]-KEY',
 // i.e., 'Mod4-j', and returns a modifiers/keycode combo.
-// (Actually, the parser is slightly more forgiving than what this comment
-//  leads you to believe.)
-func ParseString(xu *xgbutil.XUtil,
-	str string) (uint16, xproto.Keycode, error) {
+// An error is returned if the string is malformed, or if no valid KEY can
+// be found. 
+// Valid values of KEY should include almost anything returned by pressing
+// keys with the 'xev' program. Alternatively, you may reference the keys
+// of the 'keysyms' map defined in keybind/keysymdef.go.
+func ParseString(xu *xgbutil.XUtil, s string) (uint16, xproto.Keycode, error) {
 
 	mods, kc := uint16(0), xproto.Keycode(0)
-	for _, part := range strings.Split(str, "-") {
+	for _, part := range strings.Split(s, "-") {
 		switch strings.ToLower(part) {
 		case "shift":
 			mods |= xproto.ModMaskShift
@@ -188,7 +190,7 @@ func ParseString(xu *xgbutil.XUtil,
 
 	if kc == 0 {
 		return 0, 0, fmt.Errorf("Could not find a valid keycode in the "+
-			"string '%s'. Key binding failed.", str)
+			"string '%s'. Key binding failed.", s)
 	}
 
 	return mods, kc, nil
@@ -214,7 +216,6 @@ func StrToKeycode(xu *xgbutil.XUtil, str string) xproto.Keycode {
 	if !ok {
 		return xproto.Keycode(0)
 	}
-
 	return keycodeGet(xu, sym)
 }
 
@@ -240,10 +241,11 @@ func keycodeGet(xu *xgbutil.XUtil, keysym xproto.Keysym) xproto.Keycode {
 	return 0
 }
 
-// keysymToRune converts a keysym to a single rune if one is available.
-// If no matching single rune is found, the empty string is returned.
-// (Since the idea of this function is to facilate in translating keys pressed
-// to characters on the screen.)
+// KeysymToStr converts a keysym to a string if one is available.
+// If one is found, KeysymToStr also checks the 'weirdKeysyms' map, which
+// contains a map from multi-character strings to single character
+// representations (i.e., 'braceleft' to '{').
+// If no match is found initially, an empty string is returned.
 func KeysymToStr(keysym xproto.Keysym) string {
 	symStr, ok := strKeysyms[keysym]
 	if !ok {
@@ -289,12 +291,11 @@ func ModGet(xu *xgbutil.XUtil, keycode xproto.Keycode) uint16 {
 			return Modifiers[i/modMap.KeycodesPerModifier]
 		}
 	}
-
 	return 0
 }
 
-// Grabs a key with mods on a particular window.
-// Will also grab all combinations of modifiers found in xgbutil.IgnoreMods
+// Grab grabs a key with mods on a particular window.
+// This will also grab all combinations of modifiers found in xevent.IgnoreMods.
 func Grab(xu *xgbutil.XUtil, win xproto.Window,
 	mods uint16, key xproto.Keycode) {
 
@@ -304,6 +305,11 @@ func Grab(xu *xgbutil.XUtil, win xproto.Window,
 	}
 }
 
+// GrabChecked Grabs a key with mods on a particular window.
+// This is the same as Grab, except that it issue a checked request.
+// Which means that an error could be returned and handled on the spot.
+// (Checked requests are slower than unchecked requests.)
+// This will also grab all combinations of modifiers found in xevent.IgnoreMods.
 func GrabChecked(xu *xgbutil.XUtil, win xproto.Window,
 	mods uint16, key xproto.Keycode) error {
 
@@ -319,7 +325,7 @@ func GrabChecked(xu *xgbutil.XUtil, win xproto.Window,
 }
 
 // Ungrab undoes Grab. It will handle all combinations od modifiers found
-// in xgbutil.IgnoreMods.
+// in xevent.IgnoreMods.
 func Ungrab(xu *xgbutil.XUtil, win xproto.Window,
 	mods uint16, key xproto.Keycode) {
 
@@ -340,7 +346,6 @@ func GrabKeyboard(xu *xgbutil.XUtil, win xproto.Window) (bool, error) {
 		return false, fmt.Errorf("GrabKeyboard: Error grabbing keyboard on "+
 			"window '%x': %s", win, err)
 	}
-
 	return reply.Status == xproto.GrabStatusSuccess, nil
 }
 

@@ -29,7 +29,13 @@ import (
 //			fmt.Printf("(%d, %d) %dx%d\n", e.X, e.Y, e.Width, e.Height)
 //		}).Connect(X, 0x1)
 type Callback interface {
+	// Connect modifies XUtil's state to attach an event handler to a
+	// particular event.
 	Connect(xu *XUtil, win xproto.Window)
+
+	// Run is exported for use in the xevent package but should not be
+	// used by the user. (It is used to run the callback function in the
+	// main event loop.)
 	Run(xu *XUtil, ev interface{})
 }
 
@@ -50,8 +56,18 @@ type CallbackKey interface {
 // CallbackMouse works similarly to the more general Callback, but it adds
 // parameters specific to mouse bindings.
 type CallbackMouse interface {
+	// Connect modifies XUtil's state to attach an event handler to a
+	// particular button press.
+	// If sync is true, the grab will be synchronous. (This will require a
+	// call to xproto.AllowEvents in response, otherwise no further events
+	// will be processed and your program will lock.)
+	// If grab is true, connect will request a passive grab.
 	Connect(xu *XUtil, win xproto.Window, buttonStr string,
-		propagate bool, grab bool) error
+		sync bool, grab bool) error
+
+	// Run is exported for use in the mousebind package but should not be
+	// used by the user. (It is used to run the callback function in the
+	// main event loop.)
 	Run(xu *XUtil, ev interface{})
 }
 
@@ -69,6 +85,7 @@ type KeyKey struct {
 // MouseKey is the type of the key in the map of mouse bindings.
 // It essentially represents the tuple
 // (event type, window id, modifier, button).
+// It is exported for use in the mousebind package. It should not be used.
 type MouseKey struct {
 	Evtype int
 	Win    xproto.Window

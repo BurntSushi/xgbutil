@@ -31,11 +31,11 @@ func Initialize(xu *xgbutil.XUtil) {
 	xevent.ButtonReleaseFun(dragEnd).Connect(xu, xu.Dummy())
 }
 
-// ParseString takes a string of the format '[Mod[-Mod[...]]-]-KEY',
-// i.e., 'Mod4-1', and returns a modifiers/button combo.
+// ParseString takes a string of the format '[Mod[-Mod[...]]]-BUTTONNUMBER',
+// i.e., 'Mod4-1', and returns a modifiers/button combination.
 // "Mod" could also be one of {button1, button2, button3, button4, button5}.
-// (Actually, the parser is slightly more forgiving than what this comment
-//  leads you to believe.)
+// An error is returned if the string is malformed or if no BUTTONNUMBER
+// could be found.
 func ParseString(xu *xgbutil.XUtil, str string) (uint16, xproto.Button, error) {
 	mods, button := uint16(0), xproto.Button(0)
 	for _, part := range strings.Split(str, "-") {

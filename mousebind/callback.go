@@ -46,9 +46,9 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.CallbackMouse, evtype int,
 	// make sure we can respond to it in the main event loop.
 	var allCb xgbutil.Callback
 	if evtype == xevent.ButtonPress {
-		allCb = xevent.ButtonPressFun(RunButtonPressCallbacks)
+		allCb = xevent.ButtonPressFun(runButtonPressCallbacks)
 	} else {
-		allCb = xevent.ButtonReleaseFun(RunButtonReleaseCallbacks)
+		allCb = xevent.ButtonReleaseFun(runButtonReleaseCallbacks)
 	}
 
 	// If this is the first Button{Press|Release}Event on this window,
@@ -90,6 +90,8 @@ func DeduceButtonInfo(state uint16,
 	return uint16(modsTemp), button
 }
 
+// ButtonPressFun represents a function that is called when a particular mouse
+// binding is fired.
 type ButtonPressFun xevent.ButtonPressFun
 
 // If 'sync' is True, then no further events can be processed until the
@@ -106,6 +108,8 @@ func (callback ButtonPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 	callback(xu, event.(xevent.ButtonPressEvent))
 }
 
+// ButtonReleaseFun represents a function that is called when a particular mouse
+// binding is fired.
 type ButtonReleaseFun xevent.ButtonReleaseFun
 
 // If 'sync' is True, then no further events can be processed until the
@@ -123,17 +127,17 @@ func (callback ButtonReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {
 	callback(xu, event.(xevent.ButtonReleaseEvent))
 }
 
-// RunButtonPressCallbacks infers the window, button and modifiers from a
+// runButtonPressCallbacks infers the window, button and modifiers from a
 // ButtonPressEvent and runs the corresponding callbacks.
-func RunButtonPressCallbacks(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
+func runButtonPressCallbacks(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
 	mods, button := DeduceButtonInfo(ev.State, ev.Detail)
 
 	runMouseBindCallbacks(xu, ev, xevent.ButtonPress, ev.Event, mods, button)
 }
 
-// RunButtonReleaseCallbacks infers the window, keycode and modifiers from a
+// runButtonReleaseCallbacks infers the window, keycode and modifiers from a
 // ButtonPressEvent and runs the corresponding callbacks.
-func RunButtonReleaseCallbacks(xu *xgbutil.XUtil,
+func runButtonReleaseCallbacks(xu *xgbutil.XUtil,
 	ev xevent.ButtonReleaseEvent) {
 
 	mods, button := DeduceButtonInfo(ev.State, ev.Detail)

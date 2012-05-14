@@ -91,6 +91,8 @@ func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
 	callback(xu, event.(xevent.KeyPressEvent))
 }
 
+// KeyReleaseFun represents a function that is called when a particular key
+// binding is fired.
 type KeyReleaseFun xevent.KeyReleaseFun
 
 func (callback KeyReleaseFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
