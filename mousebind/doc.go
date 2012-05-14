@@ -2,7 +2,7 @@
 Package mousebind provides an easy to use interface to assign callback functions
 to human readable button sequences.
 
-Namely, the keybind package exports two function types: ButtonPressFun and 
+Namely, the mousebind package exports two function types: ButtonPressFun and 
 ButtonReleaseFun. Values of these types are functions, and have a method called 
 'Connect' that attaches an event handler to be run when a particular button
 press is issued.
@@ -95,7 +95,7 @@ This sort of example is precisely how reparenting window managers allow one to
 click on a window and have it be activated or "raised" *and* have the button 
 press sent to the client window as well.
 
-Note that with a synchronous grab, all event processed will be halted by the X 
+Note that with a synchronous grab, all event processing will be halted by the X 
 server until *some* call to xproto.AllowEvents is made.
 
 Mouse bindings on the root window example
