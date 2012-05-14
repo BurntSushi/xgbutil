@@ -11,6 +11,8 @@
 // If you click inside one of the windows created, a new window will be
 // automatically created.
 //
+// The program will stop when all windows have been closed.
+//
 // This seems like a lot of code to accomplish a relatively simple task, but a
 // lot of it is boilerplate that you might already have in your program. Other
 // portions of this example exist only to make the example workable (like
