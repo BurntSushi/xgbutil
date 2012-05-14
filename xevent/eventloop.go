@@ -48,18 +48,23 @@ func Read(xu *xgbutil.XUtil, block bool) {
 // able to run this in different goroutines concurrently. However, only
 // *one* of these should run for *each* connection.
 func Main(xu *xgbutil.XUtil) {
-	mainEventLoop(xu, nil)
+	mainEventLoop(xu, nil, nil)
 }
 
-// MainPing starts the main X event loop, and returns a ping channel.
-// A benign value will be sent to the ping channel every time an event/error is
-// dequeued.
+// MainPing starts the main X event loop, and returns a pingBefore and a
+// pingAfter channel.
+// A benign value will be sent to the pingBefore channel right before an
+// event/error is dequeued.
+// A benign value will also be sent to the pingAfter channel right after
+// all callbacks for the dequeued event have finished executing.
 // This is useful if your event loop needs to draw from other sources. e.g.,
 //
-//	ping := xevent.MainPing()
+//	pingBefore, pingAfter := xevent.MainPing()
 //	for {
 //		select {
-//		case <-ping:
+//		case <-pingBefore:
+//			// Wait for event processing to finish.
+//			<-pingAfter
 //		case val <- someOtherChannel:
 //			// do some work with val
 //		}
@@ -67,19 +72,24 @@ func Main(xu *xgbutil.XUtil) {
 //
 // Note that an unbuffered channel is returned, which implies that any work
 // done in 'val' will delay further X event processing.
+//
+// Two ping channels are returned so that your code stays thread safe by
+// default. If you'd like to achieve concurrency, simply do "other work"
+// in another goroutine or do a non-blocking receive on pingAfter.
 // N.B. If you have multiple X connections in the same program, you should be
 // able to run this in different goroutines concurrently. However, only
 // *one* of these should run for *each* connection.
-func MainPing(xu *xgbutil.XUtil) chan struct{} {
-	ping := make(chan struct{}, 0)
+func MainPing(xu *xgbutil.XUtil) (chan struct{}, chan struct{}) {
+	pingBefore := make(chan struct{}, 0)
+	pingAfter := make(chan struct{}, 0)
 	go func() {
-		mainEventLoop(xu, ping)
+		mainEventLoop(xu, pingBefore, pingAfter)
 	}()
-	return ping
+	return pingBefore, pingAfter
 }
 
 // mainEventLoop runs the main event loop with an optional ping channel.
-func mainEventLoop(xu *xgbutil.XUtil, ping chan struct{}) {
+func mainEventLoop(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 	for {
 		if Quitting(xu) {
 			break
@@ -90,22 +100,22 @@ func mainEventLoop(xu *xgbutil.XUtil, ping chan struct{}) {
 		Read(xu, true)
 
 		// Now process every event/error in the queue.
-		processEventQueue(xu, ping)
+		processEventQueue(xu, pingBefore, pingAfter)
 	}
 }
 
 // processEventQueue processes every item in the event/error queue.
-func processEventQueue(xu *xgbutil.XUtil, ping chan struct{}) {
+func processEventQueue(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 	for !Empty(xu) {
 		if Quitting(xu) {
 			return
 		}
 
-		// We technically send the ping *before* the next event is dequeued.
+		// We send the ping *before* the next event is dequeued.
 		// This is so the queue doesn't present a misrepresentation of which
 		// events haven't been processed yet.
-		if ping != nil {
-			ping <- struct{}{}
+		if pingBefore != nil && pingAfter != nil {
+			pingBefore <- struct{}{}
 		}
 		ev, err := Dequeue(xu)
 
@@ -113,6 +123,9 @@ func processEventQueue(xu *xgbutil.XUtil, ping chan struct{}) {
 		// and move on the next event/error.
 		if err != nil {
 			ErrorHandlerGet(xu)(err)
+			if pingBefore != nil && pingAfter != nil {
+				pingAfter <- struct{}{}
+			}
 			continue
 		}
 
@@ -295,7 +308,10 @@ func processEventQueue(xu *xgbutil.XUtil, ping chan struct{}) {
 				xgbutil.Logger.Printf("ERROR: UNSUPPORTED EVENT TYPE: %T",
 					event)
 			}
-			continue
+		}
+
+		if pingBefore != nil && pingAfter != nil {
+			pingAfter <- struct{}{}
 		}
 	}
 }

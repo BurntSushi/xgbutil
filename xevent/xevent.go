@@ -16,6 +16,11 @@ var NoWindow xproto.Window = 0
 // with our mouse or key bindings. In particular, for each mouse or key binding 
 // issued, there is a seperate mouse or key binding made for each of the 
 // modifiers specified.
+//
+// You may modify this slice to add (or remove) modifiers, but it should be
+// done before *any* key or mouse bindings are attached with the keybind and
+// mousebind packages. It should not be modified afterwards.
+//
 // TODO: We're assuming numlock is in the 'mod2' modifier, which is a pretty
 // common setup, but by no means guaranteed. This should be modified to actually
 // inspect the modifiers table and look for the special Num_Lock keysym.

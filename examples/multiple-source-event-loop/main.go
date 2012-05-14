@@ -73,12 +73,16 @@ func main() {
 		}).Connect(X, X.RootWin())
 
 	// Instead of using the usual xevent.Main, we use xevent.MainPing.
-	// It runs the main event loop inside a goroutine and returns a 'ping'
-	// channel, which is sent a benign value whenever an event is dequeued.
-	ping := xevent.MainPing(X)
+	// It runs the main event loop inside a goroutine and returns ping
+	// channels, which are sent a benign values right before an event is
+	// dequeued and right after that event has finished running all callbacks
+	// associated with it, respectively.
+	pingBefore, pingAfter := xevent.MainPing(X)
 	for {
 		select {
-		case <-ping:
+		case <-pingBefore:
+			// Wait for the event to finish processing.
+			<-pingAfter
 		case otherVal := <-otherChan:
 			fmt.Printf("Processing other event: %d\n", otherVal)
 		}
