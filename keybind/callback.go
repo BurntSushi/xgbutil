@@ -1,7 +1,3 @@
-/*
-   Provides a callback interface, very similar to that found in
-   xevent/callback.go --- but only for key bindings.
-*/
 package keybind
 
 import (

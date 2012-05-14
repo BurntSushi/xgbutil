@@ -1,16 +1,17 @@
-/*
-   This file contains the key sym definitions from X.
-   Taken from X11/keysymdef.h
-
-   It also contains the "XFree86 vendor specific keysyms" taken from
-   X11/XF86keysym.h.
-
-   We store this as a map because we need to be able to do reverse lookups.
-
-   keysyms is a mapping from english strings to key symbols.
-   strKeysyms is a mapping from key symbols to english strings.
-*/
 package keybind
+
+/*
+This file contains the keysym definitions from X.
+Taken from X11/keysymdef.h
+
+It also contains the "XFree86 vendor specific keysyms" taken from
+X11/XF86keysym.h.
+
+We store this as a map because we need to be able to do reverse lookups.
+
+keysyms is a mapping from english strings to key symbols.
+strKeysyms is a mapping from key symbols to english strings.
+*/
 
 import "github.com/BurntSushi/xgb/xproto"
 
@@ -78,7 +79,8 @@ var weirdKeysyms = map[string]rune{
 	"KP_9":         '9',
 }
 
-// strKeysyms is the reverse of keysyms
+// strKeysyms is the reverse of keysyms. It is built upon initialization.
+// TODO: Hard code the reverse map to be faster.
 var strKeysyms map[xproto.Keysym]string
 
 var keysyms map[string]xproto.Keysym = map[string]xproto.Keysym{

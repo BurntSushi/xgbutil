@@ -1,7 +1,3 @@
-/*
-   Package keybind provides an easy interface to bind and run callback
-   functions for human readable keybindings.
-*/
 package keybind
 
 import (

@@ -43,7 +43,9 @@ func main() {
 	win.Map()
 
 	// Notice that we use xevent.KeyPressFun instead of keybind.KeyPressFun,
-	// because we aren't trying to make a grab.
+	// because we aren't trying to make a grab *and* because we want to listen
+	// to *all* key press events, rather than just a particular key sequence
+	// that has been pressed.
 	xevent.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
 			// keybind.LookupString does the magic of implementing parts of

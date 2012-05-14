@@ -16,10 +16,13 @@ var NoWindow xproto.Window = 0
 // with our mouse or key bindings. In particular, for each mouse or key binding 
 // issued, there is a seperate mouse or key binding made for each of the 
 // modifiers specified.
+// TODO: We're assuming numlock is in the 'mod2' modifier, which is a pretty
+// common setup, but by no means guaranteed. This should be modified to actually
+// inspect the modifiers table and look for the special Num_Lock keysym.
 var IgnoreMods []uint16 = []uint16{
 	0,
-	xproto.ModMaskLock,                   // Num lock
-	xproto.ModMask2,                      // Caps lock
+	xproto.ModMaskLock,                   // Caps lock
+	xproto.ModMask2,                      // Num lock
 	xproto.ModMaskLock | xproto.ModMask2, // Caps and Num lock
 }
 

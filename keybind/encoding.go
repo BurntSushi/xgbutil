@@ -18,6 +18,44 @@ import (
 	"github.com/BurntSushi/xgbutil"
 )
 
+// LookupString attempts to convert a (modifiers, keycode) to an english string.
+// It essentially implements the rules described at http://goo.gl/qum9q
+// Namely, the bulleted list that describes how key syms should be interpreted
+// when various modifiers are pressed.
+// Note that we ignore the logic that asks us to check if particular key codes
+// are mapped to particular modifiers (i.e., "XK_Caps_Lock" to "Lock" modifier).
+// We just check if the modifiers are activated. That's good enough for me.
+// XXX: We ignore num lock stuff.
+// XXX: We ignore MODE SWITCH stuff. (i.e., we don't use group 2 key syms.)
+func LookupString(xu *xgbutil.XUtil, mods uint16,
+	keycode xproto.Keycode) string {
+
+	k1, k2, _, _ := interpretSymList(xu, keycode)
+
+	shift := mods&xproto.ModMaskShift > 0
+	lock := mods&xproto.ModMaskLock > 0
+	switch {
+	case !shift && !lock:
+		return k1
+	case !shift && lock:
+		if len(k1) == 1 && unicode.IsLower(rune(k1[0])) {
+			return k2
+		} else {
+			return k1
+		}
+	case shift && lock:
+		if len(k2) == 1 && unicode.IsLower(rune(k2[0])) {
+			return string(unicode.ToUpper(rune(k2[0])))
+		} else {
+			return k2
+		}
+	case shift:
+		return k2
+	}
+
+	return ""
+}
+
 // interpretSymList interprets the keysym list for a particular keycode as
 // described in the third and fourth paragraphs of http://goo.gl/qum9q
 func interpretSymList(xu *xgbutil.XUtil, keycode xproto.Keycode) (
@@ -64,42 +102,4 @@ func interpretSymList(xu *xgbutil.XUtil, keycode xproto.Keycode) (
 	}
 
 	return
-}
-
-// LookupString attempts to convert a (modifiers, keycode) to an english string.
-// It essentially implements the rules described at http://goo.gl/qum9q
-// Namely, the bulleted list that describes how key syms should be interpreted
-// when various modifiers are pressed.
-// Note that we ignore the logic that asks us to check if particular key codes
-// are mapped to particular modifiers (i.e., "XK_Caps_Lock" to "Lock" modifier).
-// We just check if the modifiers are activated. That's good enough for me.
-// XXX: We ignore num lock stuff.
-// XXX: We ignore MODE SWITCH stuff. (i.e., we don't use group 2 key syms.)
-func LookupString(xu *xgbutil.XUtil, mods uint16,
-	keycode xproto.Keycode) string {
-
-	k1, k2, _, _ := interpretSymList(xu, keycode)
-
-	shift := mods&xproto.ModMaskShift > 0
-	lock := mods&xproto.ModMaskLock > 0
-	switch {
-	case !shift && !lock:
-		return k1
-	case !shift && lock:
-		if len(k1) == 1 && unicode.IsLower(rune(k1[0])) {
-			return k2
-		} else {
-			return k1
-		}
-	case shift && lock:
-		if len(k2) == 1 && unicode.IsLower(rune(k2[0])) {
-			return string(unicode.ToUpper(rune(k2[0])))
-		} else {
-			return k2
-		}
-	case shift:
-		return k2
-	}
-
-	return ""
 }
