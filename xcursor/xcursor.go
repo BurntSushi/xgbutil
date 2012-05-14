@@ -7,7 +7,7 @@ import (
 )
 
 // CreateCursor sets some default colors for nice and easy cursor creation.
-// Just supply a cursor constant from 'xcursor/cursors.go'.
+// Just supply a cursor constant from 'xcursor/cursordef.go'.
 func CreateCursor(xu *xgbutil.XUtil, cursor uint16) (xproto.Cursor, error) {
 	return CreateCursorExtra(xu, cursor, 0, 0, 0, 0xffff, 0xffff, 0xffff)
 }
