@@ -24,7 +24,7 @@ import (
 //
 // Example to respond to ConfigureNotify events on window 0x1
 //
-//     xevent.ConfigureNotifyFun(
+//	xevent.ConfigureNotifyFun(
 //		func(X *xgbutil.XUtil, e xevent.ConfigureNotifyEvent) {
 //			fmt.Printf("(%d, %d) %dx%d\n", e.X, e.Y, e.Width, e.Height)
 //		}).Connect(X, 0x1)
