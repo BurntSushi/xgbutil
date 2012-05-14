@@ -17,6 +17,11 @@ to Key{Press,Release} events using xevent, but it will be run for *all*
 Key{Press,Release} events. (This is typically what one might do when setting up
 an active grab.)
 
+Initialization
+
+Before using the keybind package, you should *always* make a single call to
+keybind.Initialize for each X connection you're working with.
+
 Key sequence format
 
 Key sequences are human readable strings made up of zero or more modifiers and

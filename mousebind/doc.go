@@ -16,6 +16,11 @@ synchronous or not. One can still attach callbacks to Button{Press,Release}
 events using xevent, but it will be run for *all* Button{Press,Release} events. 
 (This is typically what one might do when setting up an active grab.)
 
+Initialization
+
+Before using the mousebind package, you should *always* make a single call to
+mousebind.Initialize for each X connection you're working with.
+
 Button sequence format
 
 Button sequences are human readable strings made up of zero or more modifiers 
