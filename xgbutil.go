@@ -163,7 +163,8 @@ type XUtil struct {
 }
 
 // NewConn connects to the X server using the DISPLAY environment variable
-// and creates a new XUtil.
+// and creates a new XUtil. Most environments have the DISPLAY environment
+// variable set, so this is probably what you want to use to connect to X.
 func NewConn() (*XUtil, error) {
 	return NewConnDisplay("")
 }
