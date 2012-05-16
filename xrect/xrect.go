@@ -1,15 +1,3 @@
-/*
-   xrect defines several utility functions that perform math on X rectangles.
-   X rectangles are defined as a 4-tuple (x, y, w, h) where x and y are the
-   top-left coordinates in the x,y plane (with origin at the top left corner).
-   w and h are the width and height of the rectangle.
-
-   One additional constraint is that x and y are signed 16 bit integers
-   (int16). In particular, they may be negative!
-
-   w and h are unsigned 16 bit integers (uint16). If they are negative, X
-   will yell at you and then stomp on you.
-*/
 package xrect
 
 import "fmt"
@@ -153,8 +141,8 @@ func IntersectArea(r1 Rect, r2 Rect) int {
 	x1, y1, w1, h1 := RectPieces(r1)
 	x2, y2, w2, h2 := RectPieces(r2)
 	if x2 < x1+w1 && x2+w2 > x1 && y2 < y1+h1 && y2+h2 > y1 {
-		iw := Min(x1+w1-1, x2+w2-1) - Max(x1, x2) + 1
-		ih := Min(y1+h1-1, y2+h2-1) - Max(y1, y2) + 1
+		iw := min(x1+w1-1, x2+w2-1) - max(x1, x2) + 1
+		ih := min(y1+h1-1, y2+h2-1) - max(y1, y2) + 1
 		return iw * ih
 	}
 
@@ -183,18 +171,20 @@ func LargestOverlap(needle Rect, haystack []Rect) int {
 }
 
 // ApplyStrut takes a list of Rects (typically the rectangles that represent
-// each physical head in this case) and a set of parameters representing a
-// strut, and modifies the list of Rects to account for struts.
+// each physical head in this case), the root window geometry,
+// and a set of parameters representing a
+// strut, and modifies the list of Rects to account for that strut.
 // That is, it shrinks each rect.
 // Note that if struts overlap, the *most restrictive* one is used. This seems
 // like the most sensible response to a weird scenario.
 // (If you don't have a partial strut, just use '0' for the extra fields.)
-// See tests/tst_rect.go for an example of how to use this to get accurate
-// workarea for each physical head.
+// See xgbutil/examples/workarea-struts for an example of how to use this to 
+// get accurate workarea for each physical head.
 func ApplyStrut(rects []Rect, rootWidth, rootHeight int,
 	left, right, top, bottom,
 	left_start_y, left_end_y, right_start_y, right_end_y,
 	top_start_x, top_end_x, bottom_start_x, bottom_end_x int) {
+
 	var nx, ny int // 'n*' are new values that may or may not be used
 	var nw, nh int
 	var x, y, w, h int
@@ -275,16 +265,14 @@ func yInRect(ytest int, rect Rect) bool {
 	return ytest >= y && ytest < (y+h)
 }
 
-// Min should be in Go's standard library... but not for floats.
-func Min(a, b int) int {
+func min(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-// Max should be in Go's standard library... but not for floats.
-func Max(a, b int) int {
+func max(a, b int) int {
 	if a > b {
 		return a
 	}
