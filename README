@@ -1,4 +1,4 @@
-This is a utility library designed to work with the X Go Binding. This 
+xgbutil is a utility library designed to work with the X Go Binding. This 
 project's main goal is to make various X related tasks easier. For example, 
 binding keys, using the EWMH or ICCCM specs with the window manager, 
 moving/resizing windows, assigning function callbacks to particular events,
