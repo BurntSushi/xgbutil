@@ -1,10 +1,3 @@
-/*
-   A collection of functions that make working with property replies
-   much easier.
-
-   Technically, not all possible property replies are supported (yet).
-   But everything needed to implement EWMH, ICCCM and Motif is here.
-*/
 package xprop
 
 import (
