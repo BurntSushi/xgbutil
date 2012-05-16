@@ -37,7 +37,7 @@ func main() {
 	// Get the current modifier map.
 	// The map is actually a table, where rows correspond to modifiers, and
 	// columns correspond to the keys that activate that modifier.
-	modMap := X.ModMapGet()
+	modMap := keybind.ModMapGet(X)
 
 	// The number of keycodes allowed per modifier (i.e., the number of
 	// columns in the modifier map).
@@ -45,7 +45,7 @@ func main() {
 
 	// Get the number of allowable keysyms per keycode.
 	// This is used to search for a valid keysym for a particular keycode.
-	symsPerKc := int(X.KeyMapGet().KeysymsPerKeycode)
+	symsPerKc := int(keybind.KeyMapGet(X).KeysymsPerKeycode)
 
 	// Imitate everything...
 	fmt.Printf("xmodmap:  up to %d keys per modifier, "+
