@@ -1,7 +1,9 @@
 package xwindow
 
-// xwindow/ewmh.go contains several methods that rely on EWMH support in
-// the currently running window manager.
+/*
+xwindow/ewmh.go contains several methods that rely on EWMH support in
+the currently running window manager.
+*/
 
 import (
 	"github.com/BurntSushi/xgb/xproto"

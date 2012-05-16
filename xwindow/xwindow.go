@@ -33,6 +33,10 @@ import (
 	"github.com/BurntSushi/xgbutil/xrect"
 )
 
+// Window represents an X window. It contains an XUtilValue to simply the
+// parameter lists for methods declared on the Window type.
+// Geom is updated whenever Geometry is called, or when Move, Resize or
+// MoveResize are called.
 type Window struct {
 	X    *xgbutil.XUtil
 	Id   xproto.Window
@@ -84,7 +88,7 @@ func Generate(xu *xgbutil.XUtil) (*Window, error) {
 //		log.Fatalf("Could not generate a new resource identifier: %s", err)
 //	}
 //	w.Create(X.RootWin(), 20, 50, 500, 700,
-//		xproto.CwBackPixel, 0xffffffff)
+//		xproto.CwBackPixel, 0xffffff)
 func (w *Window) Create(parent xproto.Window, x, y, width, height,
 	valueMask int, valueList ...uint32) {
 
@@ -160,6 +164,11 @@ func rawGeometry(xu *xgbutil.XUtil, win xproto.Drawable) (xrect.Rect, error) {
 // If you're trying to move/resize a top-level window in a window manager that
 // supports EWMH, please use WMMoveResize instead.
 func (w *Window) MoveResize(x, y, width, height int) {
+	w.Geom.XSet(x)
+	w.Geom.YSet(y)
+	w.Geom.WidthSet(width)
+	w.Geom.HeightSet(height)
+
 	xproto.ConfigureWindow(w.X.Conn(), w.Id,
 		xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -171,6 +180,9 @@ func (w *Window) MoveResize(x, y, width, height int) {
 // If you're trying to move a top-level window in a window manager that
 // supports EWMH, please use WMMove instead.
 func (w *Window) Move(x, y int) {
+	w.Geom.XSet(x)
+	w.Geom.YSet(y)
+
 	xproto.ConfigureWindow(w.X.Conn(), w.Id,
 		xproto.ConfigWindowX|xproto.ConfigWindowY,
 		[]uint32{uint32(x), uint32(y)})
@@ -182,6 +194,9 @@ func (w *Window) Move(x, y int) {
 // If you're trying to resize a top-level window in a window manager that
 // supports EWMH, please use WMResize instead.
 func (w *Window) Resize(width, height int) {
+	w.Geom.WidthSet(width)
+	w.Geom.HeightSet(height)
+
 	xproto.ConfigureWindow(w.X.Conn(), w.Id,
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 		[]uint32{uint32(width), uint32(height)})
