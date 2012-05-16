@@ -166,49 +166,6 @@ func processEventQueue(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 			runCallbacks(xu, e, ButtonRelease, e.Event)
 		case xproto.MotionNotifyEvent:
 			e := MotionNotifyEvent{&event}
-
-			// Peek at the next events, if it's just another
-			// MotionNotify, let's compress!
-			// This is actually pretty nasty. The key here is to flush
-			// the buffer so we have an updated list of events.
-			// Then we read those events into our queue, but don't block
-			// while we do. Finally, we look through the queue and start
-			// popping off motion notifies that match 'e'. If we pop one
-			// off, restart the process of finding a motion notify.
-			// Otherwise, we're done and we move on with the current
-			// motion notify.
-			var laste xproto.MotionNotifyEvent
-			for {
-				xu.Sync()
-				Read(xu, false)
-
-				found := false
-				for i, ee := range Peek(xu) {
-					if ee.Err != nil {
-						continue
-					}
-					if mn, ok := ee.Event.(xproto.MotionNotifyEvent); ok {
-						if mn.Event == e.Event {
-							laste = mn
-							DequeueAt(xu, i)
-							found = true
-							break
-						}
-					}
-				}
-				if !found {
-					break
-				}
-			}
-
-			if laste.Root != 0 {
-				e.Time = laste.Time
-				e.RootX = laste.RootX
-				e.RootY = laste.RootY
-				e.EventX = laste.EventX
-				e.EventY = laste.EventY
-			}
-
 			xu.TimeSet(e.Time)
 			runCallbacks(xu, e, MotionNotify, e.Event)
 		case xproto.EnterNotifyEvent:

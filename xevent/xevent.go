@@ -71,7 +71,7 @@ func DequeueAt(xu *xgbutil.XUtil, i int) {
 	xu.Evqueue = append(xu.Evqueue[:i], xu.Evqueue[i+1:]...)
 }
 
-// QueueEmpty returns whether the event queue is empty or not.
+// Empty returns whether the event queue is empty or not.
 func Empty(xu *xgbutil.XUtil) bool {
 	xu.EvqueueLck.RLock()
 	defer xu.EvqueueLck.RUnlock()
@@ -79,7 +79,7 @@ func Empty(xu *xgbutil.XUtil) bool {
 	return len(xu.Evqueue) == 0
 }
 
-// QueuePeek returns a *copy* of the current queue so we can examine it.
+// Peek returns a *copy* of the current queue so we can examine it.
 // This can be useful when trying to determine if a particular kind of
 // event will be processed in the future.
 func Peek(xu *xgbutil.XUtil) []xgbutil.EventOrError {

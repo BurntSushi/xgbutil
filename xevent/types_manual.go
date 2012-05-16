@@ -11,7 +11,6 @@ type ClientMessageEvent struct {
 	*xproto.ClientMessageEvent
 }
 
-// The unique code for a ClientMessage event.
 const ClientMessage = xproto.ClientMessage
 
 // NewClientMessage takes all arguments required to build a ClientMessageEvent 
@@ -75,7 +74,6 @@ type ConfigureNotifyEvent struct {
 	*xproto.ConfigureNotifyEvent
 }
 
-// The unique code for a ConfigureNotify event.
 const ConfigureNotify = xproto.ConfigureNotify
 
 // NewConfigureNotify takes all arguments required to build a 
