@@ -1,12 +1,3 @@
-/*
-   A file with a couple of functions related to the Xinerama extension.
-   Namely, just grab a list of rectangles representing all active heads.
-
-   The cool thing about Xinerama is that both RandR and TwinView provide
-   Xinerama data even when the Xinerama extension isn't the thing powering
-   your displays. Considering this is the only extension I have working with
-   XGB, this is good news.
-*/
 package xinerama
 
 import "sort"
@@ -37,10 +28,12 @@ func (hds Heads) Swap(i int, j int) {
 	hds[i], hds[j] = hds[j], hds[i]
 }
 
-// Heads returns the list of heads in a physical ordering.
+// PhyiscalHeads returns the list of heads in a physical ordering.
 // Namely, left to right then top to bottom. (Defined by (X, Y).)
 // Xinerama must have been initialized, otherwise the xinerama.QueryScreens
 // request will panic.
+// PhysicalHeads also checks to make sure each rectangle has a unique (x, y)
+// tuple, so as not to return the geometry of cloned displays.
 // (At present moment, xgbutil initializes Xinerama automatically during
 // initial connection.)
 func PhysicalHeads(xu *xgbutil.XUtil) (Heads, error) {
