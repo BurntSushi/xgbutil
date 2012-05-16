@@ -1,12 +1,3 @@
-/*
-   Package xgraphics makes drawing graphics to windows a bit easier.
-   It uses the method of paiting a background pixmap.
-
-   This packages requires the freetype and graphics packages from Google.
-
-   This package is probably incomplete. I admit that I designed it with
-   my window manager as a use case.
-*/
 package xgraphics
 
 import (
