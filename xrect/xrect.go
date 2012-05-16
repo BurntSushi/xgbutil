@@ -78,9 +78,9 @@ func (r *XRect) Pieces() (int, int, int, int) {
 }
 
 // Valid returns whether a rectangle is valid or not. i.e., a width AND height
-// greater than or equal to 1.
+// not equal to zero.
 func Valid(r Rect) bool {
-	return r.Width() > 0 && r.Height() > 0
+	return r.Width() != 0 && r.Height() != 0
 }
 
 // Subtract subtracts r2 from r1 and returns the result as a

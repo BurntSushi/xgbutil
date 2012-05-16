@@ -5,7 +5,7 @@ dealing with GetProperty and ChangeProperty X requests.
 Atoms
 
 Atoms in X are interned, meaning that strings are assigned unique integer 
-identifiers. This minimize the amount of data transmitted over an X connection.
+identifiers. This minimizes the amount of data transmitted over an X connection.
 
 Once atoms have been interned, they are never changed while the X server is 
 running. xgbutil takes advantage of this invariant and will only issue an 

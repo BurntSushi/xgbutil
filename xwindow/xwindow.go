@@ -1,27 +1,3 @@
-/*
-   A few utility functions related to client windows. In 
-   particular, getting an accurate geometry of a client window
-   including the decorations (this can vary with the window
-   manager). Also, a functon to move and/or resize a window
-   accurately by the top-left corner. (Also can change based on
-   the currently running window manager.) 
-
-   This module also contains a function 'Listen' that must be used 
-   in order to receive certain events from a window.
-
-   {SHOW EXAMPLE}
-
-   The idea here is to tell X that you want events that fall under
-   the 'PropertyChange' category. Then you bind 'func' to the 
-   particular event 'PropertyNotify'.
-
-   Most of the methods here aren't useful for window manager developers.
-   Particularly the 'GetGeometry' and move/resizing methods---they are
-   designed to fool the currently running window manager to get desired
-   results.
-
-   Window manager developers may find 'ParentWindow' and 'Listen' useful.
-*/
 package xwindow
 
 import (
@@ -114,7 +90,7 @@ func (w *Window) CreateChecked(parent xproto.Window, x, y, width, height,
 		uint32(valueMask), valueList).Check()
 }
 
-// Change issues a ChangeWindowAttributes request with the provide mask
+// Change issues a ChangeWindowAttributes request with the provided mask
 // and value list. Please see Window.Create for an example on how to use
 // the mask and value list.
 func (w *Window) Change(valueMask int, valueList ...uint32) {
