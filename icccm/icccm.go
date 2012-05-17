@@ -139,9 +139,10 @@ func WmNormalHintsSet(xu *xgbutil.XUtil, win xproto.Window,
 // Hints is a struct that organizes information related to the WM_HINTS
 // property. Once again, I refer you to the ICCCM spec for documentation.
 type Hints struct {
-	Flags                                         int
-	Input, InitialState, IconX, IconY             int
-	WindowGroup, IconPixmap, IconWindow, IconMask xproto.Window
+	Flags                             int
+	Input, InitialState, IconX, IconY int
+	IconPixmap, IconMask              xproto.Pixmap
+	WindowGroup, IconWindow           xproto.Window
 }
 
 // WM_HINTS get
@@ -163,11 +164,11 @@ func WmHintsGet(xu *xgbutil.XUtil,
 	hints.Flags = raw[0]
 	hints.Input = raw[1]
 	hints.InitialState = raw[2]
-	hints.IconPixmap = xproto.Window(raw[3])
+	hints.IconPixmap = xproto.Pixmap(raw[3])
 	hints.IconWindow = xproto.Window(raw[4])
 	hints.IconX = raw[5]
 	hints.IconY = raw[6]
-	hints.IconMask = xproto.Window(raw[7])
+	hints.IconMask = xproto.Pixmap(raw[7])
 	hints.WindowGroup = xproto.Window(raw[8])
 
 	return hints, nil

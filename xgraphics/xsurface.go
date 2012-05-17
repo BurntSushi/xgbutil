@@ -145,7 +145,6 @@ func (im *Image) XShow() *xwindow.Window {
 	}
 
 	// Paint our image before mapping.
-	im.BlendBgColor(BGRA{0xff, 0xff, 0xff, 0xff})
 	im.XSurfaceSet(win.Id)
 	im.XDraw()
 	im.XPaint(win.Id)

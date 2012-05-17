@@ -1,21 +1,39 @@
 package main
 
 import (
-	"image"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
-	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xgraphics"
-	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
+func showIcon(X *xgbutil.XUtil, wid xproto.Window, name string) {
+	hints, err := icccm.WmHintsGet(X, wid)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ximg, err := xgraphics.NewIcccmIcon(X, hints.IconPixmap, hints.IconMask)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ximg.SavePng(fmt.Sprintf("%s.png", name))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ximg.XShow()
+}
+
 func main() {
-	winw, winh := 128, 128
+	// winw, winh := 128, 128 
 	time.Sleep(time.Nanosecond)
 
 	X, err := xgbutil.NewConn()
@@ -23,57 +41,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	active, _ := ewmh.ActiveWindowGet(X)
-	icons, _ := ewmh.WmIconGet(X, active)
-	icon := xgraphics.FindBestIcon(256, 256, icons)
+	libre := xproto.Window(0x4a0001d)
+	xclock := xproto.Window(0x480000a)
 
-	ximg, err := xgraphics.NewEwmhIcon(X, icon)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ximg, err = ximg.Scale(winw, winh)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ximg.BlendBgColor(xgraphics.BGRA{0x0, 0x0, 0xff, 0xff})
-
-	win, err := xwindow.Generate(X)
-	if err != nil {
-		log.Fatal(err)
-	}
-	win.Create(X.RootWin(), 0, 0, winw, winh, xproto.CwBackPixel, 0xffffff)
-	// win.Map() 
-	xproto.MapWindowChecked(X.Conn(), win.Id).Check()
-	ximg.XSurfaceSet(win.Id)
-	ximg.XDraw()
-	ximg.XPaint(win.Id)
-
-	ximg.XShow()
-
-	time.Sleep(time.Second)
-
-	subimg := ximg.SubImage(image.Rect(20, 20, 50, 50))
-	subimg.For(func(x, y int) xgraphics.BGRA {
-		return xgraphics.BGRA{0xff, 0x0, 0x0, 0xff}
-	})
-
-	subimg.XDraw()
-	subimg.XPaint(win.Id)
-
-	ximg.XShow()
-
-	subimg.For(func(x, y int) xgraphics.BGRA {
-		return xgraphics.BGRA{0x00, 0xff, 0x0, 0xff}
-	})
-	subimg.XDraw()
-	subimg.XPaint(win.Id)
-
-	err = ximg.SavePng("a.png")
-	if err != nil {
-		log.Fatal(err)
-	}
+	showIcon(X, libre, "libre")
+	showIcon(X, xclock, "xclock")
 
 	xevent.Main(X)
 }

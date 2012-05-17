@@ -17,6 +17,9 @@ This will have to be fixed for this to be truly compatible with any X server.
 
 Most of the code is based heavily on the implementation of common images in
 the Go standard library.
+
+Manipulating images isn't something I've had much experience with, so if it
+seems like I'm doing something stupid, I probably am.
 */
 
 import (
@@ -32,7 +35,6 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
-	"github.com/BurntSushi/xgbutil/ewmh"
 )
 
 // Model for the BGRA color type.
@@ -67,8 +69,13 @@ type Image struct {
 // (Generating a pixmap id can cause an error, so this call could return
 // an error.)
 func New(X *xgbutil.XUtil, r image.Rectangle) (*Image, error) {
+	// checkCompatibility inspects several X server configuration options for
+	// values that xgraphics expects. It emits informative errors to stderr
+	// when it sees something it doesn't expect.
+	checkCompatibility(X)
 	w, h := r.Dx(), r.Dy()
 
+	// Generate the pixmap id.
 	pid, err := xproto.NewPixmapId(X.Conn())
 	if err != nil {
 		return nil, err
@@ -89,46 +96,6 @@ func New(X *xgbutil.XUtil, r image.Rectangle) (*Image, error) {
 		Stride: 4 * w,
 		Rect:   r,
 	}, nil
-}
-
-// NewConvert converts any image satisfying the image.Image interface to an
-// xgraphics.Image type.
-func NewConvert(X *xgbutil.XUtil, img image.Image) (*Image, error) {
-	if ximg, ok := img.(*Image); ok {
-		return ximg, nil // wtf?
-	}
-
-	ximg, err := New(X, img.Bounds())
-	if err != nil {
-		return nil, err
-	}
-	for x := 0; x < ximg.Rect.Dx(); x++ {
-		for y := 0; y < ximg.Rect.Dy(); y++ {
-			ximg.Set(x, y, img.At(x, y))
-		}
-	}
-	return ximg, nil
-}
-
-// NewEwmhIcon converts EWMH icon data (ARGB) to an xgraphics.Image type.
-func NewEwmhIcon(X *xgbutil.XUtil, icon *ewmh.WmIcon) (*Image, error) {
-	ximg, err := New(X, image.Rect(0, 0, icon.Width, icon.Height))
-	if err != nil {
-		return nil, err
-	}
-	for x := 0; x < ximg.Rect.Dx(); x++ {
-		for y := 0; y < ximg.Rect.Dy(); y++ {
-			argb := icon.Data[x+(y*ximg.Rect.Dx())]
-			clr := BGRA{
-				B: uint8(argb & 0x000000ff),
-				G: uint8((argb & 0x0000ff00) >> 8),
-				R: uint8((argb & 0x00ff0000) >> 16),
-				A: uint8(argb >> 24),
-			}
-			ximg.Set(x, y, clr)
-		}
-	}
-	return ximg, nil
 }
 
 // Destroy frees the pixmap resource being used by this image.
