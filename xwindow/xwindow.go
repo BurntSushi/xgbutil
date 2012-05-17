@@ -20,7 +20,7 @@ type Window struct {
 }
 
 // New creates a new window value from a window id and an XUtil type.
-// Geom is initialize to nil. Use Window.Geometry to load it.
+// Geom is initialized to zero values. Use Window.Geometry to load it.
 // Note that the geometry is the size of this particular window and nothing
 // else. If you want the geometry of a client window including decorations,
 // please use Window.DecorGeometry.
@@ -28,7 +28,7 @@ func New(xu *xgbutil.XUtil, win xproto.Window) *Window {
 	return &Window{
 		X:    xu,
 		Id:   win,
-		Geom: nil,
+		Geom: xrect.New(0, 0, 0, 0),
 	}
 }
 
@@ -44,7 +44,7 @@ func Generate(xu *xgbutil.XUtil) (*Window, error) {
 	return &Window{
 		X:    xu,
 		Id:   wid,
-		Geom: nil,
+		Geom: xrect.New(0, 0, 0, 0),
 	}, nil
 }
 
@@ -116,7 +116,7 @@ func (w *Window) Listen(evMasks ...int) {
 // Geometry retrieves an up-to-date version of the this window's geometry.
 // It also loads the geometry into the Geom member of Window.
 func (w *Window) Geometry() (xrect.Rect, error) {
-	geom, err := rawGeometry(w.X, xproto.Drawable(w.Id))
+	geom, err := RawGeometry(w.X, xproto.Drawable(w.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +124,8 @@ func (w *Window) Geometry() (xrect.Rect, error) {
 	return geom, err
 }
 
-// rawGeometry isn't smart. It just queries the window given for geometry.
-func rawGeometry(xu *xgbutil.XUtil, win xproto.Drawable) (xrect.Rect, error) {
+// RawGeometry isn't smart. It just queries the window given for geometry.
+func RawGeometry(xu *xgbutil.XUtil, win xproto.Drawable) (xrect.Rect, error) {
 	xgeom, err := xproto.GetGeometry(xu.Conn(), win).Reply()
 	if err != nil {
 		return nil, err
