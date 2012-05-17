@@ -31,7 +31,7 @@ func (w *Window) DecorGeometry() (xrect.Rect, error) {
 		}
 		parent = tempParent
 	}
-	return rawGeometry(w.X, xproto.Drawable(parent.Id))
+	return RawGeometry(w.X, xproto.Drawable(parent.Id))
 }
 
 // WMMoveResize is an accurate means of resizing a window, accounting for
@@ -79,13 +79,13 @@ func adjustSize(xu *xgbutil.XUtil, win xproto.Window,
 	w, h int) (int, int, error) {
 
 	// raw client geometry
-	cGeom, err := rawGeometry(xu, xproto.Drawable(win))
+	cGeom, err := RawGeometry(xu, xproto.Drawable(win))
 	if err != nil {
 		return 0, 0, err
 	}
 
 	// geometry with decorations
-	pGeom, err := rawGeometry(xu, xproto.Drawable(win))
+	pGeom, err := RawGeometry(xu, xproto.Drawable(win))
 	if err != nil {
 		return 0, 0, err
 	}
