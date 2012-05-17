@@ -10,19 +10,29 @@ import (
 // Drag is the public interface that will make the appropriate connections
 // to register a drag event for three functions: the begin function, the 
 // step function and the end function.
-func Drag(xu *xgbutil.XUtil, win xproto.Window, buttonStr string, grab bool,
+func Drag(xu *xgbutil.XUtil, grabwin xproto.Window, win xproto.Window,
+	buttonStr string, grab bool,
 	begin xgbutil.MouseDragBeginFun, step xgbutil.MouseDragFun,
 	end xgbutil.MouseDragFun) {
 
 	ButtonPressFun(
 		func(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
-			dragBegin(xu, ev, win, begin, step, end)
+			dragBegin(xu, ev, grabwin, win, begin, step, end)
 		}).Connect(xu, win, buttonStr, false, grab)
+
+	// If the grab win isn't the dummy, then setup event handlers for the
+	// grab window.
+	if grabwin != xu.Dummy() {
+		xevent.MotionNotifyFun(dragStep).Connect(xu, grabwin)
+		xevent.ButtonReleaseFun(dragEnd).Connect(xu, grabwin)
+	}
 }
 
 // dragGrab is a shortcut for grabbing the pointer for a drag.
-func dragGrab(xu *xgbutil.XUtil, win xproto.Window, cursor xproto.Cursor) bool {
-	status, err := GrabPointer(xu, xu.Dummy(), xu.RootWin(), cursor)
+func dragGrab(xu *xgbutil.XUtil, grabwin xproto.Window, win xproto.Window,
+	cursor xproto.Cursor) bool {
+
+	status, err := GrabPointer(xu, grabwin, xu.RootWin(), cursor)
 	if err != nil {
 		xgbutil.Logger.Printf("Mouse dragging was unsuccessful because: %v",
 			err)
@@ -46,7 +56,8 @@ func dragUngrab(xu *xgbutil.XUtil) {
 
 // dragStart executes the "begin" function registered for the current drag.
 // It also initiates the grab.
-func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent, win xproto.Window,
+func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
+	grabwin xproto.Window, win xproto.Window,
 	begin xgbutil.MouseDragBeginFun, step xgbutil.MouseDragFun,
 	end xgbutil.MouseDragFun) {
 
@@ -62,7 +73,7 @@ func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent, win xproto.Window,
 
 	// if we couldn't establish a grab, quit
 	// Or quit if 'begin' tells us to.
-	if !grab || !dragGrab(xu, win, cursor) {
+	if !grab || !dragGrab(xu, grabwin, win, cursor) {
 		return
 	}
 
@@ -72,6 +83,7 @@ func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent, win xproto.Window,
 }
 
 // dragStep executes the "step" function registered for the current drag.
+// It also compressed the MotionNotify events.
 func dragStep(xu *xgbutil.XUtil, ev xevent.MotionNotifyEvent) {
 	// If for whatever reason we don't have any *piece* of a grab,
 	// we've gotta back out.
@@ -82,9 +94,44 @@ func dragStep(xu *xgbutil.XUtil, ev xevent.MotionNotifyEvent) {
 		return
 	}
 
+	// The most recent MotionNotify event that we'll end up returning.
+	laste := ev
+
+	// We force a round trip request so that we make sure to read all
+	// available events.
+	xu.Sync()
+	xevent.Read(xu, false)
+
+	// Compress MotionNotify events.
+	for i, ee := range xevent.Peek(xu) {
+		if ee.Err != nil { // This is an error, skip it.
+			continue
+		}
+
+		// Use type assertion to make sure this is a MotionNotify event.
+		if mn, ok := ee.Event.(xproto.MotionNotifyEvent); ok {
+			// Now make sure all appropriate fields are equivalent.
+			if ev.Event == mn.Event && ev.Child == mn.Child &&
+				ev.Detail == mn.Detail && ev.State == mn.State &&
+				ev.Root == mn.Root && ev.SameScreen == mn.SameScreen {
+
+				// Set the most recent/valid motion notify event.
+				laste = xevent.MotionNotifyEvent{&mn}
+
+				// We cheat and use the stack semantics of defer to dequeue
+				// most recent motion notify events first, so that the indices
+				// don't become invalid. (If we dequeued oldest first, we'd
+				// have to account for all future events shifting to the left
+				// by one.)
+				defer func(i int) { xevent.DequeueAt(xu, i) }(i)
+			}
+		}
+	}
+	xu.TimeSet(laste.Time)
+
 	// now actually run the step
-	mouseDragStep(xu)(xu, int(ev.RootX), int(ev.RootY),
-		int(ev.EventX), int(ev.EventY))
+	mouseDragStep(xu)(xu, int(laste.RootX), int(laste.RootY),
+		int(laste.EventX), int(laste.EventY))
 }
 
 // dragEnd executes the "end" function registered for the current drag.

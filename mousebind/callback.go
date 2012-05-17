@@ -59,6 +59,9 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.CallbackMouse, evtype int,
 	return nil
 }
 
+// DeduceButtonInfo takes a (modifiers, button) tuple and returns the relevant
+// modifiers that were activated. This accounts for modifiers in
+// xevent.IgnoreMods and the the button mask of the button that is pressed.
 func DeduceButtonInfo(state uint16,
 	detail xproto.Button) (uint16, xproto.Button) {
 
