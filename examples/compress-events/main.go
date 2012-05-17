@@ -91,6 +91,11 @@ func newWindow(X *xgbutil.XUtil, color uint32) *xwindow.Window {
 func compressMotionNotify(X *xgbutil.XUtil,
 	ev xevent.MotionNotifyEvent) xevent.MotionNotifyEvent {
 
+	// We force a round trip request so that we make sure to read all
+	// available events.
+	X.Sync()
+	xevent.Read(X, false)
+
 	// The most recent MotionNotify event that we'll end up returning.
 	laste := ev
 
