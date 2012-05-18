@@ -8,11 +8,10 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	_ "image/png"
 	"log"
-
-	"code.google.com/p/graphics-go/graphics"
 
 	"github.com/BurntSushi/xgb/xproto"
 
@@ -118,7 +117,7 @@ func drawGopher(canvas *xgraphics.Image, gopher image.Image,
 
 	// Blend the gopher image into the sub-canvas.
 	// This does alpha blending.
-	xgraphics.BlendImage(subCanvas, gopher, gopherPt)
+	xgraphics.Blend(subCanvas, gopher, gopherPt)
 
 	// Now draw the changes to the pixmap.
 	subCanvas.XDraw()
@@ -156,14 +155,13 @@ func main() {
 	}
 
 	// Now scale it to a reasonable size.
-	gopher := image.NewRGBA(image.Rect(0, 0, gopherWidth, gopherHeight))
-	graphics.Scale(gopher, gopherPng)
+	gopher := xgraphics.Scale(gopherPng, gopherWidth, gopherHeight)
 
 	// Create a new xgraphics.Image. It automatically creates an X pixmap for
 	// you, and handles drawing to windows in the XDraw, XPaint and
 	// XSurfaceSet functions.
 	// N.B. An error is possible since X pixmap allocation can fail.
-	canvas, err := xgraphics.New(X, image.Rect(0, 0, width, height))
+	canvas := xgraphics.New(X, image.Rect(0, 0, width, height))
 
 	// Color in the background color.
 	canvas.For(func(x, y int) xgraphics.BGRA {
@@ -214,6 +212,12 @@ func main() {
 				pencil = c
 			}).Connect(X, win.Id, key, false)
 	}
+
+	fmt.Println("Use the left or right buttons on your mouse to paint " +
+		"squares and gophers.")
+	fmt.Println("Pressing numbers 1, 2, 3, 4, 5 or 6 will switch your pencil " +
+		"color.")
+	fmt.Println("Pressing 'c' will clear the canvas.")
 
 	xevent.Main(X)
 }

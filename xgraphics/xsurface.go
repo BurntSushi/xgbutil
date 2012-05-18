@@ -1,6 +1,8 @@
 package xgraphics
 
 import (
+	"fmt"
+
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
@@ -19,9 +21,40 @@ related requests. Namely, methods that send image data start with 'X'.
 // id still needs to be passed to XPaint. A call to XSurfaceSet simply tells
 // X that the window specified should use the pixmap in Image as its
 // background image.
-func (im *Image) XSurfaceSet(wid xproto.Window) {
+// Note that XSurfaceSet cannot be called on a sub-image. (An error will be
+// returned if you do.)
+// XSurfaceSet will also allocate an X pixmap if one hasn't been created for
+// this image yet.
+// (Generating a pixmap id can cause an error, so this call could return
+// an error.)
+func (im *Image) XSurfaceSet(wid xproto.Window) error {
+	if im.Subimg {
+		return fmt.Errorf("XSurfaceSet cannot be called on sub-images." +
+			"Please set the surface using the original parent image.")
+	}
+	if im.Pixmap == 0 {
+		// Generate the pixmap id.
+		pid, err := xproto.NewPixmapId(im.X.Conn())
+		if err != nil {
+			return err
+		}
+
+		// Now actually create the pixmap.
+		err = xproto.CreatePixmapChecked(im.X.Conn(), im.X.Screen().RootDepth,
+			pid, xproto.Drawable(im.X.RootWin()),
+			uint16(im.Bounds().Dx()), uint16(im.Bounds().Dy())).Check()
+		if err != nil {
+			return err
+		}
+
+		// Now give it to the image.
+		im.Pixmap = pid
+	}
+
+	// Tell the surface (window) to use this pixmap.
 	xproto.ChangeWindowAttributes(im.X.Conn(), wid,
 		xproto.CwBackPixmap, []uint32{uint32(im.Pixmap)})
+	return nil
 }
 
 // XPaint will write the contents of the pixmap to a window.
@@ -45,7 +78,7 @@ func (im *Image) XDraw() {
 	// Put the raw image data into its own slice.
 	// If this isn't a sub-image, then skip because it isn't necessary.
 	var data []uint8
-	if width*height*4 == len(im.Pix) {
+	if !im.Subimg {
 		data = im.Pix
 	} else {
 		data = make([]uint8, width*height*4)

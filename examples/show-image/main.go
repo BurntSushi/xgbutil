@@ -27,10 +27,7 @@ func main() {
 	}
 
 	// Now convert it into an X image.
-	ximg, err := xgraphics.NewConvert(X, img)
-	if err != nil {
-		log.Fatal(err)
-	}
+	ximg := xgraphics.NewConvert(X, img)
 
 	// Now show it in a new window.
 	ximg.XShow()

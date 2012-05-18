@@ -20,25 +20,19 @@ import (
 // xgraphics.Image type.
 // NewConvert does not check if 'img' is an xgraphics.Image. Thus, NewConvert
 // provides a convenient mechanism for copying xgraphic.Image values.
-func NewConvert(X *xgbutil.XUtil, img image.Image) (*Image, error) {
-	ximg, err := New(X, img.Bounds())
-	if err != nil {
-		return nil, err
-	}
+func NewConvert(X *xgbutil.XUtil, img image.Image) *Image {
+	ximg := New(X, img.Bounds())
 	for x := 0; x < ximg.Rect.Dx(); x++ {
 		for y := 0; y < ximg.Rect.Dy(); y++ {
 			ximg.Set(x, y, img.At(x, y))
 		}
 	}
-	return ximg, nil
+	return ximg
 }
 
 // NewEwmhIcon converts EWMH icon data (ARGB) to an xgraphics.Image type.
-func NewEwmhIcon(X *xgbutil.XUtil, icon *ewmh.WmIcon) (*Image, error) {
-	ximg, err := New(X, image.Rect(0, 0, icon.Width, icon.Height))
-	if err != nil {
-		return nil, err
-	}
+func NewEwmhIcon(X *xgbutil.XUtil, icon *ewmh.WmIcon) *Image {
+	ximg := New(X, image.Rect(0, 0, icon.Width, icon.Height))
 	for x := 0; x < ximg.Rect.Dx(); x++ {
 		for y := 0; y < ximg.Rect.Dy(); y++ {
 			argb := icon.Data[x+(y*ximg.Rect.Dx())]
@@ -51,7 +45,7 @@ func NewEwmhIcon(X *xgbutil.XUtil, icon *ewmh.WmIcon) (*Image, error) {
 			ximg.SetBGRA(x, y, clr)
 		}
 	}
-	return ximg, nil
+	return ximg
 }
 
 // NewIcccmIcon converts two pixmap ids (icon_pixmap and icon_mask in the
@@ -132,10 +126,7 @@ func NewPixmap(X *xgbutil.XUtil, iconPixmap xproto.Pixmap) (*Image, error) {
 
 	// Now create the xgraphics.Image and populate it with data from
 	// pixmapData and maskData.
-	ximg, err := New(X, image.Rect(0, 0, pgeom.Width(), pgeom.Height()))
-	if err != nil {
-		return nil, err
-	}
+	ximg := New(X, image.Rect(0, 0, pgeom.Width(), pgeom.Height()))
 
 	// We'll try to be a little flexible with the image format returned,
 	// but not completely flexible.
@@ -169,14 +160,15 @@ func readPixmapData(X *xgbutil.XUtil, ximg *Image, pixid xproto.Pixmap,
 				pixid, format.Depth, format.BitsPerPixel)
 		}
 
-		// Process one scanline at a time. Each 'y' represents a
-		// single scanline.
+		// Calculate the padded width of our image data.
 		pad := int(X.Setup().BitmapFormatScanlinePad)
 		paddedWidth := width
 		if width%pad != 0 {
 			paddedWidth = width + pad - (width % pad)
 		}
 
+		// Process one scanline at a time. Each 'y' represents a
+		// single scanline.
 		for y := 0; y < height; y++ {
 			// Each scanline has length 'width' padded to
 			// BitmapFormatScanlinePad, which is found in the X setup info.
@@ -184,11 +176,9 @@ func readPixmapData(X *xgbutil.XUtil, ximg *Image, pixid xproto.Pixmap,
 			i := y * paddedWidth / 8
 			for x := 0; x < width; x++ {
 				b := imgData.Data[i+x/8] >> uint(x%8)
-				if b&1 > 0 {
-					// ximg.Set(x, y, BGRA{0x0, 0xff, 0x0, 0xff}) 
+				if b&1 > 0 { // opaque
 					ximg.Set(x, y, BGRA{0x0, 0x0, 0x0, 0xff})
-				} else {
-					// ximg.Set(x, y, BGRA{0x0, 0x0, 0xff, 0xff}) 
+				} else { // transparent
 					ximg.Set(x, y, BGRA{0xff, 0xff, 0xff, 0x0})
 				}
 			}
@@ -261,26 +251,27 @@ func checkCompatibility(X *xgbutil.XUtil) {
 	if s.ImageByteOrder != xproto.ImageOrderLSBFirst {
 		lg.Printf("Your X server uses MSB image byte order. Unfortunately, " +
 			"xgraphics currently requires LSB image byte order. You may see " +
-			"weird things.")
+			"weird things. Please report this.")
 	}
 	if s.BitmapFormatBitOrder != xproto.ImageOrderLSBFirst {
 		lg.Printf("Your X server uses MSB bitmap bit order. Unfortunately, " +
 			"xgraphics currently requires LSB bitmap bit order. If you " +
-			"aren't using X bitmaps, you should be able to proceed normally.")
+			"aren't using X bitmaps, you should be able to proceed normally. " +
+			"Please report this.")
 	}
 	if s.BitmapFormatScanlineUnit != 32 {
-		lg.Printf("xgraphics expects that the scanline unit is set to 32, but"+
+		lg.Printf("xgraphics expects that the scanline unit is set to 32, but "+
 			"your X server has it set to '%d'. "+
 			"Namely, xgraphics hasn't been tested on other values. Things "+
 			"may still work. Particularly, if you aren't using X bitmaps, "+
-			"you should be completely unaffected.",
+			"you should be completely unaffected. Please report this.",
 			s.BitmapFormatScanlineUnit)
 	}
 	if scrn.RootDepth != 24 {
 		lg.Printf("xgraphics expects that the root window has a depth of 24, "+
 			"but yours has depth '%d'. Its possible things will still work "+
 			"if your value is 32, but will be unlikely to work with values "+
-			"less than 24.", scrn.RootDepth)
+			"less than 24. Please report this.", scrn.RootDepth)
 	}
 
 	// Look for the default format for pixmaps and make sure bits per pixel
@@ -289,7 +280,8 @@ func checkCompatibility(X *xgbutil.XUtil) {
 	if format.BitsPerPixel != 32 {
 		lg.Printf("xgraphics expects that the bits per pixel for the root "+
 			"window depth is 32. On your system, the root depth is %d and "+
-			"the bits per pixel is %d. Things will most certainly not work.",
+			"the bits per pixel is %d. Things will most certainly not work. "+
+			"Please report this.",
 			scrn.RootDepth, format.BitsPerPixel)
 	}
 }
