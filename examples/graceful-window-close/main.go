@@ -13,13 +13,6 @@
 //
 // The program will stop when all windows have been closed.
 //
-// This seems like a lot of code to accomplish a relatively simple task, but a
-// lot of it is boilerplate that you might already have in your program. Other
-// portions of this example exist only to make the example workable (like
-// creating new windows when clicking on one). The real magic in this example
-// is in 'isDeleteRequest', setting WM_PROTOCOLS, and attaching a
-// ClientMessage event handler.
-//
 // For more information on the convention used please see
 // http://tronche.com/gui/x/icccm/sec-4.html#s-4.1.2.7 and
 // http://tronche.com/gui/x/icccm/sec-4.html#s-4.2.8
@@ -34,10 +27,8 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
-	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/mousebind"
 	"github.com/BurntSushi/xgbutil/xevent"
-	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
@@ -69,30 +60,25 @@ func newWindow(X *xgbutil.XUtil) {
 		uint32(bgColor), xproto.EventMaskButtonRelease)
 	win.Map()
 
-	// Tell the window manager that we support the WM_DELETE_WINDOW protocol.
-	// If this is not set, the window manager will think you don't support
-	// WM_DELETE_WINDOW and will KILL your client. Then your connection
-	// will be lost. Try commenting out this and closing one of the windows.
-	// You'll see :-)
-	icccm.WmProtocolsSet(X, win.Id, []string{"WM_DELETE_WINDOW"})
+	// WMGracefulClose does all of the work for us. It sets the appropriate
+	// values for WM_PROTOCOLS, and listens for ClientMessages that implement
+	// the WM_DELETE_WINDOW protocol. When one is found, the provided callback
+	// is executed.
+	win.WMGracefulClose(
+		func(w *xwindow.Window) {
+			// Detach all event handlers.
+			// This should always be done when a window can no longer
+			// receive events.
+			xevent.Detach(w.X, w.Id)
+			mousebind.Detach(w.X, w.Id)
+			w.Destroy()
 
-	// A ClientMessage listener. We don't need to specify any event mask
-	// to get these events, since they are sent with an empty event mask
-	// (as specified by ICCCM).
-	xevent.ClientMessageFun(
-		func(X *xgbutil.XUtil, ev xevent.ClientMessageEvent) {
-			if isDeleteRequest(X, ev) {
-				// Make sure we detach all event handlers too.
-				xevent.Detach(X, win.Id)
-				mousebind.Detach(X, win.Id)
-				xproto.DestroyWindow(X.Conn(), win.Id)
-				counter--
-
-				if counter == 0 {
-					os.Exit(0)
-				}
+			// Exit if there are no more windows left.
+			counter--
+			if counter == 0 {
+				os.Exit(0)
 			}
-		}).Connect(X, win.Id)
+		})
 
 	// A mouse binding so that a left click will spawn a new window.
 	// Note that we don't issue a grab here. Typically, window managers will
@@ -108,35 +94,6 @@ func newWindow(X *xgbutil.XUtil) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-// isDeleteRequest checks whether a ClientMessage event satisfies the
-// WM_DELETE_WINDOW protocol. Namely, the format must be 32, the type must
-// be the WM_PROTOCOLS atom, and the first data item must be the atom
-// WM_DELETE_WINDOW.
-// This and other ICCCM protocols are certainly candidates to be included
-// in xgbutil. I just haven't gotten there yet.
-func isDeleteRequest(X *xgbutil.XUtil, ev xevent.ClientMessageEvent) bool {
-	// Make sure the Format is 32. (Meaning that each data item is
-	// 32 bits.)
-	if ev.Format != 32 {
-		return false
-	}
-
-	// Check to make sure the Type atom is WM_PROTOCOLS.
-	typeName, err := xprop.AtomName(X, ev.Type)
-	if err != nil || typeName != "WM_PROTOCOLS" { // not what we want
-		return false
-	}
-
-	// Check to make sure the first data item is WM_DELETE_WINDOW.
-	protocolType, err := xprop.AtomName(X,
-		xproto.Atom(ev.Data.Data32[0]))
-	if err != nil || protocolType != "WM_DELETE_WINDOW" {
-		return false
-	}
-
-	return true
 }
 
 func main() {

@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"math"
 
 	"code.google.com/p/graphics-go/graphics"
 
@@ -101,8 +102,10 @@ func blend(s, d uint8, alpha float64) uint8 {
 // the size specified. 
 // If there are no icons in _NET_WM_ICON, then WM_HINTS will be checked for
 // an icon.
-// Finally, if an icon is found from either one and doesn't match the size
+// If an icon is found from either one and doesn't match the size
 // specified, it will be scaled to that size.
+// If the width and height are 0, then the largest icon will be returned with
+// no scaling.
 // If an icon is not found, an error is returned.
 func FindIcon(X *xgbutil.XUtil, wid xproto.Window,
 	width, height int) (*Image, error) {
@@ -122,8 +125,10 @@ func FindIcon(X *xgbutil.XUtil, wid xproto.Window,
 
 	// We should have a valid xgraphics.Image if we're here.
 	// If the size doesn't match what's preferred, scale it.
-	if icon.Bounds().Dx() != width || icon.Bounds().Dy() != height {
-		icon = icon.Scale(width, height)
+	if width != 0 && height != 0 {
+		if icon.Bounds().Dx() != width || icon.Bounds().Dy() != height {
+			icon = icon.Scale(width, height)
+		}
 	}
 	return icon, nil
 }
@@ -170,6 +175,7 @@ func findIconIcccm(X *xgbutil.XUtil, wid xproto.Window) (*Image, error) {
 // available. Otherwise, use the smallest icon that is greater than or equal
 // to the preferred dimensions. The preferred dimensions is essentially
 // what you'll likely scale the resulting icon to.
+// If width and height are 0, then the largest icon found will be returned.
 func FindBestEwmhIcon(width, height int, icons []ewmh.WmIcon) *ewmh.WmIcon {
 	// nada nada limonada
 	if len(icons) == 0 {
@@ -178,6 +184,11 @@ func FindBestEwmhIcon(width, height int, icons []ewmh.WmIcon) *ewmh.WmIcon {
 
 	parea := width * height // preferred size
 	best := -1
+
+	// If zero area, set it to the largest possible.
+	if parea == 0 {
+		parea = math.MaxInt32
+	}
 
 	var bestArea, iconArea int
 
