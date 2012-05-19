@@ -168,14 +168,25 @@ func main() {
 		return bg
 	})
 
-	// Use the convenience function XShow to create and map the canvas window.
-	// XShow will also set the surface window of canvas for us.
-	win := canvas.XShow()
+	// Use the convenience function XShowExtra to create and map the
+	// canvas window.
+	// XShowExtra will also set the surface window of canvas for us.
+	// We also use XShowExtra to set the name of the window and to quit the
+	// main event loop when the window is closed.
+	win := canvas.XShowExtra("Pointer painting", true)
 
 	// Listen for pointer motion events and key press events.
 	win.Listen(xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
 		xproto.EventMaskKeyPress)
 
+	// The mousebind drag function runs three callbacks: one when the drag is
+	// first started, another at each "step" in the drag, and a final one when
+	// the drag is done.
+	// The button sequence (in this case '1') is pressed, the first callback
+	// is executed. If the first return value is true, the drag continues
+	// and a pointer grab is initiated with the cursor id specified in the
+	// second return value (use 0 to keep the cursor unchanged).
+	// If it's false, the drag stops.
 	mousebind.Drag(X, win.Id, win.Id, "1", false,
 		func(X *xgbutil.XUtil, rx, ry, ex, ey int) (bool, xproto.Cursor) {
 			drawPencil(canvas, win, ex, ey)
@@ -213,6 +224,7 @@ func main() {
 			}).Connect(X, win.Id, key, false)
 	}
 
+	// Output some basic directions.
 	fmt.Println("Use the left or right buttons on your mouse to paint " +
 		"squares and gophers.")
 	fmt.Println("Pressing numbers 1, 2, 3, 4, 5 or 6 will switch your pencil " +
@@ -224,10 +236,10 @@ func main() {
 
 // midRect takes an (x, y) position where the pointer was clicked, along with
 // the width and height of the thing being drawn and the width and height of
-// the canvas, and returns a Rectangle
-// whose midpoint (roughly) is (x, y) and whose width and height match the
-// parameters when the rectangle doesn't extend past the border of the canvas.
-// Make sure to check if the rectange is empty or not before using it!
+// the canvas, and returns a Rectangle whose midpoint (roughly) is (x, y) and 
+// whose width and height match the parameters when the rectangle doesn't 
+// extend past the border of the canvas. Make sure to check if the rectange is 
+// empty or not before using it!
 func midRect(x, y, width, height, canWidth, canHeight int) image.Rectangle {
 	return image.Rect(
 		max(0, min(canWidth, x-width/2)),   // top left x

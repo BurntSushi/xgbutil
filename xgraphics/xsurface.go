@@ -8,6 +8,8 @@ import (
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/keybind"
+	"github.com/BurntSushi/xgbutil/mousebind"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
@@ -142,13 +144,13 @@ func (im *Image) XDraw() {
 // XShow also returns the xwindow.Window value, in case you want to do
 // further processing. (Like attach event handlers.)
 func (im *Image) XShow() *xwindow.Window {
-	return im.XShowName("")
+	return im.XShowExtra("", false)
 }
 
 // XShowName is just like XShow, except it sets the name of the window to the
 // name provided. If name is empty, then the behavior is precisely the same
 // as XShow.
-func (im *Image) XShowName(name string) *xwindow.Window {
+func (im *Image) XShowExtra(name string, quit bool) *xwindow.Window {
 	if len(name) == 0 {
 		name = "xgbutil Image Window"
 	}
@@ -166,7 +168,13 @@ func (im *Image) XShowName(name string) *xwindow.Window {
 	// Make this window close gracefully.
 	win.WMGracefulClose(func(w *xwindow.Window) {
 		xevent.Detach(w.X, w.Id)
+		keybind.Detach(w.X, w.Id)
+		mousebind.Detach(w.X, w.Id)
 		w.Destroy()
+
+		if quit {
+			xevent.Quit(w.X)
+		}
 	})
 
 	// Set WM_STATE so it is interpreted as a top-level window.

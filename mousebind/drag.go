@@ -10,6 +10,11 @@ import (
 // Drag is the public interface that will make the appropriate connections
 // to register a drag event for three functions: the begin function, the 
 // step function and the end function.
+// The 'grabwin' is the window that the grab is placed on (and therefore the
+// window where all button events are redirected to after the drag has started),
+// and the 'win' is the window that the initial 'begin' callback is set on.
+// In typical use cases, these windows should be the same.
+// If 'grab' is false, then no pointer grab is issued.
 func Drag(xu *xgbutil.XUtil, grabwin xproto.Window, win xproto.Window,
 	buttonStr string, grab bool,
 	begin xgbutil.MouseDragBeginFun, step xgbutil.MouseDragFun,
@@ -55,7 +60,7 @@ func dragUngrab(xu *xgbutil.XUtil) {
 }
 
 // dragStart executes the "begin" function registered for the current drag.
-// It also initiates the grab.
+// It also initiates the grab with the cursor id return by the begin callback.
 func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
 	grabwin xproto.Window, win xproto.Window,
 	begin xgbutil.MouseDragBeginFun, step xgbutil.MouseDragFun,
@@ -83,7 +88,7 @@ func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
 }
 
 // dragStep executes the "step" function registered for the current drag.
-// It also compressed the MotionNotify events.
+// It also compresses the MotionNotify events.
 func dragStep(xu *xgbutil.XUtil, ev xevent.MotionNotifyEvent) {
 	// If for whatever reason we don't have any *piece* of a grab,
 	// we've gotta back out.

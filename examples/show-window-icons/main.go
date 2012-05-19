@@ -60,7 +60,7 @@ func main() {
 		// Blend a pink background color so its easy to see that alpha blending
 		// works.
 		xgraphics.BlendBgColor(xicon, color.RGBA{0xff, 0x0, 0xff, 0xff})
-		xicon.XShowName(name)
+		xicon.XShowExtra(name, false)
 	}
 
 	// All we really need to do is block, so a 'select{}' would be sufficient.
