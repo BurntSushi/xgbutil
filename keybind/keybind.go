@@ -155,7 +155,6 @@ func MapsGet(xu *xgbutil.XUtil) (*xproto.GetKeyboardMappingReply,
 // keys with the 'xev' program. Alternatively, you may reference the keys
 // of the 'keysyms' map defined in keybind/keysymdef.go.
 func ParseString(xu *xgbutil.XUtil, s string) (uint16, xproto.Keycode, error) {
-
 	mods, kc := uint16(0), xproto.Keycode(0)
 	for _, part := range strings.Split(s, "-") {
 		switch strings.ToLower(part) {
