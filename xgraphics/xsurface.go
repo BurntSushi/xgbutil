@@ -36,27 +36,34 @@ func (im *Image) XSurfaceSet(wid xproto.Window) error {
 			"Please set the surface using the original parent image.")
 	}
 	if im.Pixmap == 0 {
-		// Generate the pixmap id.
-		pid, err := xproto.NewPixmapId(im.X.Conn())
-		if err != nil {
+		if err := im.CreatePixmap(); err != nil {
 			return err
 		}
-
-		// Now actually create the pixmap.
-		err = xproto.CreatePixmapChecked(im.X.Conn(), im.X.Screen().RootDepth,
-			pid, xproto.Drawable(im.X.RootWin()),
-			uint16(im.Bounds().Dx()), uint16(im.Bounds().Dy())).Check()
-		if err != nil {
-			return err
-		}
-
-		// Now give it to the image.
-		im.Pixmap = pid
 	}
 
 	// Tell the surface (window) to use this pixmap.
 	xproto.ChangeWindowAttributes(im.X.Conn(), wid,
 		xproto.CwBackPixmap, []uint32{uint32(im.Pixmap)})
+	return nil
+}
+
+func (im *Image) CreatePixmap() error {
+	// Generate the pixmap id.
+	pid, err := xproto.NewPixmapId(im.X.Conn())
+	if err != nil {
+		return err
+	}
+
+	// Now actually create the pixmap.
+	err = xproto.CreatePixmapChecked(im.X.Conn(), im.X.Screen().RootDepth,
+		pid, xproto.Drawable(im.X.RootWin()),
+		uint16(im.Bounds().Dx()), uint16(im.Bounds().Dy())).Check()
+	if err != nil {
+		return err
+	}
+
+	// Now give it to the image.
+	im.Pixmap = pid
 	return nil
 }
 
@@ -68,6 +75,22 @@ func (im *Image) XPaint(wid xproto.Window) {
 	// performance problem, please let me know. (It seems like the whole area
 	// of the window is cleared when it is resized anyway.)
 	xproto.ClearArea(im.X.Conn(), false, wid, 0, 0, 0, 0)
+}
+
+// XExpPaint achieve a similar result as XPaint and XSurfaceSet, but
+// uses CopyArea instead of setting a background pixmap and using ClearArea.
+// CreatePixmap must be called before using XExpPaint.
+// XExpPaint can be called on sub-images.
+// x and y correspond to the destination x and y to copy the image to.
+func (im *Image) XExpPaint(wid xproto.Window, x, y int) {
+	if im.Pixmap == 0 {
+		return
+	}
+	xproto.CopyArea(im.X.Conn(),
+		xproto.Drawable(im.Pixmap), xproto.Drawable(wid), im.X.GC(),
+		int16(im.Rect.Min.X), int16(im.Rect.Min.Y),
+		int16(x), int16(y),
+		uint16(im.Rect.Dx()), uint16(im.Rect.Dy()))
 }
 
 // XDraw will write the contents of Image to a pixmap.
