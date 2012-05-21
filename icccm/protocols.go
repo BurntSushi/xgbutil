@@ -34,4 +34,3 @@ func IsDeleteRequest(X *xgbutil.XUtil, ev xevent.ClientMessageEvent) bool {
 
 	return true
 }
-

@@ -41,4 +41,3 @@ func (w *Window) WMGracefulClose(cb func(w *Window)) {
 			}
 		}).Connect(w.X, w.Id)
 }
-
