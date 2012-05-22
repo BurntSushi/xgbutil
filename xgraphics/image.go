@@ -73,7 +73,20 @@ type Image struct {
 // X server.
 // (Generating a pixmap id can cause an error, so this call could return
 // an error.)
+// If 'X' is nil, then a new connection will be made. This is usually a bad
+// idea, particularly if you're making a lot of small images, but can be
+// used to achieve true parallelism. (Particularly useful when painting large
+// images.)
 func New(X *xgbutil.XUtil, r image.Rectangle) *Image {
+	var err error
+	if X == nil {
+		X, err = xgbutil.NewConn()
+		if err != nil {
+			xgbutil.Logger.Panicf("Could not create a new connection when " +
+				"creating a new xgraphics.Image value because: %s", err)
+		}
+	}
+
 	// checkCompatibility inspects several X server configuration options for
 	// values that xgraphics expects. It emits informative errors to stderr
 	// when it sees something it doesn't expect.
