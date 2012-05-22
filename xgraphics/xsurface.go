@@ -77,7 +77,7 @@ func (im *Image) XPaint(wid xproto.Window) {
 	xproto.ClearArea(im.X.Conn(), false, wid, 0, 0, 0, 0)
 }
 
-// XExpPaint achieve a similar result as XPaint and XSurfaceSet, but
+// XExpPaint achieves a similar result as XPaint and XSurfaceSet, but
 // uses CopyArea instead of setting a background pixmap and using ClearArea.
 // CreatePixmap must be called before using XExpPaint.
 // XExpPaint can be called on sub-images.
@@ -119,13 +119,11 @@ func (im *Image) XDraw() {
 	// X's max request size (by default) is (2^16) * 4 = 262144 bytes, which
 	// corresponds precisely to a 256x256 sized image with 32 bits per pixel.
 	// Thus, we check the size of the image data and calculate the number of
-	// PutImage requests we'll need to make, and the number of rows of the
-	// image we'll send in each request. If a single row of an image exceeds
-	// the max request length, we're in trouble.
-	// N.B. The constant 28 comes from the fixed size part of a
-	// PutImage request.
-	sends := len(data)/(xgbutil.MaxReqSize-28) + 1
+	// rows of the image we'll send in each request. If a single row of an 
+	// image exceeds the max request length, we're in trouble.  N.B. The 
+	// constant 28 comes from the fixed size part of a PutImage request.
 	rowsPer := (xgbutil.MaxReqSize - 28) / (width * 4)
+	bytesPer := rowsPer * width * 4
 
 	// The start x position of what we're sending. Doesn't change.
 	xpos := im.Rect.Min.X
@@ -144,8 +142,8 @@ func (im *Image) XDraw() {
 	// The sliced data we're sending, for convenience.
 	var toSend []byte
 
-	for i := 0; i < sends; i++ {
-		end = start + rowsPer*width*4
+	for end < len(data) {
+		end = start + bytesPer
 		if end > len(data) { // make sure end doesn't extend beyond data
 			end = len(data)
 		}
