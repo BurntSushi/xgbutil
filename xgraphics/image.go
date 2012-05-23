@@ -82,7 +82,7 @@ func New(X *xgbutil.XUtil, r image.Rectangle) *Image {
 	if X == nil {
 		X, err = xgbutil.NewConn()
 		if err != nil {
-			xgbutil.Logger.Panicf("Could not create a new connection when " +
+			xgbutil.Logger.Panicf("Could not create a new connection when "+
 				"creating a new xgraphics.Image value because: %s", err)
 		}
 	}
