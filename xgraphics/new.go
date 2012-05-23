@@ -22,9 +22,22 @@ import (
 // provides a convenient mechanism for copying xgraphic.Image values.
 func NewConvert(X *xgbutil.XUtil, img image.Image) *Image {
 	ximg := New(X, img.Bounds())
+
+	// I've attempted to optimize this loop.
+	// It actually takes more time to convert an image than to send the bytes
+	// over the wire. (I suspect 'copy' is super fast, which can be used in
+	// XDraw, whereas computing each pixel is super slow.)
+	// But how is image decoding so much faster than this? I'll have to
+	// investigate... Maybe the Color interface being used here is the real
+	// slow down.
 	for x := 0; x < ximg.Rect.Dx(); x++ {
 		for y := 0; y < ximg.Rect.Dy(); y++ {
-			ximg.Set(x, y, img.At(x, y))
+			r, g, b, a := img.At(x, y).RGBA()
+			i := ximg.PixOffset(x, y)
+			ximg.Pix[i+0] = uint8(b >> 8)
+			ximg.Pix[i+1] = uint8(g >> 8)
+			ximg.Pix[i+2] = uint8(r >> 8)
+			ximg.Pix[i+3] = uint8(a >> 8)
 		}
 	}
 	return ximg
@@ -219,6 +232,7 @@ func getFormat(X *xgbutil.XUtil, depth byte) *xproto.Format {
 
 // getVisualInfo searches SetupInfo for a VisualInfo value matching
 // the depth provided.
+// XXX: This isn't used (yet).
 func getVisualInfo(X *xgbutil.XUtil, depth byte,
 	visualid xproto.Visualid) *xproto.VisualInfo {
 
