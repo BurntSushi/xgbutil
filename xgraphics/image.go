@@ -91,14 +91,12 @@ func New(X *xgbutil.XUtil, r image.Rectangle) *Image {
 	// values that xgraphics expects. It emits informative errors to stderr
 	// when it sees something it doesn't expect.
 	checkCompatibility(X)
-	w, h := r.Dx(), r.Dy()
 
-	buf := make([]uint8, 4*w*h)
 	return &Image{
 		X:      X,
 		Pixmap: 0,
-		Pix:    buf,
-		Stride: 4 * w,
+		Pix:    make([]uint8, 4*r.Dx()*r.Dy()),
+		Stride: 4 * r.Dx(),
 		Rect:   r,
 		Subimg: false,
 	}
@@ -256,6 +254,7 @@ func bgraModel(c color.Color) color.Color {
 	if _, ok := c.(BGRA); ok {
 		return c
 	}
+
 	r, g, b, a := c.RGBA()
 	return BGRA{
 		B: uint8(b >> 8),
