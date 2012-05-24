@@ -8,6 +8,7 @@ xgraphics.Image.
 import (
 	"fmt"
 	"image"
+	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
 
@@ -30,15 +31,15 @@ func NewConvert(X *xgbutil.XUtil, img image.Image) *Image {
 	// But how is image decoding so much faster than this? I'll have to
 	// investigate... Maybe the Color interface being used here is the real
 	// slow down.
-	for x := 0; x < ximg.Rect.Dx(); x++ {
-		for y := 0; y < ximg.Rect.Dy(); y++ {
-			r, g, b, a := img.At(x, y).RGBA()
-			i := ximg.PixOffset(x, y)
-			ximg.Pix[i+0] = uint8(b >> 8)
-			ximg.Pix[i+1] = uint8(g >> 8)
-			ximg.Pix[i+2] = uint8(r >> 8)
-			ximg.Pix[i+3] = uint8(a >> 8)
-		}
+	switch concrete := img.(type) {
+	case *image.RGBA:
+		convertRGBA(ximg, concrete)
+	case *image.YCbCr:
+		convertYCbCr(ximg, concrete)
+	default:
+		xgbutil.Logger.Printf("Converting image type %T the slow way. "+
+			"Optimization for this image type hasn't been added yet.", img)
+		convertImage(ximg, img)
 	}
 	return ximg
 }
