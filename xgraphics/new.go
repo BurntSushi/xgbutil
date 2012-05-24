@@ -21,6 +21,8 @@ import (
 // xgraphics.Image type.
 // NewConvert does not check if 'img' is an xgraphics.Image. Thus, NewConvert
 // provides a convenient mechanism for copying xgraphic.Image values.
+// Also, NewConvert attempts to optimize image conversion for some image
+// formats. (Currently, only *image.YCbCr and *image.RGBA.)
 func NewConvert(X *xgbutil.XUtil, img image.Image) *Image {
 	ximg := New(X, img.Bounds())
 
@@ -101,7 +103,7 @@ func NewIcccmIcon(X *xgbutil.XUtil, iconPixmap,
 				maskBgra := mximg.At(x, y).(BGRA)
 				bgra := pximg.At(x, y).(BGRA)
 				if maskBgra.A == 0 {
-					pximg.Set(x, y, BGRA{
+					pximg.SetBGRA(x, y, BGRA{
 						B: bgra.B,
 						G: bgra.G,
 						R: bgra.R,
