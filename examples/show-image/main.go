@@ -30,7 +30,10 @@ func main() {
 	ximg := xgraphics.NewConvert(X, img)
 
 	// Now show it in a new window.
-	ximg.XShow()
+	// We set the window title and tell the program to quit gracefully when
+	// the window is closed.
+	// There is also a convenience method, XShow, that requires no parameters.
+	ximg.XShowExtra("The Go Gopher!", true)
 
 	// If we don't block, the program will end and the window will disappear.
 	// We could use a 'select{}' here, but xevent.Main will emit errors if
