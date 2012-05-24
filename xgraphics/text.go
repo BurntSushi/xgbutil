@@ -3,6 +3,8 @@ package xgraphics
 import (
 	"image"
 	"image/color"
+	"io"
+	"io/ioutil"
 
 	"code.google.com/p/freetype-go/freetype"
 	"code.google.com/p/freetype-go/freetype/truetype"
@@ -64,7 +66,12 @@ func ftContext(font *truetype.Font, fontSize float64) *freetype.Context {
 }
 
 // ParseFont reads a font file and creates a freetype.Font type
-func ParseFont(fontBytes []byte) (*truetype.Font, error) {
+func ParseFont(fontReader io.Reader) (*truetype.Font, error) {
+	fontBytes, err := ioutil.ReadAll(fontReader)
+	if err != nil {
+		return nil, err
+	}
+
 	font, err := freetype.ParseFont(fontBytes)
 	if err != nil {
 		return nil, err

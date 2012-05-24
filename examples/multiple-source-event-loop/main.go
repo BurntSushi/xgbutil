@@ -74,7 +74,7 @@ func main() {
 
 	// Instead of using the usual xevent.Main, we use xevent.MainPing.
 	// It runs the main event loop inside a goroutine and returns ping
-	// channels, which are sent a benign values right before an event is
+	// channels, which are sent benign values right before an event is
 	// dequeued and right after that event has finished running all callbacks
 	// associated with it, respectively.
 	pingBefore, pingAfter := xevent.MainPing(X)

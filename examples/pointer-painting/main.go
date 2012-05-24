@@ -187,6 +187,7 @@ func main() {
 	// and a pointer grab is initiated with the cursor id specified in the
 	// second return value (use 0 to keep the cursor unchanged).
 	// If it's false, the drag stops.
+	// Note that Drag will automatically compress MotionNotify events.
 	mousebind.Drag(X, win.Id, win.Id, "1", false,
 		func(X *xgbutil.XUtil, rx, ry, ex, ey int) (bool, xproto.Cursor) {
 			drawPencil(canvas, win, ex, ey)

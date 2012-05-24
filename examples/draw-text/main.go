@@ -3,7 +3,6 @@ package main
 
 import (
 	"image"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -45,13 +44,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fontBytes, err := ioutil.ReadAll(fontReader)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	// Now parse the font.
-	font, err := xgraphics.ParseFont(fontBytes)
+	font, err := xgraphics.ParseFont(fontReader)
 	if err != nil {
 		log.Fatal(err)
 	}
