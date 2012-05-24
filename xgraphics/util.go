@@ -21,8 +21,7 @@ xgraphics/util.go contains a variety of image manipulation functions that
 are not specific to xgraphics.Image.
 */
 
-// Scale is a simple wrapper around graphics.Scale. It will also scale a
-// mask appropriately.
+// Scale is a simple wrapper around graphics.Scale.
 func Scale(img image.Image, width, height int) draw.Image {
 	dimg := image.NewRGBA(image.Rect(0, 0, width, height))
 	graphics.Scale(dimg, img)
@@ -36,21 +35,25 @@ func Scale(img image.Image, width, height int) draw.Image {
 // instead. (It's more efficient.)
 // Blend does not (currently) blend with the destination's alpha channel,
 // only the source's alpha channel.
-func Blend(dest draw.Image, src image.Image, sp image.Point) {
+func Blend(dest *Image, src image.Image, sp image.Point) {
 	rsrc, dsrc := src.Bounds(), dest.Bounds()
 	_, smxx, _, smxy := rsrc.Min.X, rsrc.Max.X, rsrc.Min.Y, rsrc.Max.Y
 	dmnx, dmxx, dmny, dmxy := dsrc.Min.X, dsrc.Max.X, dsrc.Min.Y, dsrc.Max.Y
 
-	for sx, dx := sp.X, dmnx; sx < smxx && dx < dmxx; sx, dx = sx+1, dx+1 {
-		for sy, dy := sp.Y, dmny; sy < smxy && dy < dmxy; sy, dy = sy+1, dy+1 {
-			sr, sg, sb, sa := src.At(sx, sy).RGBA()
-			dr, dg, db, _ := dest.At(dx, dy).RGBA()
-			alpha := float64(uint8(sa)) / 255.0
+	var sx, dx, sy, dy int
+	var sr, sg, sb, sa uint32
+	var bgra BGRA
+	var alpha float64
+	for sx, dx = sp.X, dmnx; sx < smxx && dx < dmxx; sx, dx = sx+1, dx+1 {
+		for sy, dy = sp.Y, dmny; sy < smxy && dy < dmxy; sy, dy = sy+1, dy+1 {
+			sr, sg, sb, sa = src.At(sx, sy).RGBA()
+			bgra = dest.At(dx, dy).(BGRA)
+			alpha = float64(uint8(sa)) / 255.0
 
-			dest.Set(dx, dy, color.RGBA{
-				blend(uint8(sr), uint8(dr), alpha),
-				blend(uint8(sg), uint8(dg), alpha),
-				blend(uint8(sb), uint8(db), alpha),
+			dest.SetBGRA(dx, dy, BGRA{
+				blend(uint8(sb), uint8(bgra.B), alpha),
+				blend(uint8(sg), uint8(bgra.G), alpha),
+				blend(uint8(sr), uint8(bgra.R), alpha),
 				0xff,
 			})
 		}
@@ -60,17 +63,21 @@ func Blend(dest draw.Image, src image.Image, sp image.Point) {
 // BlendBgColor blends the Image (receiver) into the background color
 // specified. This is more efficient than creating a background image and
 // blending with Blend.
-func BlendBgColor(dest draw.Image, c color.Color) {
+func BlendBgColor(dest *Image, c color.Color) {
 	r := dest.Bounds()
-	cr, cg, cb, _ := c.RGBA()
+	cr32, cg32, cb32, _ := c.RGBA()
+	cr, cg, cb := uint8(cr32), uint8(cg32), uint8(cb32)
+
+	var bgra BGRA
+	var alpha float64
 	for x := r.Min.X; x < r.Max.X; x++ {
 		for y := r.Min.Y; y < r.Max.Y; y++ {
-			r, g, b, a := dest.At(x, y).RGBA()
-			alpha := float64(uint8(a)) / 255.0
-			dest.Set(x, y, BGRA{
-				B: blend(uint8(b), uint8(cb), alpha),
-				G: blend(uint8(g), uint8(cg), alpha),
-				R: blend(uint8(r), uint8(cr), alpha),
+			bgra = dest.At(x, y).(BGRA)
+			alpha = float64(bgra.A) / 255.0
+			dest.SetBGRA(x, y, BGRA{
+				B: blend(bgra.B, cb, alpha),
+				G: blend(bgra.G, cg, alpha),
+				R: blend(bgra.R, cr, alpha),
 				A: 0xff,
 			})
 		}

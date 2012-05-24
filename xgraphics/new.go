@@ -8,7 +8,6 @@ xgraphics.Image.
 import (
 	"fmt"
 	"image"
-	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
 
@@ -47,18 +46,22 @@ func NewConvert(X *xgbutil.XUtil, img image.Image) *Image {
 }
 
 // NewEwmhIcon converts EWMH icon data (ARGB) to an xgraphics.Image type.
+// You should probably use xgraphics.FindIcon instead of this directly.
 func NewEwmhIcon(X *xgbutil.XUtil, icon *ewmh.WmIcon) *Image {
 	ximg := New(X, image.Rect(0, 0, icon.Width, icon.Height))
-	for x := 0; x < ximg.Rect.Dx(); x++ {
-		for y := 0; y < ximg.Rect.Dy(); y++ {
-			argb := icon.Data[x+(y*ximg.Rect.Dx())]
-			clr := BGRA{
+	r := ximg.Rect
+	width := r.Dx()
+
+	var argb, x, y int
+	for x = r.Min.X; x < r.Max.X; x++ {
+		for y = r.Min.Y; y < r.Max.Y; y++ {
+			argb = icon.Data[x+(y*width)]
+			ximg.SetBGRA(x, y, BGRA{
 				B: uint8(argb & 0x000000ff),
 				G: uint8((argb & 0x0000ff00) >> 8),
 				R: uint8((argb & 0x00ff0000) >> 16),
 				A: uint8(argb >> 24),
-			}
-			ximg.SetBGRA(x, y, clr)
+			})
 		}
 	}
 	return ximg
@@ -67,6 +70,7 @@ func NewEwmhIcon(X *xgbutil.XUtil, icon *ewmh.WmIcon) *Image {
 // NewIcccmIcon converts two pixmap ids (icon_pixmap and icon_mask in the
 // WM_HINTS properts) to a single xgraphics.Image.
 // It is okay for one of iconPixmap or iconMask to be 0, but not both.
+// You should probably use xgraphics.FindIcon instead of this directly.
 func NewIcccmIcon(X *xgbutil.XUtil, iconPixmap,
 	iconMask xproto.Pixmap) (*Image, error) {
 
@@ -98,10 +102,13 @@ func NewIcccmIcon(X *xgbutil.XUtil, iconPixmap,
 	switch {
 	case pximg != nil && mximg != nil:
 		r := pximg.Bounds()
-		for x := r.Min.X; x < r.Max.X; x++ {
-			for y := r.Min.Y; y < r.Max.Y; y++ {
-				maskBgra := mximg.At(x, y).(BGRA)
-				bgra := pximg.At(x, y).(BGRA)
+
+		var x, y int
+		var bgra, maskBgra BGRA
+		for x = r.Min.X; x < r.Max.X; x++ {
+			for y = r.Min.Y; y < r.Max.Y; y++ {
+				maskBgra = mximg.At(x, y).(BGRA)
+				bgra = pximg.At(x, y).(BGRA)
 				if maskBgra.A == 0 {
 					pximg.SetBGRA(x, y, BGRA{
 						B: bgra.B,
@@ -205,9 +212,10 @@ func readPixmapData(X *xgbutil.XUtil, ximg *Image, pixid xproto.Pixmap,
 				"an unsupported value for bits-per-pixel: %d",
 				pixid, format.BitsPerPixel)
 		}
+		bytesPer := int(format.BitsPerPixel) / 8
+		var i int
 		ximg.For(func(x, y int) BGRA {
-			bytesPer := int(format.BitsPerPixel) / 8
-			i := y*width*bytesPer + x*bytesPer
+			i = y*width*bytesPer + x*bytesPer
 			return BGRA{
 				B: imgData.Data[i],
 				G: imgData.Data[i+1],

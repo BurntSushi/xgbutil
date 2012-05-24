@@ -3,7 +3,6 @@ package xgraphics
 import (
 	"image"
 	"image/color"
-	"image/draw"
 
 	"code.google.com/p/freetype-go/freetype"
 	"code.google.com/p/freetype-go/freetype/truetype"
@@ -13,7 +12,7 @@ import (
 // position specified on to the image. A color.Color, a font size and a font  
 // must also be specified.
 // Finally, the (x, y) coordinate advanced by the text extents is returned.
-func DrawText(img draw.Image, x int, y int, clr color.Color, fontSize float64,
+func (im *Image) Text(x, y int, clr color.Color, fontSize float64,
 	font *truetype.Font, text string) (int, int, error) {
 
 	// Create a solid color image
@@ -21,8 +20,8 @@ func DrawText(img draw.Image, x int, y int, clr color.Color, fontSize float64,
 
 	// Set up the freetype context... mostly boiler plate
 	c := ftContext(font, fontSize)
-	c.SetClip(img.Bounds())
-	c.SetDst(img)
+	c.SetClip(im.Bounds())
+	c.SetDst(im)
 	c.SetSrc(textClr)
 
 	// Now let's actually draw the text...
@@ -36,7 +35,13 @@ func DrawText(img draw.Image, x int, y int, clr color.Color, fontSize float64,
 	return int(newpt.X / 256), int(newpt.Y / 256), nil
 }
 
-// Returns the width and height extents of a string given a font.
+// Returns the max width and height extents of a string given a font.
+// This is calculated by determining the number of pixels in an "em" unit
+// for the given font, and multiplying by the number of characters in 'text'.
+// Since a particular character may be smaller than one "em" unit, this has
+// a tendency to overestimate the extents.
+// It is provided because I do not know how to calculate the precise extents
+// using freetype-go.
 // TODO: This does not currently account for multiple lines. It may never do so.
 func TextMaxExtents(font *truetype.Font, fontSize float64,
 	text string) (width int, height int, err error) {

@@ -47,6 +47,10 @@ func (im *Image) XSurfaceSet(wid xproto.Window) error {
 	return nil
 }
 
+// CreatePixmap allocates an X resource identifier for a pixmap. (It does not
+// do any drawing.) You only need to call this if you're using XDraw/XExpPaint. 
+// If you're using XSurfaceSet/XDraw/XPaint, then CreatePixmap is called for
+// you automatically.
 func (im *Image) CreatePixmap() error {
 	// Generate the pixmap id.
 	pid, err := xproto.NewPixmapId(im.X.Conn())
@@ -68,7 +72,10 @@ func (im *Image) CreatePixmap() error {
 }
 
 // XPaint will write the contents of the pixmap to a window.
-// Note that painting will do nothing if Draw hasn't been called.
+// Note that painting will do nothing if XDraw hasn't been called.
+// XPaint is what switches the buffer (drawn to using XDraw) into the window
+// to be visible. That is, multiple calls to XDraw can be made, and the screen
+// will only be updated once with a call to XPaint.
 func (im *Image) XPaint(wid xproto.Window) {
 	// We clear the whole window here because sometimes we rely on the tiling
 	// of a background pixmap. If anyone knows if this is a significant
@@ -82,6 +89,8 @@ func (im *Image) XPaint(wid xproto.Window) {
 // CreatePixmap must be called before using XExpPaint.
 // XExpPaint can be called on sub-images.
 // x and y correspond to the destination x and y to copy the image to.
+//
+// This should not be used on the same image with XSurfaceSet and XPaint.
 func (im *Image) XExpPaint(wid xproto.Window, x, y int) {
 	if im.Pixmap == 0 {
 		return
@@ -96,8 +105,15 @@ func (im *Image) XExpPaint(wid xproto.Window, x, y int) {
 // XDraw will write the contents of Image to a pixmap.
 // Note that this is more like a buffer. Drawing does not put the contents
 // on the screen.
-// After drawing, it is necessary to call Paint to put the contents somewhere.
+// After drawing, it is necessary to call XPaint to put the contents somewhere.
 // Draw may return an X error if something has gone horribly wrong.
+//
+// XSurfaceSet should be called before XDraw. (If not, X will yell at you.)
+// More specifically, CreatePixmap needs to be called before XDraw, but it is
+// done automatically in XSurfaceSet.
+//
+// If you're using sub-images to update a particular region of the image, XDraw
+// is where you'll see the performance benefit (not XPaint).
 func (im *Image) XDraw() {
 	width, height := im.Rect.Dx(), im.Rect.Dy()
 
@@ -169,7 +185,9 @@ func (im *Image) XShow() *xwindow.Window {
 }
 
 // XShowName is just like XShow, except it sets the name of the window to the
-// name provided. If name is empty, then the behavior is precisely the same
+// name provided, and will quit the current event loop if 'quit' is true when
+// the window is closed.
+// If name is empty and quit is false, then the behavior is precisely the same
 // as XShow.
 func (im *Image) XShowExtra(name string, quit bool) *xwindow.Window {
 	if len(name) == 0 {

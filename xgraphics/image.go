@@ -44,8 +44,8 @@ type Image struct {
 	X *xgbutil.XUtil
 
 	// X images must also be tied to a pixmap (its drawing surface).
-	// Calls to 'Draw' will draw data to this pixmap.
-	// Calls to 'Paint' will tell X to show the pixmap on some window.
+	// Calls to 'XDraw' will draw data to this pixmap.
+	// Calls to 'XPaint' will tell X to show the pixmap on some window.
 	Pixmap xproto.Pixmap
 
 	// Pix holds the image's pixels in BGRA order, so that they don't need
@@ -71,8 +71,6 @@ type Image struct {
 // New will also create an X pixmap. When you are no longer using this
 // image, you should call Destroy so that the X pixmap can be freed on the
 // X server.
-// (Generating a pixmap id can cause an error, so this call could return
-// an error.)
 // If 'X' is nil, then a new connection will be made. This is usually a bad
 // idea, particularly if you're making a lot of small images, but can be
 // used to achieve true parallelism. (Particularly useful when painting large
@@ -113,8 +111,8 @@ func (im *Image) Destroy() {
 // Scale will scale the image to the size provided.
 // Note that this will destroy the current pixmap associated with this image.
 // After scaling, XSurfaceSet will need to be called for each window that
-// this image is painted to. (And obviously, XDraw and XPaint.)
-// This function may return an error if a new pixmap cannot be allocated.
+// this image is painted to. (And obviously, XDraw and XPaint will need to
+// be called again.)
 func (im *Image) Scale(width, height int) *Image {
 	dimg := New(im.X, image.Rect(0, 0, width, height))
 	graphics.Scale(dimg, im)
@@ -203,6 +201,10 @@ func (im *Image) For(each func(x, y int) BGRA) {
 // N.B. The standard library defines a similar function, but returns an
 // image.Image. Here, we return xgraphics.Image so that we can use the extra
 // methods defined by xgraphics on it.
+//
+// This method is cheap to call. It should be used to update only specific
+// regions of an X pixmap to avoid sending an entire image to the X server when
+// only a piece of it is updated.
 func (im *Image) SubImage(r image.Rectangle) *Image {
 	r = r.Intersect(im.Rect)
 	if r.Empty() {

@@ -1,12 +1,15 @@
 /*
 Package xgraphics defines an X image type and provides convenience functions 
-reading and writing X pixmaps and bitmaps. It is a work-in-progress, and while 
-it works for some common configurations, it does not work for all 
-configurations. Package xgraphics also provides some support for drawing text 
-on to images using freetype-go, scaling images using graphics-go, simple alpha 
-blending, finding EWMH and ICCCM window icons and efficiently drawing any image 
-into an X pixmap. (Which "efficient" means being able to specify sub-regions of 
-images to draw, so that the entire image isn't sent to X.)
+for reading and writing X pixmaps and bitmaps. It is a work-in-progress, and 
+while it works for some common X server configurations, it does not work for 
+all X server configurations. Package xgraphics also provides some support for 
+drawing text on to images using freetype-go, scaling images using graphics-go, 
+simple alpha blending, finding EWMH and ICCCM window icons and efficiently 
+drawing any image into an X pixmap. (Where "efficient" means being able to 
+specify sub-regions of images to draw, so that the entire image isn't sent to 
+X.) If more elaborate image routines are required, I recommend using draw2d. 
+(The xgraphics.Image type satisfies the draw.Image interface, which allows it 
+to work with draw2d.)
 
 In general, xgraphics paints pixmaps to windows using using the BackPixmap 
 approach. (Setting the background pixmap of the window to the pixmap containing 
@@ -16,6 +19,10 @@ contents of your image's pixmap directly to the window. (This requires
 responding to expose events to redraw the pixmap.) The former approach requires 
 less book-keeping, but supposedly has some issues with some video cards. The 
 latter approach is probably more reliable, but requires more book-keeping.
+
+Note that while text drawing functions are provided, it is not necessary to use
+them to write text on images. Namely, there is nothing X specific about them. 
+They are strictly for convenience.
 
 A quick example
 
@@ -39,7 +46,8 @@ debugging what an image looks like.)
 	ximg.XShow()
 
 A complete working example named 'show-image' that's similar to this can be 
-found in the examples directory of the xgbutil package.
+found in the examples directory of the xgbutil package. More involved examples,
+'show-window-icons' and 'pointer-painting', are also provided.
 
 Portability
 
@@ -53,7 +61,14 @@ I am undecided (perhaps because I haven't thought about it too much) about
 whether to hide these configuration details behind multiple xgraphics.Image 
 types or hiding everything inside one xgraphics.Image type. I lean toward the 
 latter because the former requires a large number of types (and therefore a lot 
-of code duplication).
+of code duplication). One design decision that I've already made is that images 
+should be converted to the format used by the X server (xgraphics currently 
+assumes this is BGRx) once when the image is created. Without this, an 
+xgraphics.Image type wouldn't be required, and images would have to be 
+converted to the X image format every time an image is drawn into a pixmap. 
+This results in a lot of overhead. Moreover, Go's interfaces allow an 
+xgraphics.Image type to work anywhere that an image.Image or a draw.Image value 
+is expected.
 
 If your X server is not configured to what the xgraphics package expects, 
 messages will be emitted to stderr when a new xgraphics.Image value is created. 
