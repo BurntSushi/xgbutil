@@ -11,7 +11,7 @@ import (
 )
 
 // Logger is used through xgbutil when messages need to be emitted to stderr.
-var Logger = log.New(os.Stderr, "XGBUTIL: ", 0)
+var Logger = log.New(os.Stderr, "[xgbutil] ", log.Lshortfile)
 
 // The current maximum request size. I think we can expand this with
 // BigReq, but it probably isn't worth it at the moment.
