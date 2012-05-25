@@ -8,11 +8,14 @@ import (
 	"github.com/BurntSushi/xgbutil/xprop"
 )
 
-// IsDeleteRequest checks whether a ClientMessage event satisfies the
+// IsDeleteProtocol checks whether a ClientMessage event satisfies the
 // WM_DELETE_WINDOW protocol. Namely, the format must be 32, the type must
 // be the WM_PROTOCOLS atom, and the first data item must be the atom
 // WM_DELETE_WINDOW.
-func IsDeleteRequest(X *xgbutil.XUtil, ev xevent.ClientMessageEvent) bool {
+//
+// Note that if you're using the xwindow package, you should use the
+// WMGracefulClose method instead of directly using IsDeleteProtocol.
+func IsDeleteProtocol(X *xgbutil.XUtil, ev xevent.ClientMessageEvent) bool {
 	// Make sure the Format is 32. (Meaning that each data item is
 	// 32 bits.)
 	if ev.Format != 32 {

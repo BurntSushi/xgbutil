@@ -1,6 +1,10 @@
 /*
 Package icccm provides an API for a portion of the ICCCM, namely, getters
-and setters for many of the properties specified in the ICCCM.
+and setters for many of the properties specified in the ICCCM. There is also a 
+smattering of support for other protocols specified by ICCCM. For example, to 
+satisfy the WM_DELETE_WINDOW protocol, package icccm provides 'IsDeleteProtocol'
+which returns whether a ClientMessage event satisfies the WM_DELETE_WINDOW
+protocol.
 
 If a property has values that aren't simple strings or integers, struct types 
 are provided to organize the data. In particular, WM_NORMAL_HINTS and WM_HINTS.

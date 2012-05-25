@@ -36,7 +36,7 @@ func (w *Window) WMGracefulClose(cb func(w *Window)) {
 	// provided.
 	xevent.ClientMessageFun(
 		func(X *xgbutil.XUtil, ev xevent.ClientMessageEvent) {
-			if icccm.IsDeleteRequest(X, ev) {
+			if icccm.IsDeleteProtocol(X, ev) {
 				cb(w)
 			}
 		}).Connect(w.X, w.Id)
