@@ -69,7 +69,8 @@ func (w *Window) Create(parent xproto.Window, x, y, width, height,
 	valueMask int, valueList ...uint32) {
 
 	s := w.X.Screen()
-	xproto.CreateWindow(w.X.Conn(), s.RootDepth, w.Id, parent,
+	xproto.CreateWindow(w.X.Conn(),
+		xproto.WindowClassCopyFromParent, w.Id, parent,
 		int16(x), int16(y), uint16(width), uint16(height), 0,
 		xproto.WindowClassInputOutput, s.RootVisual,
 		uint32(valueMask), valueList)
@@ -84,7 +85,8 @@ func (w *Window) CreateChecked(parent xproto.Window, x, y, width, height,
 	valueMask int, valueList ...uint32) error {
 
 	s := w.X.Screen()
-	return xproto.CreateWindowChecked(w.X.Conn(), s.RootDepth, w.Id, parent,
+	return xproto.CreateWindowChecked(w.X.Conn(),
+		xproto.WindowClassCopyFromParent, w.Id, parent,
 		int16(x), int16(y), uint16(width), uint16(height), 0,
 		xproto.WindowClassInputOutput, s.RootVisual,
 		uint32(valueMask), valueList).Check()
