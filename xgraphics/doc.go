@@ -70,6 +70,18 @@ This results in a lot of overhead. Moreover, Go's interfaces allow an
 xgraphics.Image type to work anywhere that an image.Image or a draw.Image value 
 is expected.
 
+The obvious down-side to this approach is that optimizations made in image 
+drawing routines in other libraries won't be able to apply to xgraphics.Image 
+values (since the optimizations are probably hard-coded for image types 
+declared in Go's standard library). This isn't well suited to the process of 
+creating some canvas to draw on, and using another library to draw on the 
+canvas. (At least, it won't be as fast as possible.) I can't think of any way 
+around this, other than having the library add an optimization step 
+specifically for xgraphics.Image values. Of course, the other approach is to 
+convert image formats only when drawing to X and completely subvert the 
+xgraphics.Image type, but this seems worse than unoptimized image drawing 
+routines. (Unfortunately, both things need to be fast.)
+
 If your X server is not configured to what the xgraphics package expects, 
 messages will be emitted to stderr when a new xgraphics.Image value is created. 
 If you see any of these messages, please report them to xgbutil's project page:

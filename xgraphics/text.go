@@ -14,6 +14,12 @@ import (
 // position specified on to the image. A color.Color, a font size and a font  
 // must also be specified.
 // Finally, the (x, y) coordinate advanced by the text extents is returned.
+//
+// Note that the ParseFont helper function can be used to get a *truetype.Font
+// value without having to import freetype-go directly.
+//
+// If you need more control over the 'context' used to draw text (like the DPI),
+// then you'll need to ignore this convenience method and use your own.
 func (im *Image) Text(x, y int, clr color.Color, fontSize float64,
 	font *truetype.Font, text string) (int, int, error) {
 
