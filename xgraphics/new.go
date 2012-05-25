@@ -33,8 +33,14 @@ func NewConvert(X *xgbutil.XUtil, img image.Image) *Image {
 	// investigate... Maybe the Color interface being used here is the real
 	// slow down.
 	switch concrete := img.(type) {
+	case *image.NRGBA:
+		convertNRGBA(ximg, concrete)
+	case *image.NRGBA64:
+		convertNRGBA64(ximg, concrete)
 	case *image.RGBA:
 		convertRGBA(ximg, concrete)
+	case *image.RGBA64:
+		convertRGBA64(ximg, concrete)
 	case *image.YCbCr:
 		convertYCbCr(ximg, concrete)
 	default:
