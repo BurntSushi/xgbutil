@@ -99,16 +99,16 @@ func paintGradient(X *xgbutil.XUtil, wid xproto.Window, width, height int,
 
 	// Now calculate the increment step between each RGB channel in
 	// the start and end colors.
-	rinc := float64(int(end.R)-int(start.R)) / float64(width)
-	ginc := float64(int(end.G)-int(start.G)) / float64(width)
-	binc := float64(int(end.B)-int(start.B)) / float64(width)
+	rinc := (0xff * (int(end.R)-int(start.R))) / width
+	ginc := (0xff * (int(end.G)-int(start.G))) / width
+	binc := (0xff * (int(end.B)-int(start.B))) / width
 
 	// Now apply the increment to each "column" in the image.
 	ximg.For(func(x, y int) xgraphics.BGRA {
 		return xgraphics.BGRA{
-			B: uint8(float64(start.B) + binc*float64(x)),
-			G: uint8(float64(start.G) + ginc*float64(x)),
-			R: uint8(float64(start.R) + rinc*float64(x)),
+			B: uint8(int(start.B) + (binc*x) / 0xff),
+			G: uint8(int(start.G) + (ginc*x) / 0xff),
+			R: uint8(int(start.R) + (rinc*x) / 0xff),
 			A: 0xff,
 		}
 	})
