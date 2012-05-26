@@ -78,7 +78,7 @@ func drawPencil(canvas *xgraphics.Image, win *xwindow.Window, x, y int) {
 
 	// Now color each pixel in tip with the pencil color.
 	tip.For(func(x, y int) xgraphics.BGRA {
-		return xgraphics.BlendBGRA(pencil, canvas.At(x, y).(xgraphics.BGRA))
+		return xgraphics.BlendBGRA(canvas.At(x, y).(xgraphics.BGRA), pencil)
 	})
 
 	// Now draw the changes to the pixmap.

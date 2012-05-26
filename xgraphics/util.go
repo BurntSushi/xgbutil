@@ -51,9 +51,9 @@ func Blend(dest *Image, src image.Image, sp image.Point) {
 			alpha = float64(uint8(sa)) / 255.0
 
 			dest.SetBGRA(dx, dy, BGRA{
-				blend(uint8(sb), uint8(bgra.B), alpha),
-				blend(uint8(sg), uint8(bgra.G), alpha),
-				blend(uint8(sr), uint8(bgra.R), alpha),
+				blend(uint8(bgra.B), uint8(sb), alpha),
+				blend(uint8(bgra.G), uint8(sg), alpha),
+				blend(uint8(bgra.R), uint8(sr), alpha),
 				0xff,
 			})
 		}
@@ -75,9 +75,9 @@ func BlendBgColor(dest *Image, c color.Color) {
 			bgra = dest.At(x, y).(BGRA)
 			alpha = float64(bgra.A) / 255.0
 			dest.SetBGRA(x, y, BGRA{
-				B: blend(bgra.B, cb, alpha),
-				G: blend(bgra.G, cg, alpha),
-				R: blend(bgra.R, cr, alpha),
+				B: blend(cb, bgra.B, alpha),
+				G: blend(cg, bgra.G, alpha),
+				R: blend(cr, bgra.R, alpha),
 				A: 0xff,
 			})
 		}
@@ -86,12 +86,12 @@ func BlendBgColor(dest *Image, c color.Color) {
 
 // Blend returns the blended alpha color for src and dest colors.
 // This assumes that the destination has alpha = 1.
-func BlendBGRA(src, dest BGRA) BGRA {
+func BlendBGRA(dest, src BGRA) BGRA {
 	alpha := float64(src.A) / 255.0
 	return BGRA{
-		B: blend(src.B, dest.B, alpha),
-		G: blend(src.G, dest.G, alpha),
-		R: blend(src.R, dest.R, alpha),
+		B: blend(dest.B, src.B, alpha),
+		G: blend(dest.G, src.G, alpha),
+		R: blend(dest.R, src.R, alpha),
 		A: 0xff,
 	}
 }
@@ -99,7 +99,7 @@ func BlendBGRA(src, dest BGRA) BGRA {
 // blend calculates the value of a color given some alpha value in [0, 1]
 // and a source and destination color. Note that this assumes that the
 // destination is fully opaque (has an alpha value of 1).
-func blend(s, d uint8, alpha float64) uint8 {
+func blend(d, s uint8, alpha float64) uint8 {
 	return uint8(float64(s)*alpha + float64(d)*(1-alpha))
 }
 
