@@ -1,17 +1,29 @@
 /*
-   Package motif has a few functions to allow easy access to Motif related
-   properties.
+Package motif has a few functions to allow easy access to Motif related
+properties.
 
-   The main purpose here is that some applications communicate "no window
-   decorations" to the window manager using _MOTIF_WM_HINTS. (Like Google
-   Chrome.) I haven't seen Motif stuff used for other purposes in the wild for 
-   a long time.
+The main purpose here is that some applications communicate "no window
+decorations" to the window manager using _MOTIF_WM_HINTS. (Like Google
+Chrome.) I haven't seen Motif stuff used for other purposes in the wild for 
+a long time.
 
-   As a result, only the useful bits are implemented here. More may be added
-   on an on-demand basis, but don't count on it.
+As a result, only the useful bits are implemented here. More may be added
+on an on-demand basis, but don't count on it.
 
-   Try not to bash your head against your desk too hard:
-   http://www.opengroup.org/openmotif/hardcopydocs.html
+Try not to bash your head against your desk too hard:
+http://www.opengroup.org/openmotif/hardcopydocs.html
+
+Example
+
+To test if a window wants decorations or not:
+
+	mh, err := motif.WmHintsGet(XUtilValue, window-id)
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("Decorations? ", motif.Decor(X, window-id, mh))
+	}
+
 */
 package motif
 
@@ -60,6 +72,21 @@ const (
 )
 
 const StatusTearoffWindow = 1
+
+// Decor checks a Hints value for whether or not the client has requested
+// that the window manager paint decorations.
+// That is, Decor returns false when the window provided doesn't want
+// decorations and true otherwise.
+func Decor(xu *xgbutil.XUtil, win xproto.Window, mh *Hints) bool {
+	if mh.Flags&HintDecorations > 0 {
+		noDecor := mh.Decoration == DecorationNone ||
+			(mh.Decoration&DecorationAll == 0 &&
+				mh.Decoration&DecorationTitle == 0 &&
+				mh.Decoration&DecorationResizeH == 0)
+		return !noDecor
+	}
+	return true
+}
 
 // Hints is a struct that organizes the information related to the
 // WM_NORMAL_HINTS property.
