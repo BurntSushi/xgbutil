@@ -90,7 +90,7 @@ func NewIcccmIcon(X *xgbutil.XUtil, iconPixmap,
 
 	// Get the xgraphics.Image for iconPixmap.
 	if iconPixmap != 0 {
-		pximg, err = NewPixmap(X, iconPixmap)
+		pximg, err = NewDrawable(X, xproto.Drawable(iconPixmap))
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +98,7 @@ func NewIcccmIcon(X *xgbutil.XUtil, iconPixmap,
 
 	// Now get the xgraphics.Image for iconMask.
 	if iconMask != 0 {
-		mximg, err = NewPixmap(X, iconMask)
+		mximg, err = NewDrawable(X, xproto.Drawable(iconMask))
 		if err != nil {
 			return nil, err
 		}
@@ -135,18 +135,18 @@ func NewIcccmIcon(X *xgbutil.XUtil, iconPixmap,
 	panic("unreachable")
 }
 
-// NewPixmap converts an X pixmap into a xgraphics.Image.
+// NewDrawable converts an X drawable into a xgraphics.Image.
 // This is used in NewIcccmIcon.
-func NewPixmap(X *xgbutil.XUtil, iconPixmap xproto.Pixmap) (*Image, error) {
+func NewDrawable(X *xgbutil.XUtil, did xproto.Drawable) (*Image, error) {
 	// Get the geometry of the pixmap for use in the GetImage request.
-	pgeom, err := xwindow.RawGeometry(X, xproto.Drawable(iconPixmap))
+	pgeom, err := xwindow.RawGeometry(X, xproto.Drawable(did))
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the image data for each pixmap.
 	pixmapData, err := xproto.GetImage(X.Conn(), xproto.ImageFormatZPixmap,
-		xproto.Drawable(iconPixmap),
+		did,
 		0, 0, uint16(pgeom.Width()), uint16(pgeom.Height()),
 		(1<<32)-1).Reply()
 	if err != nil {
@@ -159,7 +159,7 @@ func NewPixmap(X *xgbutil.XUtil, iconPixmap xproto.Pixmap) (*Image, error) {
 
 	// We'll try to be a little flexible with the image format returned,
 	// but not completely flexible.
-	err = readPixmapData(X, ximg, iconPixmap, pixmapData,
+	err = readDrawableData(X, ximg, did, pixmapData,
 		pgeom.Width(), pgeom.Height())
 	if err != nil {
 		return nil, err
@@ -168,17 +168,17 @@ func NewPixmap(X *xgbutil.XUtil, iconPixmap xproto.Pixmap) (*Image, error) {
 	return ximg, nil
 }
 
-// readPixmapData uses Format information to read data from an X pixmap
+// readDrawableData uses Format information to read data from an X pixmap
 // into an xgraphics.Image.
 // readPixmapData does not take into account all information possible to read
 // X pixmaps and bitmaps. Of particular note is bit order/byte order.
-func readPixmapData(X *xgbutil.XUtil, ximg *Image, pixid xproto.Pixmap,
+func readDrawableData(X *xgbutil.XUtil, ximg *Image, did xproto.Drawable,
 	imgData *xproto.GetImageReply, width, height int) error {
 
 	format := getFormat(X, imgData.Depth)
 	if format == nil {
 		return fmt.Errorf("Could not find valid format for pixmap %d "+
-			"with depth %d", pixid, imgData.Depth)
+			"with depth %d", did, imgData.Depth)
 	}
 
 	switch format.Depth {
@@ -186,7 +186,7 @@ func readPixmapData(X *xgbutil.XUtil, ximg *Image, pixid xproto.Pixmap,
 		if format.BitsPerPixel != 1 {
 			return fmt.Errorf("The image returned for pixmap id %d with "+
 				"depth %d has an unsupported value for bits-per-pixel: %d",
-				pixid, format.Depth, format.BitsPerPixel)
+				did, format.Depth, format.BitsPerPixel)
 		}
 
 		// Calculate the padded width of our image data.
@@ -216,7 +216,7 @@ func readPixmapData(X *xgbutil.XUtil, ximg *Image, pixid xproto.Pixmap,
 		if format.BitsPerPixel != 24 && format.BitsPerPixel != 32 {
 			return fmt.Errorf("The image returned for pixmap id %d has "+
 				"an unsupported value for bits-per-pixel: %d",
-				pixid, format.BitsPerPixel)
+				did, format.BitsPerPixel)
 		}
 		bytesPer := int(format.BitsPerPixel) / 8
 		var i int
@@ -231,7 +231,7 @@ func readPixmapData(X *xgbutil.XUtil, ximg *Image, pixid xproto.Pixmap,
 		})
 	default:
 		return fmt.Errorf("The image returned for pixmap id %d has an "+
-			"unsupported value for depth: %d", pixid, format.Depth)
+			"unsupported value for depth: %d", did, format.Depth)
 	}
 
 	return nil
