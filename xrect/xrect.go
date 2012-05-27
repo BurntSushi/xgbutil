@@ -85,7 +85,7 @@ func Valid(r Rect) bool {
 
 // Subtract subtracts r2 from r1 and returns the result as a
 // new slice of Rects.
-// Basically, rectangle subtraction works by cutting r1 out of r2, and returning
+// Basically, rectangle subtraction works by cutting r2 out of r1, and returning
 // the resulting rectangles.
 // If r1 does not overlap r2, then only one rectangle is returned and is
 // equivalent to r1.

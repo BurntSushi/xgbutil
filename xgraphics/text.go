@@ -10,7 +10,7 @@ import (
 	"code.google.com/p/freetype-go/freetype/truetype"
 )
 
-// DrawText takes an image and, using the freetype package, writes text in the
+// Text takes an image and, using the freetype package, writes text in the
 // position specified on to the image. A color.Color, a font size and a font  
 // must also be specified.
 // Finally, the (x, y) coordinate advanced by the text extents is returned.

@@ -176,7 +176,7 @@ func findIconIcccm(X *xgbutil.XUtil, wid xproto.Window) (*Image, error) {
 	return NewIcccmIcon(X, hints.IconPixmap, hints.IconMask)
 }
 
-// FindBestIcon takes width/height dimensions and a slice of *ewmh.WmIcon
+// FindBestEwmhIcon takes width/height dimensions and a slice of *ewmh.WmIcon
 // and finds the best matching icon of the bunch. We always prefer bigger.
 // If no icons are bigger than the preferred dimensions, use the biggest
 // available. Otherwise, use the smallest icon that is greater than or equal

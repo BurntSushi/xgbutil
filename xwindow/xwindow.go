@@ -9,7 +9,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xrect"
 )
 
-// Window represents an X window. It contains an XUtilValue to simply the
+// Window represents an X window. It contains an XUtilValue to simplfy the
 // parameter lists for methods declared on the Window type.
 // Geom is updated whenever Geometry is called, or when Move, Resize or
 // MoveResize are called.
@@ -110,7 +110,6 @@ func (w *Window) Listen(evMasks ...int) {
 	for _, mask := range evMasks {
 		evMask |= mask
 	}
-
 	xproto.ChangeWindowAttributes(w.X.Conn(), w.Id, xproto.CwEventMask,
 		[]uint32{uint32(evMask)})
 }
