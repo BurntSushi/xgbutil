@@ -1,5 +1,9 @@
 all: callback.go types_auto.go gofmt
 
+install:
+	go install -p 6 . ./ewmh ./gopher ./icccm ./keybind ./motif ./mousebind \
+		./xcursor ./xevent ./xgraphics ./xinerama ./xprop ./xrect ./xwindow
+
 gofmt:
 	gofmt -w *.go */*.go examples/*/*.go
 	colcheck *.go */*.go examples/*/*.go
