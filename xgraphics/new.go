@@ -6,8 +6,13 @@ xgraphics.Image.
 */
 
 import (
+	"bytes"
 	"fmt"
 	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+	"os"
 
 	"github.com/BurntSushi/xgb/xproto"
 
@@ -49,6 +54,34 @@ func NewConvert(X *xgbutil.XUtil, img image.Image) *Image {
 		convertImage(ximg, img)
 	}
 	return ximg
+}
+
+// NewFileName uses the image package's decoder and converts a file specified
+// by fileName to an xgraphics.Image value.
+// Opening a file or decoding an image can cause an error.
+func NewFileName(X *xgbutil.XUtil, fileName string) (*Image, error) {
+	srcReader, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer srcReader.Close()
+
+	img, _, err := image.Decode(srcReader)
+	if err != nil {
+		return nil, err
+	}
+	return NewConvert(X, img), nil
+}
+
+// NewBytes uses the image package's decoder to convert the bytes given to
+// an xgraphics.Imag value.
+// Decoding an image can cause an error.
+func NewBytes(X *xgbutil.XUtil, bs []byte) (*Image, error) {
+	img, _, err := image.Decode(bytes.NewReader(bs))
+	if err != nil {
+		return nil, err
+	}
+	return NewConvert(X, img), nil
 }
 
 // NewEwmhIcon converts EWMH icon data (ARGB) to an xgraphics.Image type.
