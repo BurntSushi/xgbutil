@@ -52,13 +52,13 @@ func (im *Image) Text(x, y int, clr color.Color, fontSize float64,
 // using freetype-go.
 // TODO: This does not currently account for multiple lines. It may never do so.
 func TextMaxExtents(font *truetype.Font, fontSize float64,
-	text string) (width int, height int, err error) {
+	text string) (width int, height int) {
 
 	// We need a context to calculate the extents
 	c := ftContext(font, fontSize)
 
 	emSquarePix := c.FUnitToPixelRU(font.UnitsPerEm())
-	return len(text) * emSquarePix, emSquarePix, nil
+	return len(text) * emSquarePix, emSquarePix
 }
 
 // ftContext does the boiler plate to create a freetype context
