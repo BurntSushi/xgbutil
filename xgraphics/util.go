@@ -103,6 +103,14 @@ func blend(d, s uint8, alpha float64) uint8 {
 	return uint8(float64(s)*alpha + float64(d)*(1-alpha))
 }
 
+// FreePixmap is a convenience function for destroying a pixmap resource
+// on the X server.
+// If you're using an xgraphics.Image value, then its Destroy method will call
+// this for you.
+func FreePixmap(X *xgbutil.XUtil, pixid xproto.Pixmap) {
+	xproto.FreePixmap(X.Conn(), pixid)
+}
+
 // FindIcon takes a window id and attempts to return an xgraphics.Image of
 // that window's icon.
 // It will first try to look for an icon in _NET_WM_ICON that is closest to
