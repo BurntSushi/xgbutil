@@ -224,6 +224,10 @@ func keysymsPer(xu *xgbutil.XUtil) int {
 func keycodeGet(xu *xgbutil.XUtil, keysym xproto.Keysym) xproto.Keycode {
 	min, max := minMaxKeycodeGet(xu)
 	keyMap := KeyMapGet(xu)
+	if keyMap == nil {
+		panic("keybind.Initialize must be called before using the keybind " +
+			"package.")
+	}
 
 	var c byte
 	for kc := int(min); kc <= int(max); kc++ {
@@ -349,26 +353,37 @@ func UngrabKeyboard(xu *xgbutil.XUtil) {
 	xproto.UngrabKeyboard(xu.Conn(), 0)
 }
 
-// DummyGrab grabs the keyboard and sends all key events to the dummy window.
-func DummyGrab(xu *xgbutil.XUtil) error {
-	ok, err := GrabKeyboard(xu, xu.Dummy())
+// SmartGrab grabs the keyboard for the given window, and redirects all
+// key events in the xevent main event loop to avoid races.
+func SmartGrab(xu *xgbutil.XUtil, win xproto.Window) error {
+	ok, err := GrabKeyboard(xu, win)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("DummyGrab: Grabbing keyboard was not successful.")
+		return fmt.Errorf("SmartGrab: Grabbing keyboard was not successful.")
 	}
 
 	// Now redirect all key events to the dummy window to prevent races
-	xevent.RedirectKeyEvents(xu, xu.Dummy())
+	xevent.RedirectKeyEvents(xu, win)
 
 	return nil
 }
 
-// DummyUngrab ungrabs the keyboard from the dummy window.
-func DummyUngrab(xu *xgbutil.XUtil) {
+// SmartUngrab reverses SmartGrab and stops redirecting all key events.
+func SmartUngrab(xu *xgbutil.XUtil) {
 	UngrabKeyboard(xu)
 
 	// Stop redirecting all key events
 	xevent.RedirectKeyEvents(xu, 0)
+}
+
+// DummyGrab grabs the keyboard and sends all key events to the dummy window.
+func DummyGrab(xu *xgbutil.XUtil) error {
+	return SmartGrab(xu, xu.Dummy())
+}
+
+// DummyUngrab ungrabs the keyboard from the dummy window.
+func DummyUngrab(xu *xgbutil.XUtil) {
+	SmartUngrab(xu)
 }
