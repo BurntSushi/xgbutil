@@ -6,6 +6,9 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/keybind"
+	"github.com/BurntSushi/xgbutil/mousebind"
+	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xrect"
 )
 
@@ -28,7 +31,7 @@ func New(xu *xgbutil.XUtil, win xproto.Window) *Window {
 	return &Window{
 		X:    xu,
 		Id:   win,
-		Geom: xrect.New(0, 0, 0, 0),
+		Geom: xrect.New(0, 0, 1, 1),
 	}
 }
 
@@ -41,11 +44,36 @@ func Generate(xu *xgbutil.XUtil) (*Window, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Window{
-		X:    xu,
-		Id:   wid,
-		Geom: xrect.New(0, 0, 0, 0),
-	}, nil
+	return New(xu, wid), nil
+}
+
+// Create is a convenience constructor that will generate a new window id (with 
+// the Generate constructor) and make a bare-bones call to CreateChecked (with 
+// geometry (0, 0) 1x1). An error can be generated from Generate or 
+// CreateChecked.
+func Create(xu *xgbutil.XUtil, parent xproto.Window) (*Window, error) {
+	win, err := Generate(xu)
+	if err != nil {
+		return nil, err
+	}
+
+	err = win.CreateChecked(parent, 0, 0, 1, 1, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return win, nil
+}
+
+// Must panics if err is non-nil or if win is nil. Otherwise, win is returned.
+func Must(win *Window, err error) *Window {
+	if err != nil {
+		panic(err)
+	}
+	if win == nil {
+		panic("win and err are nil")
+	}
+	return win
 }
 
 // Create issues a CreateWindow request for Window.
@@ -133,6 +161,55 @@ func RawGeometry(xu *xgbutil.XUtil, win xproto.Drawable) (xrect.Rect, error) {
 	}
 	return xrect.New(int(xgeom.X), int(xgeom.Y),
 		int(xgeom.Width), int(xgeom.Height)), nil
+}
+
+// Configure issues a raw Configure request with the parameters given and
+// updates the geometry of the window.
+// This should probably only be used when passing along ConfigureNotify events 
+// (from the perspective of the window manager). In other cases, one should
+// opt for [WM][Move][Resize] or Stack[Sibling].
+func (win *Window) Configure(flags, x, y, w, h int,
+	sibling xproto.Window, stackMode byte) {
+
+	vals := []uint32{}
+
+	if xproto.ConfigWindowX&flags > 0 {
+		vals = append(vals, uint32(x))
+	}
+	if xproto.ConfigWindowY&flags > 0 {
+		vals = append(vals, uint32(y))
+	}
+	if xproto.ConfigWindowWidth&flags > 0 {
+		if int16(w) <= 0 {
+			w = 1
+		}
+		vals = append(vals, uint32(w))
+	}
+	if xproto.ConfigWindowHeight&flags > 0 {
+		if int16(h) <= 0 {
+			h = 1
+		}
+		vals = append(vals, uint32(h))
+	}
+	if xproto.ConfigWindowSibling&flags > 0 {
+		vals = append(vals, uint32(sibling))
+	}
+	if xproto.ConfigWindowStackMode&flags > 0 {
+		vals = append(vals, uint32(stackMode))
+	}
+
+	xproto.ConfigureWindow(win.X.Conn(), win.Id, uint16(flags), vals)
+}
+
+// MROpt is like MoveResize, but exposes the X value mask so that any
+// combination of x/y/width/height can be set. It's a strictly convenience
+// function. (i.e., when you need to set 'y' and 'height' but not 'x' or 
+// 'width'.)
+func (w *Window) MROpt(flags, x, y, width, height int) {
+	// Make sure only x/y/width/height are used.
+	flags &= xproto.ConfigWindowX | xproto.ConfigWindowY |
+		xproto.ConfigWindowWidth | xproto.ConfigWindowHeight
+	w.Configure(flags, x, y, width, height, 0, 0)
 }
 
 // MoveResize issues a ConfigureRequest for this window with the provided
@@ -227,6 +304,9 @@ func (w *Window) Unmap() {
 // identifier for use in other places.)
 func (w *Window) Destroy() {
 	xproto.DestroyWindow(w.X.Conn(), w.Id)
+	keybind.Detach(w.X, w.Id)
+	mousebind.Detach(w.X, w.Id)
+	xevent.Detach(w.X, w.Id)
 }
 
 // Focus tries to issue a SetInputFocus to get the focus.
