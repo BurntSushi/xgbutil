@@ -34,6 +34,7 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
 // Model for the BGRA color type.
@@ -197,6 +198,24 @@ func (im *Image) For(each func(x, y int) BGRA) {
 	}
 }
 
+// ForExp is like For, but bypasses image.Color types.
+// (So it should be faster.)
+func (im *Image) ForExp(each func(x, y int) (r, g, b, a uint8)) {
+	var x, y, i int
+	var r, g, b, a uint8
+	for x = im.Rect.Min.X; x < im.Rect.Max.X; x++ {
+		for y = im.Rect.Min.Y; y < im.Rect.Max.Y; y++ {
+			i = im.PixOffset(x, y)
+			r, g, b, a = each(x, y)
+
+			im.Pix[i+0] = b
+			im.Pix[i+1] = g
+			im.Pix[i+2] = r
+			im.Pix[i+3] = a
+		}
+	}
+}
+
 // SubImage provides a sub image of Image without copying image data.
 // N.B. The standard library defines a similar function, but returns an
 // image.Image. Here, we return xgraphics.Image so that we can use the extra
@@ -226,6 +245,22 @@ func (im *Image) SubImage(r image.Rectangle) *Image {
 // corresponds to the pixel at (x, y).
 func (im *Image) PixOffset(x, y int) int {
 	return (y-im.Rect.Min.Y)*im.Stride + (x-im.Rect.Min.X)*4
+}
+
+// Window is a convenience function for painting the provided
+// Image value to a new window, destroying the pixmap created by that image,
+// and returning the window value.
+// The window is sized to the dimensions of the image.
+func (im *Image) Window(parent xproto.Window) *xwindow.Window {
+	win := xwindow.Must(xwindow.Create(im.X, parent))
+	win.Resize(im.Bounds().Dx(), im.Bounds().Dy())
+
+	im.XSurfaceSet(win.Id)
+	im.XDraw()
+	im.XPaint(win.Id)
+	im.Destroy()
+
+	return win
 }
 
 // BGRA is the representation of color for each pixel in an X pixmap.
