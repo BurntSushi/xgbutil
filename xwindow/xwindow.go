@@ -300,7 +300,7 @@ func (w *Window) Unmap() {
 }
 
 // Destroy is a simple alias to destroy a window. You should use this when
-// you no longer intend to use this window. (It will free the resource
+// you no longer intend to use this window. (It will free the X resource
 // identifier for use in other places.)
 func (w *Window) Destroy() {
 	xproto.DestroyWindow(w.X.Conn(), w.Id)
