@@ -29,6 +29,21 @@ func Scale(img image.Image, width, height int) draw.Image {
 	return dimg
 }
 
+// Alpha will modify the alpha channel of the image such that:
+// existingAlpha = existingAlpha * (givenAlpha / 100.0)
+func Alpha(dest *Image, alpha int) {
+	r := dest.Bounds()
+
+	var a, x, y, i int
+	for x = r.Min.X; x < r.Max.X; x++ {
+		for y = r.Min.Y; y < r.Max.Y; y++ {
+			i = dest.PixOffset(x, y)
+			a = int(dest.Pix[i+3])
+			dest.Pix[i+3] = uint8((a * alpha) / 100)
+		}
+	}
+}
+
 // Blend alpha blends the src image (starting at the spt Point) into the
 // dest image.
 // If you're blending into a solid background color, use BlendBgColor
