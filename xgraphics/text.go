@@ -85,3 +85,14 @@ func ParseFont(fontReader io.Reader) (*truetype.Font, error) {
 
 	return font, nil
 }
+
+// MustFont panics if err is not nil or if the font is nil.
+func MustFont(font *truetype.Font, err error) *truetype.Font {
+	if err != nil {
+		panic(err)
+	}
+	if font == nil {
+		panic("font is nil")
+	}
+	return font
+}
