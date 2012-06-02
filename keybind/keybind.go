@@ -338,14 +338,31 @@ func Ungrab(xu *xgbutil.XUtil, win xproto.Window,
 // XGB. It is possible to not get an error and the grab to be unsuccessful.
 // The purpose of 'win' is that after a grab is successful, ALL Key*Events will
 // be sent to that window. Make sure you have a callback attached :-)
-func GrabKeyboard(xu *xgbutil.XUtil, win xproto.Window) (bool, error) {
+func GrabKeyboard(xu *xgbutil.XUtil, win xproto.Window) error {
 	reply, err := xproto.GrabKeyboard(xu.Conn(), false, win, 0,
 		xproto.GrabModeAsync, xproto.GrabModeAsync).Reply()
 	if err != nil {
-		return false, fmt.Errorf("GrabKeyboard: Error grabbing keyboard on "+
+		return fmt.Errorf("GrabKeyboard: Error grabbing keyboard on "+
 			"window '%x': %s", win, err)
 	}
-	return reply.Status == xproto.GrabStatusSuccess, nil
+
+	switch reply.Status {
+	case xproto.GrabStatusSuccess:
+		// all is well
+	case xproto.GrabStatusAlreadyGrabbed:
+		return fmt.Errorf("GrabKeyboard: Could not grab keyboard. " +
+			"Status: AlreadyGrabbed.")
+	case xproto.GrabStatusInvalidTime:
+		return fmt.Errorf("GrabKeyboard: Could not grab keyboard. " +
+			"Status: InvalidTime.")
+	case xproto.GrabStatusNotViewable:
+		return fmt.Errorf("GrabKeyboard: Could not grab keyboard. " +
+			"Status: NotViewable.")
+	case xproto.GrabStatusFrozen:
+		return fmt.Errorf("GrabKeyboard: Could not grab keyboard. " +
+			"Status: Frozen.")
+	}
+	return nil
 }
 
 // UngrabKeyboard undoes GrabKeyboard.
@@ -356,12 +373,9 @@ func UngrabKeyboard(xu *xgbutil.XUtil) {
 // SmartGrab grabs the keyboard for the given window, and redirects all
 // key events in the xevent main event loop to avoid races.
 func SmartGrab(xu *xgbutil.XUtil, win xproto.Window) error {
-	ok, err := GrabKeyboard(xu, win)
+	err := GrabKeyboard(xu, win)
 	if err != nil {
-		return err
-	}
-	if !ok {
-		return fmt.Errorf("SmartGrab: Grabbing keyboard was not successful.")
+		return fmt.Errorf("SmartGrab: %s", err)
 	}
 
 	// Now redirect all key events to the dummy window to prevent races
