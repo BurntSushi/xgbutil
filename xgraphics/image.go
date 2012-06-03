@@ -106,6 +106,7 @@ func New(X *xgbutil.XUtil, r image.Rectangle) *Image {
 func (im *Image) Destroy() {
 	if im.Pixmap != 0 {
 		xproto.FreePixmap(im.X.Conn(), im.Pixmap)
+		im.Pixmap = 0
 	}
 }
 
