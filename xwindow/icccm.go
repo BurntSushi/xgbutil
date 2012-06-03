@@ -1,6 +1,8 @@
 package xwindow
 
 import (
+	"github.com/BurntSushi/xgb/xproto"
+
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
@@ -38,6 +40,48 @@ func (w *Window) WMGracefulClose(cb func(w *Window)) {
 		func(X *xgbutil.XUtil, ev xevent.ClientMessageEvent) {
 			if icccm.IsDeleteProtocol(X, ev) {
 				cb(w)
+			}
+		}).Connect(w.X, w.Id)
+}
+
+// WMTakeFocus will do all the necessary setup to support the WM_TAKE_FOCUS
+// protocol using the "LocallyActive" input model described in Section 4.1.7
+// of the ICCCM. Namely, listening to ClientMessage events and running the
+// callback function provided when a WM_TAKE_FOCUS ClientMessage has been
+// received.
+//
+// Typically, the callback function should include a call to SetInputFocus
+// with the "Parent" InputFocus type, the sub-window id of the window that
+// should have focus, and the 'tstamp' timestamp.
+func (w *Window) WMTakeFocus(cb func(w *Window, tstamp xproto.Timestamp)) {
+	// Make sure the Input flag is set to true in WM_HINTS.
+	icccm.WmHintsSet(w.X, w.Id, &icccm.Hints{
+		Flags: icccm.HintInput,
+		Input: 1,
+	})
+
+	// Get the current protocols so we don't overwrite anything.
+	prots, _ := icccm.WmProtocolsGet(w.X, w.Id)
+
+	// If WM_TAKE_FOCUS isn't here, add it. Otherwise, move on.
+	wmfocus := false
+	for _, prot := range prots {
+		if prot == "WM_TAKE_FOCUS" {
+			wmfocus = true
+			break
+		}
+	}
+	if !wmfocus {
+		icccm.WmProtocolsSet(w.X, w.Id, append(prots, "WM_TAKE_FOCUS"))
+	}
+
+	// Attach a ClientMessage event handler. It will determine whether the
+	// ClientMessage is a 'focus' request, and if so, run the callback 'cb'
+	// provided.
+	xevent.ClientMessageFun(
+		func(X *xgbutil.XUtil, ev xevent.ClientMessageEvent) {
+			if icccm.IsFocusProtocol(X, ev) {
+				cb(w, xproto.Timestamp(ev.Data.Data32[1]))
 			}
 		}).Connect(w.X, w.Id)
 }
