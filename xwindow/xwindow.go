@@ -316,6 +316,12 @@ func (w *Window) Focus() {
 	xproto.SetInputFocus(w.X.Conn(), xproto.InputFocusPointerRoot, w.Id, 0)
 }
 
+// FocusParent is just like Focus, except it sets the "revert-to" mode to
+// Parent. This should be used when setting focus to a sub-window.
+func (w *Window) FocusParent(tstamp xproto.Timestamp) {
+	xproto.SetInputFocus(w.X.Conn(), xproto.InputFocusParent, w.Id, tstamp)
+}
+
 // Kill forcefully destroys a client. It is almost never what you want, and if
 // you do it to one your clients, you'll lose your connection.
 // (This is typically used in a special client like `xkill` or in a window
