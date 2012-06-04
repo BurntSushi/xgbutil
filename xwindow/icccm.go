@@ -54,9 +54,14 @@ func (w *Window) WMGracefulClose(cb func(w *Window)) {
 // with the "Parent" InputFocus type, the sub-window id of the window that
 // should have focus, and the 'tstamp' timestamp.
 func (w *Window) WMTakeFocus(cb func(w *Window, tstamp xproto.Timestamp)) {
-	// Make sure the Input flag is set to true in WM_HINTS.
+	// Make sure the Input flag is set to true in WM_HINTS. We first
+	// must retrieve the current WM_HINTS, so we don't overwrite the flags.
+	curFlags := 0
+	if hints, err := icccm.WmHintsGet(w.X, w.Id); err == nil {
+		curFlags = hints.Flags
+	}
 	icccm.WmHintsSet(w.X, w.Id, &icccm.Hints{
-		Flags: icccm.HintInput,
+		Flags: curFlags | icccm.HintInput,
 		Input: 1,
 	})
 
