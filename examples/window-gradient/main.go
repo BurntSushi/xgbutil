@@ -104,13 +104,13 @@ func paintGradient(X *xgbutil.XUtil, wid xproto.Window, width, height int,
 	binc := (0xff * (int(end.B) - int(start.B))) / width
 
 	// Now apply the increment to each "column" in the image.
-	ximg.For(func(x, y int) xgraphics.BGRA {
-		return xgraphics.BGRA{
-			B: uint8(int(start.B) + (binc*x)/0xff),
-			G: uint8(int(start.G) + (ginc*x)/0xff),
-			R: uint8(int(start.R) + (rinc*x)/0xff),
-			A: 0xff,
-		}
+	// Using 'ForExp' allows us to bypass the creation of a color.BGRA value
+	// for each pixel in the image.
+	ximg.ForExp(func(x, y int) (uint8, uint8, uint8, uint8) {
+		return uint8(int(start.B) + (binc*x)/0xff),
+			uint8(int(start.G) + (ginc*x)/0xff),
+			uint8(int(start.R) + (rinc*x)/0xff),
+			0xff
 	})
 
 	// Set the surface to paint on for ximg.
