@@ -312,16 +312,20 @@ func checkCompatibility(X *xgbutil.XUtil) {
 	s := X.Setup()
 	scrn := X.Screen()
 	lg := xgbutil.Logger
+	showInstructions := false
+
 	if s.ImageByteOrder != xproto.ImageOrderLSBFirst {
 		lg.Printf("Your X server uses MSB image byte order. Unfortunately, " +
 			"xgraphics currently requires LSB image byte order. You may see " +
 			"weird things. Please report this.")
+		showInstructions = true
 	}
 	if s.BitmapFormatBitOrder != xproto.ImageOrderLSBFirst {
 		lg.Printf("Your X server uses MSB bitmap bit order. Unfortunately, " +
 			"xgraphics currently requires LSB bitmap bit order. If you " +
 			"aren't using X bitmaps, you should be able to proceed normally. " +
 			"Please report this.")
+		showInstructions = true
 	}
 	if s.BitmapFormatScanlineUnit != 32 {
 		lg.Printf("xgraphics expects that the scanline unit is set to 32, but "+
@@ -330,12 +334,14 @@ func checkCompatibility(X *xgbutil.XUtil) {
 			"may still work. Particularly, if you aren't using X bitmaps, "+
 			"you should be completely unaffected. Please report this.",
 			s.BitmapFormatScanlineUnit)
+		showInstructions = true
 	}
 	if scrn.RootDepth != 24 {
 		lg.Printf("xgraphics expects that the root window has a depth of 24, "+
 			"but yours has depth '%d'. Its possible things will still work "+
 			"if your value is 32, but will be unlikely to work with values "+
 			"less than 24. Please report this.", scrn.RootDepth)
+		showInstructions = true
 	}
 
 	// Look for the default format for pixmaps and make sure bits per pixel
@@ -347,5 +353,13 @@ func checkCompatibility(X *xgbutil.XUtil) {
 			"the bits per pixel is %d. Things will most certainly not work. "+
 			"Please report this.",
 			scrn.RootDepth, format.BitsPerPixel)
+		showInstructions = true
+	}
+
+	// Give instructions on reporting the issue.
+	if showInstructions {
+		lg.Printf("Please report the aforementioned error message(s) at " +
+			"https://github.com/BurntSushi/xgbutil. Please also include the " +
+			"entire output of the `xdpyinfo` command in your report. Thanks!")
 	}
 }
