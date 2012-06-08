@@ -17,9 +17,10 @@ import (
 // Geom is updated whenever Geometry is called, or when Move, Resize or
 // MoveResize are called.
 type Window struct {
-	X    *xgbutil.XUtil
-	Id   xproto.Window
-	Geom xrect.Rect
+	X         *xgbutil.XUtil
+	Id        xproto.Window
+	Geom      xrect.Rect
+	Destroyed bool
 }
 
 // New creates a new window value from a window id and an XUtil type.
@@ -29,14 +30,15 @@ type Window struct {
 // please use Window.DecorGeometry.
 func New(xu *xgbutil.XUtil, win xproto.Window) *Window {
 	return &Window{
-		X:    xu,
-		Id:   win,
-		Geom: xrect.New(0, 0, 1, 1),
+		X:         xu,
+		Id:        win,
+		Geom:      xrect.New(0, 0, 1, 1),
+		Destroyed: false,
 	}
 }
 
 // Generate is just like New, but generates a new X resource id for you.
-// Geom is set to nil.
+// Geom is initialized to (0, 0) 1x1.
 // It is possible for id generation to return an error, in which case, an
 // error is returned here.
 func Generate(xu *xgbutil.XUtil) (*Window, error) {
@@ -163,6 +165,15 @@ func RawGeometry(xu *xgbutil.XUtil, win xproto.Drawable) (xrect.Rect, error) {
 		int(xgeom.Width), int(xgeom.Height)), nil
 }
 
+// RootGeometry gets the geometry of the root window. It will panic on failure.
+func RootGeometry(xu *xgbutil.XUtil) xrect.Rect {
+	geom, err := RawGeometry(xu, xproto.Drawable(xu.RootWin()))
+	if err != nil {
+		panic(err)
+	}
+	return geom
+}
+
 // Configure issues a raw Configure request with the parameters given and
 // updates the geometry of the window.
 // This should probably only be used when passing along ConfigureNotify events 
@@ -175,21 +186,25 @@ func (win *Window) Configure(flags, x, y, w, h int,
 
 	if xproto.ConfigWindowX&flags > 0 {
 		vals = append(vals, uint32(x))
+		win.Geom.XSet(x)
 	}
 	if xproto.ConfigWindowY&flags > 0 {
 		vals = append(vals, uint32(y))
+		win.Geom.YSet(y)
 	}
 	if xproto.ConfigWindowWidth&flags > 0 {
 		if int16(w) <= 0 {
 			w = 1
 		}
 		vals = append(vals, uint32(w))
+		win.Geom.WidthSet(w)
 	}
 	if xproto.ConfigWindowHeight&flags > 0 {
 		if int16(h) <= 0 {
 			h = 1
 		}
 		vals = append(vals, uint32(h))
+		win.Geom.HeightSet(h)
 	}
 	if xproto.ConfigWindowSibling&flags > 0 {
 		vals = append(vals, uint32(sibling))
@@ -218,15 +233,9 @@ func (w *Window) MROpt(flags, x, y, width, height int) {
 // If you're trying to move/resize a top-level window in a window manager that
 // supports EWMH, please use WMMoveResize instead.
 func (w *Window) MoveResize(x, y, width, height int) {
-	w.Geom.XSet(x)
-	w.Geom.YSet(y)
-	w.Geom.WidthSet(width)
-	w.Geom.HeightSet(height)
-
-	xproto.ConfigureWindow(w.X.Conn(), w.Id,
-		xproto.ConfigWindowX|xproto.ConfigWindowY|
-			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(x), uint32(y), uint32(width), uint32(height)})
+	w.Configure(xproto.ConfigWindowX|xproto.ConfigWindowY|
+		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, x, y, width, height,
+		0, 0)
 }
 
 // Move issues a ConfigureRequest for this window with the provided
@@ -234,12 +243,7 @@ func (w *Window) MoveResize(x, y, width, height int) {
 // If you're trying to move a top-level window in a window manager that
 // supports EWMH, please use WMMove instead.
 func (w *Window) Move(x, y int) {
-	w.Geom.XSet(x)
-	w.Geom.YSet(y)
-
-	xproto.ConfigureWindow(w.X.Conn(), w.Id,
-		xproto.ConfigWindowX|xproto.ConfigWindowY,
-		[]uint32{uint32(x), uint32(y)})
+	w.Configure(xproto.ConfigWindowX|xproto.ConfigWindowY, x, y, 0, 0, 0, 0)
 }
 
 // Resize issues a ConfigureRequest for this window with the provided
@@ -248,12 +252,8 @@ func (w *Window) Move(x, y int) {
 // If you're trying to resize a top-level window in a window manager that
 // supports EWMH, please use WMResize instead.
 func (w *Window) Resize(width, height int) {
-	w.Geom.WidthSet(width)
-	w.Geom.HeightSet(height)
-
-	xproto.ConfigureWindow(w.X.Conn(), w.Id,
-		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(width), uint32(height)})
+	w.Configure(xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, 0, 0,
+		width, height, 0, 0)
 }
 
 // Stack issues a configure request to change the stack mode of Window.
@@ -294,7 +294,7 @@ func (w *Window) Map() {
 	xproto.MapWindow(w.X.Conn(), w.Id)
 }
 
-// Unamp is a simple alias to unmap the window.
+// Unmap is a simple alias to unmap the window.
 func (w *Window) Unmap() {
 	xproto.UnmapWindow(w.X.Conn(), w.Id)
 }
@@ -303,7 +303,20 @@ func (w *Window) Unmap() {
 // you no longer intend to use this window. (It will free the X resource
 // identifier for use in other places.)
 func (w *Window) Destroy() {
-	xproto.DestroyWindow(w.X.Conn(), w.Id)
+	if !w.Destroyed {
+		w.Detach()
+		err := xproto.DestroyWindowChecked(w.X.Conn(), w.Id).Check()
+		if err != nil {
+			panic(err)
+		}
+
+		w.Destroyed = true
+	}
+}
+
+// Detach will detach this window's event handlers from all xevent, keybind
+// and mousebind callbacks.
+func (w *Window) Detach() {
 	keybind.Detach(w.X, w.Id)
 	mousebind.Detach(w.X, w.Id)
 	xevent.Detach(w.X, w.Id)
