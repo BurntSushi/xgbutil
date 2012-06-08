@@ -329,7 +329,7 @@ func Ungrab(xu *xgbutil.XUtil, win xproto.Window,
 	mods uint16, key xproto.Keycode) {
 
 	for _, m := range xevent.IgnoreMods {
-		xproto.UngrabKey(xu.Conn(), key, win, mods|m)
+		xproto.UngrabKeyChecked(xu.Conn(), key, win, mods|m).Check()
 	}
 }
 

@@ -142,7 +142,7 @@ func Ungrab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
 	button xproto.Button) {
 
 	for _, m := range xevent.IgnoreMods {
-		xproto.UngrabButton(xu.Conn(), byte(button), win, mods|m)
+		xproto.UngrabButtonChecked(xu.Conn(), byte(button), win, mods|m).Check()
 	}
 }
 

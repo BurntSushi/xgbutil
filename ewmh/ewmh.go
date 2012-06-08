@@ -25,8 +25,7 @@ func ClientEvent(xu *xgbutil.XUtil, window xproto.Window, messageType string,
 		return err
 	}
 
-	xevent.SendRootEvent(xu, cm, uint32(evMask))
-	return nil
+	return xevent.SendRootEvent(xu, cm, uint32(evMask))
 }
 
 // _NET_ACTIVE_WINDOW get

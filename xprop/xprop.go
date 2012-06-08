@@ -48,9 +48,9 @@ func ChangeProp(xu *xgbutil.XUtil, win xproto.Window, format byte, prop string,
 		return err
 	}
 
-	xproto.ChangeProperty(xu.Conn(), xproto.PropModeReplace, win, propAtom,
-		typAtom, format, uint32(len(data)/(int(format)/8)), data)
-	return nil
+	return xproto.ChangePropertyChecked(xu.Conn(), xproto.PropModeReplace, win,
+		propAtom, typAtom, format,
+		uint32(len(data)/(int(format)/8)), data).Check()
 }
 
 // ChangeProperty32 makes changing 32 bit formatted properties easier

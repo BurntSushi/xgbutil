@@ -205,8 +205,9 @@ func Detach(xu *xgbutil.XUtil, win xproto.Window) {
 
 // SendRootEvent takes a type implementing the xgb.Event interface, converts it
 // to raw X bytes, and sends it to the root window using the SendEvent request.
-func SendRootEvent(xu *xgbutil.XUtil, ev xgb.Event, evMask uint32) {
-	xproto.SendEvent(xu.Conn(), false, xu.RootWin(), evMask, string(ev.Bytes()))
+func SendRootEvent(xu *xgbutil.XUtil, ev xgb.Event, evMask uint32) error {
+	return xproto.SendEventChecked(xu.Conn(), false, xu.RootWin(), evMask,
+		string(ev.Bytes())).Check()
 }
 
 // ReplayPointer is a quick alias to AllowEvents with 'ReplayPointer' mode.
