@@ -11,6 +11,7 @@ It is not for the faint of heart.
 */
 
 import (
+	"strings"
 	"unicode"
 
 	"github.com/BurntSushi/xgb/xproto"
@@ -54,6 +55,16 @@ func LookupString(xu *xgbutil.XUtil, mods uint16,
 	}
 
 	return ""
+}
+
+// KeyMatch returns true if a string representation of a key can
+// be matched (case insensitive) to the (modifiers, keycode) tuple provided. 
+// String representations can be found in keybind/keysymdef.go
+func KeyMatch(xu *xgbutil.XUtil,
+	keyStr string, mods uint16, keycode xproto.Keycode) bool {
+
+	guess := LookupString(xu, mods, keycode)
+	return strings.ToLower(guess) == strings.ToLower(keyStr)
 }
 
 // interpretSymList interprets the keysym list for a particular keycode as
