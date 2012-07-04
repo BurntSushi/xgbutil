@@ -137,11 +137,15 @@ func clearCanvas(canvas *xgraphics.Image, win *xwindow.Window) {
 	canvas.XPaint(win.Id)
 }
 
+func fatal(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
 func main() {
 	X, err := xgbutil.NewConn()
-	if err != nil {
-		log.Fatal(err)
-	}
+	fatal(err)
 
 	// Whenever the mousebind package is used, you must call Initialize.
 	// Similarly for the keybind package.
@@ -150,9 +154,7 @@ func main() {
 
 	// Easter egg! Use a right click to draw a gopher.
 	gopherPng, _, err := image.Decode(bytes.NewBuffer(gopher.GopherPng()))
-	if err != nil {
-		log.Fatal(err)
-	}
+	fatal(err)
 
 	// Now scale it to a reasonable size.
 	gopher := xgraphics.Scale(gopherPng, gopherWidth, gopherHeight)
