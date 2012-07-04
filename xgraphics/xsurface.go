@@ -129,6 +129,17 @@ func (im *Image) XPaintRects(wid xproto.Window, rects ...image.Rectangle) {
 // If you're using sub-images to update a particular region of the image, XDraw
 // is where you'll see the performance benefit (not XPaint).
 func (im *Image) XDraw() {
+	im.xdraw(false)
+}
+
+// XDrawChecked is the same as XDraw, but issues PutImageChecked requests
+// instead. This should *only* be used for debugging purposes, as each
+// PutImageChecked request blocks for a round trip to the X server.
+func (im *Image) XDrawChecked() error {
+	return im.xdraw(true)
+}
+
+func (im *Image) xdraw(checked bool) error {
 	width, height := im.Rect.Dx(), im.Rect.Dy()
 
 	// Put the raw image data into its own slice.
@@ -181,13 +192,26 @@ func (im *Image) XDraw() {
 		toSend = data[start:end]
 		heightPer = len(toSend) / 4 / width
 
-		xproto.PutImage(im.X.Conn(), xproto.ImageFormatZPixmap,
-			xproto.Drawable(im.Pixmap), im.X.GC(),
-			uint16(width), uint16(heightPer), int16(xpos), int16(ypos),
-			0, 24, toSend)
+		if checked {
+			err := xproto.PutImageChecked(
+				im.X.Conn(), xproto.ImageFormatZPixmap,
+				xproto.Drawable(im.Pixmap), im.X.GC(),
+				uint16(width), uint16(heightPer), int16(xpos), int16(ypos),
+				0, 24, toSend).Check()
+			if err != nil {
+				return err
+			}
+		} else {
+			xproto.PutImage(im.X.Conn(), xproto.ImageFormatZPixmap,
+				xproto.Drawable(im.Pixmap), im.X.GC(),
+				uint16(width), uint16(heightPer), int16(xpos), int16(ypos),
+				0, 24, toSend)
+		}
 		start = end
 		ypos += rowsPer
 	}
+
+	return nil
 }
 
 // XShow creates a new window and paints the image to the window.
