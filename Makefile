@@ -18,8 +18,11 @@ tags:
 	find ./ \( -name '*.go' -and -not -wholename './tests/*' -and -not -wholename './examples/*' \) -print0 | xargs -0 gotags > TAGS
 
 loc:
-	find ./ -name '*.go' -and -not -wholename './tests*' -and -not -name '*keysymdef.go' -print | sort | xargs wc -l
+	find ./ -name '*.go' -and -not -wholename './tests*' -and -not -name '*keysymdef.go' -and -not -name '*gopher.go' -print | sort | xargs wc -l
 
 ex-%:
 	go run examples/$*/main.go
+
+gopherimg:
+	go-bindata -f GopherPng -p gopher -i gopher/gophercolor-small.png -o gopher/gopher.go
 
