@@ -6,7 +6,7 @@ drawing images to a window, etc.
 
 xgbutil attempts to be thread safe, but it has not been completely tested in 
 this regard. In general, the X event loop implemented in the xevent package is 
-sequential. The idea is to be thread safe by default, and let the user spawn 
+sequential. The idea is to be sequential by default, and let the user spawn 
 concurrent code at their discretion. (i.e., the complexity of making the main 
 event loop generally concurrent is vast.)
 
