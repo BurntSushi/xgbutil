@@ -33,7 +33,7 @@ func (im *Image) Text(x, y int, clr color.Color, fontSize float64,
 	c.SetSrc(textClr)
 
 	// Now let's actually draw the text...
-	pt := freetype.Pt(x, y+int(font.FUnitsPerEm()))
+	pt := freetype.Pt(x, y+int(c.PointToFix32(fontSize)>>8))
 	newpt, err := c.DrawString(text, pt)
 	if err != nil {
 		return 0, 0, err
@@ -54,7 +54,8 @@ func (im *Image) Text(x, y int, clr color.Color, fontSize float64,
 func TextMaxExtents(font *truetype.Font, fontSize float64,
 	text string) (width int, height int) {
 
-	emSquarePix := int(font.FUnitsPerEm())
+	c := ftContext(font, fontSize)
+	emSquarePix := int(c.PointToFix32(fontSize) >> 8)
 	return len(text) * emSquarePix, emSquarePix
 }
 
