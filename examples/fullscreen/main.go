@@ -51,7 +51,7 @@ func main() {
 		func(X *xgbutil.XUtil, ev xevent.KeyPressEvent) {
 			println("fullscreen!")
 			err := ewmh.WmStateReq(X, win.Id, ewmh.StateToggle,
-								   "_NET_WM_STATE_FULLSCREEN")
+				"_NET_WM_STATE_FULLSCREEN")
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -64,7 +64,7 @@ func main() {
 		func(X *xgbutil.XUtil, ev xevent.KeyPressEvent) {
 			println("quit fullscreen!")
 			err := ewmh.WmStateReq(X, win.Id, ewmh.StateToggle,
-								   "_NET_WM_STATE_FULLSCREEN")
+				"_NET_WM_STATE_FULLSCREEN")
 			if err != nil {
 				log.Fatal(err)
 			}
