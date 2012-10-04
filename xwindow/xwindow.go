@@ -307,7 +307,7 @@ func (w *Window) Destroy() {
 		w.Detach()
 		err := xproto.DestroyWindowChecked(w.X.Conn(), w.Id).Check()
 		if err != nil {
-			panic(err)
+			xgbutil.Logger.Println(err)
 		}
 
 		w.Destroyed = true
