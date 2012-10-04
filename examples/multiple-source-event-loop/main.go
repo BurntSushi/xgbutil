@@ -77,7 +77,7 @@ func main() {
 	// channels, which are sent benign values right before an event is
 	// dequeued and right after that event has finished running all callbacks
 	// associated with it, respectively.
-	pingBefore, pingAfter := xevent.MainPing(X)
+	pingBefore, pingAfter, pingQuit := xevent.MainPing(X)
 	for {
 		select {
 		case <-pingBefore:
@@ -85,6 +85,9 @@ func main() {
 			<-pingAfter
 		case otherVal := <-otherChan:
 			fmt.Printf("Processing other event: %d\n", otherVal)
+		case <-pingQuit:
+			fmt.Printf("xevent loop has quit")
+			return
 		}
 	}
 }

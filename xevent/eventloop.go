@@ -48,7 +48,7 @@ func Read(xu *xgbutil.XUtil, block bool) {
 // able to run this in different goroutines concurrently. However, only
 // *one* of these should run for *each* connection.
 func Main(xu *xgbutil.XUtil) {
-	mainEventLoop(xu, nil, nil)
+	mainEventLoop(xu, nil, nil, nil)
 }
 
 // MainPing starts the main X event loop, and returns a pingBefore and a
@@ -79,19 +79,24 @@ func Main(xu *xgbutil.XUtil) {
 //
 // A complete example using MainPing can be found in the examples directory in
 // the xgbutil package under the name multiple-source-event-loop.
-func MainPing(xu *xgbutil.XUtil) (chan struct{}, chan struct{}) {
+func MainPing(xu *xgbutil.XUtil) (chan struct{}, chan struct{}, chan struct{}) {
 	pingBefore := make(chan struct{}, 0)
 	pingAfter := make(chan struct{}, 0)
+	pingQuit := make(chan struct{}, 0)
 	go func() {
-		mainEventLoop(xu, pingBefore, pingAfter)
+		mainEventLoop(xu, pingBefore, pingAfter, pingQuit)
 	}()
-	return pingBefore, pingAfter
+	return pingBefore, pingAfter, pingQuit
 }
 
 // mainEventLoop runs the main event loop with an optional ping channel.
-func mainEventLoop(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
+func mainEventLoop(xu *xgbutil.XUtil,
+	pingBefore, pingAfter, pingQuit chan struct{}) {
 	for {
 		if Quitting(xu) {
+			if pingQuit != nil {
+				pingQuit <- struct{}{}
+			}
 			break
 		}
 
