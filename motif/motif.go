@@ -21,7 +21,7 @@ To test if a window wants decorations or not:
 	if err != nil {
 		log.Fatal(err)
 	} else {
-		log.Println("Decorations? ", motif.Decor(X, window-id, mh))
+		log.Println("Decorations? ", motif.Decor(mh))
 	}
 
 */
@@ -75,9 +75,9 @@ const StatusTearoffWindow = 1
 
 // Decor checks a Hints value for whether or not the client has requested
 // that the window manager paint decorations.
-// That is, Decor returns false when the window provided doesn't want
+// That is, Decor returns false when the hints provided indicate no
 // decorations and true otherwise.
-func Decor(xu *xgbutil.XUtil, win xproto.Window, mh *Hints) bool {
+func Decor(mh *Hints) bool {
 	if mh.Flags&HintDecorations > 0 {
 		noDecor := mh.Decoration == DecorationNone ||
 			(mh.Decoration&DecorationAll == 0 &&
