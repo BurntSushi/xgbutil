@@ -216,6 +216,19 @@ func PropValNums(reply *xproto.GetPropertyReply, err error) ([]int, error) {
 	return nums, nil
 }
 
+// PropValNum64 transforms a GetPropertyReply struct into a 64 bit
+// integer. Useful when the property value is a single integer.
+func PropValNum64(reply *xproto.GetPropertyReply, err error) (int64, error) {
+	if err != nil {
+		return 0, err
+	}
+	if reply.Format != 32 {
+		return 0, fmt.Errorf("PropValNum: Expected format 32 but got %d",
+			reply.Format)
+	}
+	return int64(xgb.Get32(reply.Value)), nil
+}
+
 // PropValStr transforms a GetPropertyReply struct into a string.
 // Useful when the property value is a null terminated string represented
 // by integers. Also must be 8 bit format.

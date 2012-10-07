@@ -504,18 +504,18 @@ func WmAllowedActionsSet(xu *xgbutil.XUtil, win xproto.Window,
 }
 
 // _NET_WM_DESKTOP get
-func WmDesktopGet(xu *xgbutil.XUtil, win xproto.Window) (int, error) {
-	return xprop.PropValNum(xprop.GetProperty(xu, win, "_NET_WM_DESKTOP"))
+func WmDesktopGet(xu *xgbutil.XUtil, win xproto.Window) (int64, error) {
+	return xprop.PropValNum64(xprop.GetProperty(xu, win, "_NET_WM_DESKTOP"))
 }
 
 // _NET_WM_DESKTOP set
-func WmDesktopSet(xu *xgbutil.XUtil, win xproto.Window, desk int) error {
-	return xprop.ChangeProp32(xu, win, "_NET_WM_DESKTOP", "CARDINAL", desk)
+func WmDesktopSet(xu *xgbutil.XUtil, win xproto.Window, desk int64) error {
+	return xprop.ChangeProp32(xu, win, "_NET_WM_DESKTOP", "CARDINAL", int(desk))
 }
 
 // _NET_WM_DESKTOP req
-func WmDesktopReq(xu *xgbutil.XUtil, win xproto.Window, desk int) error {
-	return WmDesktopReqExtra(xu, win, desk, 2)
+func WmDesktopReq(xu *xgbutil.XUtil, win xproto.Window, desk int64) error {
+	return WmDesktopReqExtra(xu, win, int(desk), 2)
 }
 
 // _NET_WM_DESKTOP req extra
