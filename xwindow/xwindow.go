@@ -135,13 +135,13 @@ func (w *Window) Change(valueMask int, valueList ...uint32) {
 // not receive the events you desire.
 // Event masks are constants declare in the xgb/xproto package starting with the
 // EventMask prefix.
-func (w *Window) Listen(evMasks ...int) {
+func (w *Window) Listen(evMasks ...int) error {
 	evMask := 0
 	for _, mask := range evMasks {
 		evMask |= mask
 	}
-	xproto.ChangeWindowAttributes(w.X.Conn(), w.Id, xproto.CwEventMask,
-		[]uint32{uint32(evMask)})
+	return xproto.ChangeWindowAttributesChecked(w.X.Conn(), w.Id,
+		xproto.CwEventMask, []uint32{uint32(evMask)}).Check()
 }
 
 // Geometry retrieves an up-to-date version of the this window's geometry.
