@@ -48,6 +48,8 @@ func NewConvert(X *xgbutil.XUtil, img image.Image) *Image {
 		convertRGBA64(ximg, concrete)
 	case *image.YCbCr:
 		convertYCbCr(ximg, concrete)
+	case *Image:
+		convertXImage(ximg, concrete)
 	default:
 		xgbutil.Logger.Printf("Converting image type %T the slow way. "+
 			"Optimization for this image type hasn't been added yet.", img)

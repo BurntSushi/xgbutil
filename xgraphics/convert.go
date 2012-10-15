@@ -32,6 +32,10 @@ func convertImage(dest *Image, src image.Image) {
 	}
 }
 
+func convertXImage(dest *Image, src *Image) {
+	copy(dest.Pix, src.Pix)
+}
+
 func convertYCbCr(dest *Image, src *image.YCbCr) {
 	var r, g, b uint8
 	var x, y, i, yi, ci int
