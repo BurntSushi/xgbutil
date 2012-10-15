@@ -467,7 +467,7 @@ func VirtualRootsSet(xu *xgbutil.XUtil, wins []xproto.Window) error {
 }
 
 // _NET_VISIBLE_DESKTOPS get
-// This is not parted of the EWMH spec, but is a property of my own creation.
+// This is not part of the EWMH spec, but is a property of my own creation.
 // It allows the window manager to report that it has multiple desktops
 // viewable at the same time. (This conflicts with other EWMH properties,
 // so I don't think this will ever be added to the official spec.)
