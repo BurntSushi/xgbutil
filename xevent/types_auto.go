@@ -11,6 +11,7 @@ package xevent
 import (
 	"fmt"
 
+	"github.com/BurntSushi/xgb/shape"
 	"github.com/BurntSushi/xgb/xproto"
 )
 
@@ -322,4 +323,14 @@ const MappingNotify = xproto.MappingNotify
 
 func (ev MappingNotifyEvent) String() string {
 	return fmt.Sprintf("%v", ev.MappingNotifyEvent)
+}
+
+type ShapeNotifyEvent struct {
+	*shape.NotifyEvent
+}
+
+const ShapeNotify = shape.Notify
+
+func (ev ShapeNotifyEvent) String() string {
+	return fmt.Sprintf("%v", ev.NotifyEvent)
 }

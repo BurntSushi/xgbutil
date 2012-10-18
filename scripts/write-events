@@ -3,39 +3,42 @@
 import sys
 
 events = [
-    'KeyPressEvent',
-    'KeyReleaseEvent',
-    'ButtonPressEvent',
-    'ButtonReleaseEvent',
-    'MotionNotifyEvent',
-    'EnterNotifyEvent',
-    'LeaveNotifyEvent',
-    'FocusInEvent',
-    'FocusOutEvent',
-    'KeymapNotifyEvent',
-    'ExposeEvent',
-    'GraphicsExposureEvent',
-    'NoExposureEvent',
-    'VisibilityNotifyEvent',
-    'CreateNotifyEvent',
-    'DestroyNotifyEvent',
-    'UnmapNotifyEvent',
-    'MapNotifyEvent',
-    'MapRequestEvent',
-    'ReparentNotifyEvent',
-    'ConfigureNotifyEvent',
-    'ConfigureRequestEvent',
-    'GravityNotifyEvent',
-    'ResizeRequestEvent',
-    'CirculateNotifyEvent',
-    'CirculateRequestEvent',
-    'PropertyNotifyEvent',
-    'SelectionClearEvent',
-    'SelectionRequestEvent',
-    'SelectionNotifyEvent',
-    'ColormapNotifyEvent',
-    'ClientMessageEvent',
-    'MappingNotifyEvent',
+    ('xproto', 'KeyPressEvent'),
+    ('xproto', 'KeyReleaseEvent'),
+    ('xproto', 'ButtonPressEvent'),
+    ('xproto', 'ButtonReleaseEvent'),
+    ('xproto', 'MotionNotifyEvent'),
+    ('xproto', 'EnterNotifyEvent'),
+    ('xproto', 'LeaveNotifyEvent'),
+    ('xproto', 'FocusInEvent'),
+    ('xproto', 'FocusOutEvent'),
+    ('xproto', 'KeymapNotifyEvent'),
+    ('xproto', 'ExposeEvent'),
+    ('xproto', 'GraphicsExposureEvent'),
+    ('xproto', 'NoExposureEvent'),
+    ('xproto', 'VisibilityNotifyEvent'),
+    ('xproto', 'CreateNotifyEvent'),
+    ('xproto', 'DestroyNotifyEvent'),
+    ('xproto', 'UnmapNotifyEvent'),
+    ('xproto', 'MapNotifyEvent'),
+    ('xproto', 'MapRequestEvent'),
+    ('xproto', 'ReparentNotifyEvent'),
+    ('xproto', 'ConfigureNotifyEvent'),
+    ('xproto', 'ConfigureRequestEvent'),
+    ('xproto', 'GravityNotifyEvent'),
+    ('xproto', 'ResizeRequestEvent'),
+    ('xproto', 'CirculateNotifyEvent'),
+    ('xproto', 'CirculateRequestEvent'),
+    ('xproto', 'PropertyNotifyEvent'),
+    ('xproto', 'SelectionClearEvent'),
+    ('xproto', 'SelectionRequestEvent'),
+    ('xproto', 'SelectionNotifyEvent'),
+    ('xproto', 'ColormapNotifyEvent'),
+    ('xproto', 'ClientMessageEvent'),
+    ('xproto', 'MappingNotifyEvent'),
+
+    # X Shape extension events
+    ('shape', 'NotifyEvent'),
 ]
 
 assert len(sys.argv) == 2
@@ -53,26 +56,39 @@ if sys.argv[1] == 'evtypes':
     print 'import ('
     print '\t"fmt"'
     print
+    print '\t"github.com/BurntSushi/xgb/shape"'
     print '\t"github.com/BurntSushi/xgb/xproto"'
     print ')'
     print
 
-    for e in events:
+    for ext, e in events:
         # Skip ClientMessageEvent and ConfigureNotifyEvent
         # We define these manually in xevents/types_manual.go
         if e in ('ClientMessageEvent', 'ConfigureNotifyEvent'):
             continue
 
-        print 'type %s struct {' % e
-        print '    *xproto.%s' % e
-        print '}'
-        print
-        print 'const %s = xproto.%s' % (e[:-5], e[:-5])
-        print
-        print 'func (ev %s) String() string {' % e
-        print '    return fmt.Sprintf("%%v", ev.%s)' % e
-        print '}'
-        print
+        if ext == 'xproto':
+            print 'type %s struct {' % e
+            print '    *%s.%s' % (ext, e)
+            print '}'
+            print
+            print 'const %s = %s.%s' % (e[:-5], ext, e[:-5])
+            print
+            print 'func (ev %s) String() string {' % e
+            print '    return fmt.Sprintf("%%v", ev.%s)' % e
+            print '}'
+            print
+        else:
+            print 'type %s%s struct {' % (ext.title(), e)
+            print '    *%s.%s' % (ext, e)
+            print '}'
+            print
+            print 'const %s%s = %s.%s' % (ext.title(), e[:-5], ext, e[:-5])
+            print
+            print 'func (ev %s%s) String() string {' % (ext.title(), e)
+            print '    return fmt.Sprintf("%%v", ev.%s)' % e
+            print '}'
+            print
 elif sys.argv[1] == 'callbacks':
     print 'package xevent'
     print '''/*
@@ -90,8 +106,10 @@ elif sys.argv[1] == 'callbacks':
     print ')'
     print
 
-    for e in events:
+    for ext, e in events:
         e = e[:-5]
+        if ext != 'xproto':
+            e = '%s%s' % (ext.title(), e)
         print 'type %sFun func(xu *xgbutil.XUtil, event %sEvent)' % (e, e)
         print
         print 'func (callback %sFun) '\

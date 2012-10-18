@@ -376,3 +376,14 @@ func (callback MappingNotifyFun) Connect(xu *xgbutil.XUtil,
 func (callback MappingNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
 	callback(xu, event.(MappingNotifyEvent))
 }
+
+type ShapeNotifyFun func(xu *xgbutil.XUtil, event ShapeNotifyEvent)
+
+func (callback ShapeNotifyFun) Connect(xu *xgbutil.XUtil,
+	win xproto.Window) {
+	attachCallback(xu, ShapeNotify, win, callback)
+}
+
+func (callback ShapeNotifyFun) Run(xu *xgbutil.XUtil, event interface{}) {
+	callback(xu, event.(ShapeNotifyEvent))
+}

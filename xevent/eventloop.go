@@ -11,6 +11,7 @@ loop.
 */
 
 import (
+	"github.com/BurntSushi/xgb/shape"
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
@@ -265,6 +266,9 @@ func processEventQueue(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 		case xproto.MappingNotifyEvent:
 			e := MappingNotifyEvent{&event}
 			runCallbacks(xu, e, MappingNotify, NoWindow)
+		case shape.NotifyEvent:
+			e := ShapeNotifyEvent{&event}
+			runCallbacks(xu, e, ShapeNotify, e.AffectedWindow)
 		default:
 			if event != nil {
 				xgbutil.Logger.Printf("ERROR: UNSUPPORTED EVENT TYPE: %T",
