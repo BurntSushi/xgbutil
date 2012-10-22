@@ -56,7 +56,7 @@ func (w *Window) WMGracefulClose(cb func(w *Window)) {
 func (w *Window) WMTakeFocus(cb func(w *Window, tstamp xproto.Timestamp)) {
 	// Make sure the Input flag is set to true in WM_HINTS. We first
 	// must retrieve the current WM_HINTS, so we don't overwrite the flags.
-	curFlags := 0
+	curFlags := uint(0)
 	if hints, err := icccm.WmHintsGet(w.X, w.Id); err == nil {
 		curFlags = hints.Flags
 	}

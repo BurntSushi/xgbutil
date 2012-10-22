@@ -89,14 +89,14 @@ func NewBytes(X *xgbutil.XUtil, bs []byte) (*Image, error) {
 // NewEwmhIcon converts EWMH icon data (ARGB) to an xgraphics.Image type.
 // You should probably use xgraphics.FindIcon instead of this directly.
 func NewEwmhIcon(X *xgbutil.XUtil, icon *ewmh.WmIcon) *Image {
-	ximg := New(X, image.Rect(0, 0, icon.Width, icon.Height))
+	ximg := New(X, image.Rect(0, 0, int(icon.Width), int(icon.Height)))
 	r := ximg.Rect
 	width := r.Dx()
 
 	var argb, x, y int
 	for x = r.Min.X; x < r.Max.X; x++ {
 		for y = r.Min.Y; y < r.Max.Y; y++ {
-			argb = icon.Data[x+(y*width)]
+			argb = int(icon.Data[x+(y*width)])
 			ximg.SetBGRA(x, y, BGRA{
 				B: uint8(argb & 0x000000ff),
 				G: uint8((argb & 0x0000ff00) >> 8),

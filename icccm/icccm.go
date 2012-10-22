@@ -66,11 +66,12 @@ func WmIconNameSet(xu *xgbutil.XUtil, win xproto.Window, name string) error {
 // NormalHints is a struct that organizes the information related to the
 // WM_NORMAL_HINTS property. Please see the ICCCM spec for more details.
 type NormalHints struct {
-	Flags                                                         int
-	X, Y, Width, Height, MinWidth, MinHeight, MaxWidth, MaxHeight int
-	WidthInc, HeightInc                                           int
-	MinAspectNum, MinAspectDen, MaxAspectNum, MaxAspectDen        int
-	BaseWidth, BaseHeight, WinGravity                             int
+	Flags                                                   uint
+	X, Y                                                    int
+	Width, Height, MinWidth, MinHeight, MaxWidth, MaxHeight uint
+	WidthInc, HeightInc                                     uint
+	MinAspectNum, MinAspectDen, MaxAspectNum, MaxAspectDen  uint
+	BaseWidth, BaseHeight, WinGravity                       uint
 }
 
 // WM_NORMAL_HINTS get
@@ -91,8 +92,8 @@ func WmNormalHintsGet(xu *xgbutil.XUtil,
 
 	nh = &NormalHints{}
 	nh.Flags = hints[0]
-	nh.X = hints[1]
-	nh.Y = hints[2]
+	nh.X = int(hints[1])
+	nh.Y = int(hints[2])
 	nh.Width = hints[3]
 	nh.Height = hints[4]
 	nh.MinWidth = hints[5]
@@ -121,9 +122,9 @@ func WmNormalHintsGet(xu *xgbutil.XUtil,
 func WmNormalHintsSet(xu *xgbutil.XUtil, win xproto.Window,
 	nh *NormalHints) error {
 
-	raw := []int{
+	raw := []uint{
 		nh.Flags,
-		nh.X, nh.Y, nh.Width, nh.Height,
+		uint(nh.X), uint(nh.Y), nh.Width, nh.Height,
 		nh.MinWidth, nh.MinHeight,
 		nh.MaxWidth, nh.MaxHeight,
 		nh.WidthInc, nh.HeightInc,
@@ -139,10 +140,11 @@ func WmNormalHintsSet(xu *xgbutil.XUtil, win xproto.Window,
 // Hints is a struct that organizes information related to the WM_HINTS
 // property. Once again, I refer you to the ICCCM spec for documentation.
 type Hints struct {
-	Flags                             int
-	Input, InitialState, IconX, IconY int
-	IconPixmap, IconMask              xproto.Pixmap
-	WindowGroup, IconWindow           xproto.Window
+	Flags                   uint
+	Input, InitialState     uint
+	IconX, IconY            int
+	IconPixmap, IconMask    xproto.Pixmap
+	WindowGroup, IconWindow xproto.Window
 }
 
 // WM_HINTS get
@@ -166,8 +168,8 @@ func WmHintsGet(xu *xgbutil.XUtil,
 	hints.InitialState = raw[2]
 	hints.IconPixmap = xproto.Pixmap(raw[3])
 	hints.IconWindow = xproto.Window(raw[4])
-	hints.IconX = raw[5]
-	hints.IconY = raw[6]
+	hints.IconX = int(raw[5])
+	hints.IconY = int(raw[6])
 	hints.IconMask = xproto.Pixmap(raw[7])
 	hints.WindowGroup = xproto.Window(raw[8])
 
@@ -177,12 +179,12 @@ func WmHintsGet(xu *xgbutil.XUtil,
 // WM_HINTS set
 // Make sure to set the flags in the Hints struct correctly!
 func WmHintsSet(xu *xgbutil.XUtil, win xproto.Window, hints *Hints) error {
-	raw := []int{
+	raw := []uint{
 		hints.Flags, hints.Input, hints.InitialState,
-		int(hints.IconPixmap), int(hints.IconWindow),
-		hints.IconX, hints.IconY,
-		int(hints.IconMask),
-		int(hints.WindowGroup),
+		uint(hints.IconPixmap), uint(hints.IconWindow),
+		uint(hints.IconX), uint(hints.IconY),
+		uint(hints.IconMask),
+		uint(hints.WindowGroup),
 	}
 	return xprop.ChangeProp32(xu, win, "WM_HINTS", "WM_HINTS", raw...)
 }
@@ -232,7 +234,7 @@ func WmTransientForSet(xu *xgbutil.XUtil, win xproto.Window,
 	transient xproto.Window) error {
 
 	return xprop.ChangeProp32(xu, win, "WM_TRANSIENT_FOR", "WINDOW",
-		int(transient))
+		uint(transient))
 }
 
 // WM_PROTOCOLS get
@@ -285,7 +287,7 @@ func WmClientMachineSet(xu *xgbutil.XUtil, win xproto.Window,
 // property. Namely, the state (corresponding to a State* constant in this file)
 // and the icon window (probably not used).
 type WmState struct {
-	State int
+	State uint
 	Icon  xproto.Window
 }
 
@@ -309,9 +311,9 @@ func WmStateGet(xu *xgbutil.XUtil, win xproto.Window) (*WmState, error) {
 
 // WM_STATE set
 func WmStateSet(xu *xgbutil.XUtil, win xproto.Window, state *WmState) error {
-	raw := []int{
+	raw := []uint{
 		state.State,
-		int(state.Icon),
+		uint(state.Icon),
 	}
 
 	return xprop.ChangeProp32(xu, win, "WM_STATE", "WM_STATE", raw...)
@@ -320,7 +322,7 @@ func WmStateSet(xu *xgbutil.XUtil, win xproto.Window, state *WmState) error {
 // IconSize is a struct the organizes information related to the WM_ICON_SIZE
 // property. Mostly info about its dimensions.
 type IconSize struct {
-	MinWidth, MinHeight, MaxWidth, MaxHeight, WidthInc, HeightInc int
+	MinWidth, MinHeight, MaxWidth, MaxHeight, WidthInc, HeightInc uint
 }
 
 // WM_ICON_SIZE get
@@ -346,7 +348,7 @@ func WmIconSizeGet(xu *xgbutil.XUtil, win xproto.Window) (*IconSize, error) {
 func WmIconSizeSet(xu *xgbutil.XUtil, win xproto.Window,
 	icondim *IconSize) error {
 
-	raw := []int{
+	raw := []uint{
 		icondim.MinWidth, icondim.MinHeight,
 		icondim.MaxWidth, icondim.MaxHeight,
 		icondim.WidthInc, icondim.HeightInc,

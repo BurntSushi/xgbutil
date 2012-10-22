@@ -230,8 +230,8 @@ func FindBestEwmhIcon(width, height int, icons []ewmh.WmIcon) *ewmh.WmIcon {
 		}
 
 		// load areas for comparison
-		bestArea = icons[best].Width * icons[best].Height
-		iconArea = icon.Width * icon.Height
+		bestArea = int(icons[best].Width * icons[best].Height)
+		iconArea = int(icon.Width * icon.Height)
 
 		// We don't always want to accept bigger icons if our best is
 		// already bigger. But we always want something bigger if our best

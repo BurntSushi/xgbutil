@@ -56,7 +56,7 @@ func ChangeProp(xu *xgbutil.XUtil, win xproto.Window, format byte, prop string,
 // ChangeProperty32 makes changing 32 bit formatted properties easier
 // by constructing the raw X data for you.
 func ChangeProp32(xu *xgbutil.XUtil, win xproto.Window, prop string, typ string,
-	data ...int) error {
+	data ...uint) error {
 
 	buf := make([]byte, len(data)*4)
 	for i, datum := range data {
@@ -66,22 +66,22 @@ func ChangeProp32(xu *xgbutil.XUtil, win xproto.Window, prop string, typ string,
 	return ChangeProp(xu, win, 32, prop, typ, buf)
 }
 
-// WindowToInt is a covenience function for converting []xproto.Window
-// to []uint32.
-func WindowToInt(ids []xproto.Window) []int {
-	ids32 := make([]int, len(ids))
+// WindowToUint is a covenience function for converting []xproto.Window
+// to []uint.
+func WindowToInt(ids []xproto.Window) []uint {
+	ids32 := make([]uint, len(ids))
 	for i, v := range ids {
-		ids32[i] = int(v)
+		ids32[i] = uint(v)
 	}
 	return ids32
 }
 
 // AtomToInt is a covenience function for converting []xproto.Atom
-// to []uint32.
-func AtomToInt(ids []xproto.Atom) []int {
-	ids32 := make([]int, len(ids))
+// to []uint.
+func AtomToUint(ids []xproto.Atom) []uint {
+	ids32 := make([]uint, len(ids))
 	for i, v := range ids {
-		ids32[i] = int(v)
+		ids32[i] = uint(v)
 	}
 	return ids32
 }
@@ -89,15 +89,15 @@ func AtomToInt(ids []xproto.Atom) []int {
 // StrToAtoms is a convenience function for converting
 // []string to []uint32 atoms.
 // NOTE: If an atom name in the list doesn't exist, it will be created.
-func StrToAtoms(xu *xgbutil.XUtil, atomNames []string) ([]int, error) {
+func StrToAtoms(xu *xgbutil.XUtil, atomNames []string) ([]uint, error) {
 	var err error
-	atoms := make([]int, len(atomNames))
+	atoms := make([]uint, len(atomNames))
 	for i, atomName := range atomNames {
 		a, err := Atom(xu, atomName, false)
 		if err != nil {
 			return nil, err
 		}
-		atoms[i] = int(a)
+		atoms[i] = uint(a)
 	}
 	return atoms, err
 }
@@ -185,7 +185,7 @@ func PropValWindows(reply *xproto.GetPropertyReply,
 
 // PropValNum transforms a GetPropertyReply struct into an unsigned
 // integer. Useful when the property value is a single integer.
-func PropValNum(reply *xproto.GetPropertyReply, err error) (int, error) {
+func PropValNum(reply *xproto.GetPropertyReply, err error) (uint, error) {
 	if err != nil {
 		return 0, err
 	}
@@ -193,12 +193,12 @@ func PropValNum(reply *xproto.GetPropertyReply, err error) (int, error) {
 		return 0, fmt.Errorf("PropValNum: Expected format 32 but got %d",
 			reply.Format)
 	}
-	return int(xgb.Get32(reply.Value)), nil
+	return uint(xgb.Get32(reply.Value)), nil
 }
 
 // PropValNums is the same as PropValNum, except that it returns a slice
 // of integers. Also must be 32 bit format.
-func PropValNums(reply *xproto.GetPropertyReply, err error) ([]int, error) {
+func PropValNums(reply *xproto.GetPropertyReply, err error) ([]uint, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -207,10 +207,10 @@ func PropValNums(reply *xproto.GetPropertyReply, err error) ([]int, error) {
 			reply.Format)
 	}
 
-	nums := make([]int, reply.ValueLen)
+	nums := make([]uint, reply.ValueLen)
 	vals := reply.Value
 	for i := 0; len(vals) >= 4; i++ {
-		nums[i] = int(xgb.Get32(vals))
+		nums[i] = uint(xgb.Get32(vals))
 		vals = vals[4:]
 	}
 	return nums, nil

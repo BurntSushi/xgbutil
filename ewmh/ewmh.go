@@ -37,7 +37,7 @@ func ActiveWindowGet(xu *xgbutil.XUtil) (xproto.Window, error) {
 // _NET_ACTIVE_WINDOW set
 func ActiveWindowSet(xu *xgbutil.XUtil, win xproto.Window) error {
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_ACTIVE_WINDOW", "WINDOW",
-		int(win))
+		uint(win))
 }
 
 // _NET_ACTIVE_WINDOW req
@@ -90,13 +90,13 @@ func CloseWindowExtra(xu *xgbutil.XUtil, win xproto.Window,
 }
 
 // _NET_CURRENT_DESKTOP get
-func CurrentDesktopGet(xu *xgbutil.XUtil) (int, error) {
+func CurrentDesktopGet(xu *xgbutil.XUtil) (uint, error) {
 	return xprop.PropValNum(xprop.GetProperty(xu, xu.RootWin(),
 		"_NET_CURRENT_DESKTOP"))
 }
 
 // _NET_CURRENT_DESKTOP set
-func CurrentDesktopSet(xu *xgbutil.XUtil, desk int) error {
+func CurrentDesktopSet(xu *xgbutil.XUtil, desk uint) error {
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_CURRENT_DESKTOP",
 		"CARDINAL", desk)
 }
@@ -146,13 +146,13 @@ func DesktopGeometryGet(xu *xgbutil.XUtil) (*DesktopGeometry, error) {
 		return nil, err
 	}
 
-	return &DesktopGeometry{Width: geom[0], Height: geom[1]}, nil
+	return &DesktopGeometry{Width: int(geom[0]), Height: int(geom[1])}, nil
 }
 
 // _NET_DESKTOP_GEOMETRY set
 func DesktopGeometrySet(xu *xgbutil.XUtil, dg *DesktopGeometry) error {
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_DESKTOP_GEOMETRY",
-		"CARDINAL", dg.Width, dg.Height)
+		"CARDINAL", uint(dg.Width), uint(dg.Height))
 }
 
 // _NET_DESKTOP_GEOMETRY req
@@ -209,7 +209,7 @@ func DesktopLayoutGet(xu *xgbutil.XUtil) (dl *DesktopLayout, err error) {
 
 // _NET_DESKTOP_LAYOUT set
 func DesktopLayoutSet(xu *xgbutil.XUtil, orientation, columns, rows,
-	startingCorner int) error {
+	startingCorner uint) error {
 
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_DESKTOP_LAYOUT",
 		"CARDINAL", orientation, columns, rows,
@@ -235,8 +235,8 @@ func DesktopViewportGet(xu *xgbutil.XUtil) ([]DesktopViewport, error) {
 	viewports := make([]DesktopViewport, len(coords)/2)
 	for i, _ := range viewports {
 		viewports[i] = DesktopViewport{
-			X: coords[i*2],
-			Y: coords[i*2+1],
+			X: int(coords[i*2]),
+			Y: int(coords[i*2+1]),
 		}
 	}
 	return viewports, nil
@@ -244,10 +244,10 @@ func DesktopViewportGet(xu *xgbutil.XUtil) ([]DesktopViewport, error) {
 
 // _NET_DESKTOP_VIEWPORT set
 func DesktopViewportSet(xu *xgbutil.XUtil, viewports []DesktopViewport) error {
-	coords := make([]int, len(viewports)*2)
+	coords := make([]uint, len(viewports)*2)
 	for i, viewport := range viewports {
-		coords[i*2] = viewport.X
-		coords[i*2+1] = viewport.Y
+		coords[i*2] = uint(viewport.X)
+		coords[i*2+1] = uint(viewport.Y)
 	}
 
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_DESKTOP_VIEWPORT",
@@ -280,21 +280,21 @@ func FrameExtentsGet(xu *xgbutil.XUtil,
 	}
 
 	return &FrameExtents{
-		Left:   raw[0],
-		Right:  raw[1],
-		Top:    raw[2],
-		Bottom: raw[3],
+		Left:   int(raw[0]),
+		Right:  int(raw[1]),
+		Top:    int(raw[2]),
+		Bottom: int(raw[3]),
 	}, nil
 }
 
 // _NET_FRAME_EXTENTS set
 func FrameExtentsSet(xu *xgbutil.XUtil, win xproto.Window,
 	extents *FrameExtents) error {
-	raw := make([]int, 4)
-	raw[0] = extents.Left
-	raw[1] = extents.Right
-	raw[2] = extents.Top
-	raw[3] = extents.Bottom
+	raw := make([]uint, 4)
+	raw[0] = uint(extents.Left)
+	raw[1] = uint(extents.Right)
+	raw[2] = uint(extents.Top)
+	raw[3] = uint(extents.Bottom)
 
 	return xprop.ChangeProp32(xu, win, "_NET_FRAME_EXTENTS", "CARDINAL", raw...)
 }
@@ -347,13 +347,13 @@ func MoveresizeWindowExtra(xu *xgbutil.XUtil, win xproto.Window, x, y, w, h,
 }
 
 // _NET_NUMBER_OF_DESKTOPS get
-func NumberOfDesktopsGet(xu *xgbutil.XUtil) (int, error) {
+func NumberOfDesktopsGet(xu *xgbutil.XUtil) (uint, error) {
 	return xprop.PropValNum(xprop.GetProperty(xu, xu.RootWin(),
 		"_NET_NUMBER_OF_DESKTOPS"))
 }
 
 // _NET_NUMBER_OF_DESKTOPS set
-func NumberOfDesktopsSet(xu *xgbutil.XUtil, numDesks int) error {
+func NumberOfDesktopsSet(xu *xgbutil.XUtil, numDesks uint) error {
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_NUMBER_OF_DESKTOPS",
 		"CARDINAL", numDesks)
 }
@@ -399,7 +399,7 @@ func ShowingDesktopGet(xu *xgbutil.XUtil) (bool, error) {
 
 // _NET_SHOWING_DESKTOP set
 func ShowingDesktopSet(xu *xgbutil.XUtil, show bool) error {
-	var showInt int
+	var showInt uint
 	if show {
 		showInt = 1
 	} else {
@@ -411,7 +411,7 @@ func ShowingDesktopSet(xu *xgbutil.XUtil, show bool) error {
 
 // _NET_SHOWING_DESKTOP req
 func ShowingDesktopReq(xu *xgbutil.XUtil, show bool) error {
-	var showInt int
+	var showInt uint
 	if show {
 		showInt = 1
 	} else {
@@ -451,7 +451,7 @@ func SupportingWmCheckSet(xu *xgbutil.XUtil, win xproto.Window,
 	wmWin xproto.Window) error {
 
 	return xprop.ChangeProp32(xu, win, "_NET_SUPPORTING_WM_CHECK", "WINDOW",
-		int(wmWin))
+		uint(wmWin))
 }
 
 // _NET_VIRTUAL_ROOTS get
@@ -471,13 +471,13 @@ func VirtualRootsSet(xu *xgbutil.XUtil, wins []xproto.Window) error {
 // It allows the window manager to report that it has multiple desktops
 // viewable at the same time. (This conflicts with other EWMH properties,
 // so I don't think this will ever be added to the official spec.)
-func VisibleDesktopsGet(xu *xgbutil.XUtil) ([]int, error) {
+func VisibleDesktopsGet(xu *xgbutil.XUtil) ([]uint, error) {
 	return xprop.PropValNums(xprop.GetProperty(xu, xu.RootWin(),
 		"_NET_VISIBLE_DESKTOPS"))
 }
 
 // _NET_VISIBLE_DESKTOPS set
-func VisibleDesktopsSet(xu *xgbutil.XUtil, desktops []int) error {
+func VisibleDesktopsSet(xu *xgbutil.XUtil, desktops []uint) error {
 	return xprop.ChangeProp32(xu, xu.RootWin(), "_NET_VISIBLE_DESKTOPS",
 		"CARDINAL", desktops...)
 }
@@ -504,22 +504,23 @@ func WmAllowedActionsSet(xu *xgbutil.XUtil, win xproto.Window,
 }
 
 // _NET_WM_DESKTOP get
-func WmDesktopGet(xu *xgbutil.XUtil, win xproto.Window) (int64, error) {
-	return xprop.PropValNum64(xprop.GetProperty(xu, win, "_NET_WM_DESKTOP"))
+func WmDesktopGet(xu *xgbutil.XUtil, win xproto.Window) (uint, error) {
+	return xprop.PropValNum(xprop.GetProperty(xu, win, "_NET_WM_DESKTOP"))
 }
 
 // _NET_WM_DESKTOP set
-func WmDesktopSet(xu *xgbutil.XUtil, win xproto.Window, desk int64) error {
-	return xprop.ChangeProp32(xu, win, "_NET_WM_DESKTOP", "CARDINAL", int(desk))
+func WmDesktopSet(xu *xgbutil.XUtil, win xproto.Window, desk uint) error {
+	return xprop.ChangeProp32(xu, win, "_NET_WM_DESKTOP", "CARDINAL",
+		uint(desk))
 }
 
 // _NET_WM_DESKTOP req
-func WmDesktopReq(xu *xgbutil.XUtil, win xproto.Window, desk int64) error {
-	return WmDesktopReqExtra(xu, win, int(desk), 2)
+func WmDesktopReq(xu *xgbutil.XUtil, win xproto.Window, desk uint) error {
+	return WmDesktopReqExtra(xu, win, desk, 2)
 }
 
 // _NET_WM_DESKTOP req extra
-func WmDesktopReqExtra(xu *xgbutil.XUtil, win xproto.Window, desk,
+func WmDesktopReqExtra(xu *xgbutil.XUtil, win xproto.Window, desk uint,
 	source int) error {
 
 	return ClientEvent(xu, win, "_NET_WM_DESKTOP", desk, source)
@@ -529,10 +530,10 @@ func WmDesktopReqExtra(xu *xgbutil.XUtil, win xproto.Window, desk,
 // _NET_WM_FULLSCREEN_MONITORS property. Namely, the top, bottom, left and
 // right monitor edges for a particular window.
 type WmFullscreenMonitors struct {
-	Top    int
-	Bottom int
-	Left   int
-	Right  int
+	Top    uint
+	Bottom uint
+	Left   uint
+	Right  uint
 }
 
 // _NET_WM_FULLSCREEN_MONITORS get
@@ -557,7 +558,7 @@ func WmFullscreenMonitorsGet(xu *xgbutil.XUtil,
 func WmFullscreenMonitorsSet(xu *xgbutil.XUtil, win xproto.Window,
 	edges *WmFullscreenMonitors) error {
 
-	raw := make([]int, 4)
+	raw := make([]uint, 4)
 	raw[0] = edges.Top
 	raw[1] = edges.Bottom
 	raw[2] = edges.Left
@@ -599,7 +600,7 @@ func WmHandledIconsGet(xu *xgbutil.XUtil, win xproto.Window) (bool, error) {
 
 // _NET_WM_HANDLED_ICONS set
 func WmHandledIconsSet(xu *xgbutil.XUtil, handle bool) error {
-	var handled int
+	var handled uint
 	if handle {
 		handled = 1
 	} else {
@@ -613,9 +614,9 @@ func WmHandledIconsSet(xu *xgbutil.XUtil, handle bool) error {
 // The WmIcon method will return a list of these, since a single
 // client can specify multiple icons of varying sizes.
 type WmIcon struct {
-	Width  int
-	Height int
-	Data   []int
+	Width  uint
+	Height uint
+	Data   []uint
 }
 
 // _NET_WM_ICON get
@@ -626,7 +627,7 @@ func WmIconGet(xu *xgbutil.XUtil, win xproto.Window) ([]WmIcon, error) {
 	}
 
 	wmicons := make([]WmIcon, 0)
-	start := 0
+	start := uint(0)
 	for int(start) < len(icon) {
 		w, h := icon[start], icon[start+1]
 		upto := w * h
@@ -646,7 +647,7 @@ func WmIconGet(xu *xgbutil.XUtil, win xproto.Window) ([]WmIcon, error) {
 
 // _NET_WM_ICON set
 func WmIconSet(xu *xgbutil.XUtil, win xproto.Window, icons []WmIcon) error {
-	raw := make([]int, 0, 10000) // start big
+	raw := make([]uint, 0, 10000) // start big
 	for _, icon := range icons {
 		raw = append(raw, icon.Width, icon.Height)
 		raw = append(raw, icon.Data...)
@@ -660,8 +661,8 @@ func WmIconSet(xu *xgbutil.XUtil, win xproto.Window, icons []WmIcon) error {
 type WmIconGeometry struct {
 	X      int
 	Y      int
-	Width  int
-	Height int
+	Width  uint
+	Height uint
 }
 
 // _NET_WM_ICON_GEOMETRY get
@@ -675,8 +676,8 @@ func WmIconGeometryGet(xu *xgbutil.XUtil,
 	}
 
 	return &WmIconGeometry{
-		X:      geom[0],
-		Y:      geom[1],
+		X:      int(geom[0]),
+		Y:      int(geom[1]),
 		Width:  geom[2],
 		Height: geom[3],
 	}, nil
@@ -686,9 +687,9 @@ func WmIconGeometryGet(xu *xgbutil.XUtil,
 func WmIconGeometrySet(xu *xgbutil.XUtil, win xproto.Window,
 	geom *WmIconGeometry) error {
 
-	rawGeom := make([]int, 4)
-	rawGeom[0] = geom.X
-	rawGeom[1] = geom.Y
+	rawGeom := make([]uint, 4)
+	rawGeom[0] = uint(geom.X)
+	rawGeom[1] = uint(geom.Y)
 	rawGeom[2] = geom.Width
 	rawGeom[3] = geom.Height
 
@@ -754,8 +755,8 @@ func WmNameSet(xu *xgbutil.XUtil, win xproto.Window, name string) error {
 type WmOpaqueRegion struct {
 	X      int
 	Y      int
-	Width  int
-	Height int
+	Width  uint
+	Height uint
 }
 
 // _NET_WM_OPAQUE_REGION get
@@ -771,8 +772,8 @@ func WmOpaqueRegionGet(xu *xgbutil.XUtil,
 	regions := make([]WmOpaqueRegion, len(raw)/4)
 	for i, _ := range regions {
 		regions[i] = WmOpaqueRegion{
-			X:      raw[i*4+0],
-			Y:      raw[i*4+1],
+			X:      int(raw[i*4+0]),
+			Y:      int(raw[i*4+1]),
 			Width:  raw[i*4+2],
 			Height: raw[i*4+3],
 		}
@@ -784,11 +785,11 @@ func WmOpaqueRegionGet(xu *xgbutil.XUtil,
 func WmOpaqueRegionSet(xu *xgbutil.XUtil, win xproto.Window,
 	regions []WmOpaqueRegion) error {
 
-	raw := make([]int, len(regions)*4)
+	raw := make([]uint, len(regions)*4)
 
 	for i, region := range regions {
-		raw[i*4+0] = region.X
-		raw[i*4+1] = region.Y
+		raw[i*4+0] = uint(region.X)
+		raw[i*4+1] = uint(region.Y)
 		raw[i*4+2] = region.Width
 		raw[i*4+3] = region.Height
 	}
@@ -798,12 +799,12 @@ func WmOpaqueRegionSet(xu *xgbutil.XUtil, win xproto.Window,
 }
 
 // _NET_WM_PID get
-func WmPidGet(xu *xgbutil.XUtil, win xproto.Window) (int, error) {
+func WmPidGet(xu *xgbutil.XUtil, win xproto.Window) (uint, error) {
 	return xprop.PropValNum(xprop.GetProperty(xu, win, "_NET_WM_PID"))
 }
 
 // _NET_WM_PID set
-func WmPidSet(xu *xgbutil.XUtil, win xproto.Window, pid int) error {
+func WmPidSet(xu *xgbutil.XUtil, win xproto.Window, pid uint) error {
 	return xprop.ChangeProp32(xu, win, "_NET_WM_PID", "CARDINAL", pid)
 }
 
@@ -892,10 +893,10 @@ func WmStateReqExtra(xu *xgbutil.XUtil, win xproto.Window, action int,
 // WmStrut struct organizes information for the _NET_WM_STRUT property.
 // Namely, it encapsulates its four values: left, right, top and bottom.
 type WmStrut struct {
-	Left   int
-	Right  int
-	Top    int
-	Bottom int
+	Left   uint
+	Right  uint
+	Top    uint
+	Bottom uint
 }
 
 // _NET_WM_STRUT get
@@ -916,7 +917,7 @@ func WmStrutGet(xu *xgbutil.XUtil, win xproto.Window) (*WmStrut, error) {
 
 // _NET_WM_STRUT set
 func WmStrutSet(xu *xgbutil.XUtil, win xproto.Window, struts *WmStrut) error {
-	rawStruts := make([]int, 4)
+	rawStruts := make([]uint, 4)
 	rawStruts[0] = struts.Left
 	rawStruts[1] = struts.Right
 	rawStruts[2] = struts.Top
@@ -931,9 +932,9 @@ func WmStrutSet(xu *xgbutil.XUtil, win xproto.Window, struts *WmStrut) error {
 // bottom, left_start_y, left_end_y, right_start_y, right_end_y,
 // top_start_x, top_end_x, bottom_start_x, and bottom_end_x.
 type WmStrutPartial struct {
-	Left, Right, Top, Bottom                     int
-	LeftStartY, LeftEndY, RightStartY, RightEndY int
-	TopStartX, TopEndX, BottomStartX, BottomEndX int
+	Left, Right, Top, Bottom                     uint
+	LeftStartY, LeftEndY, RightStartY, RightEndY uint
+	TopStartX, TopEndX, BottomStartX, BottomEndX uint
 }
 
 // _NET_WM_STRUT_PARTIAL get
@@ -959,7 +960,7 @@ func WmStrutPartialGet(xu *xgbutil.XUtil,
 func WmStrutPartialSet(xu *xgbutil.XUtil, win xproto.Window,
 	struts *WmStrutPartial) error {
 
-	rawStruts := make([]int, 4)
+	rawStruts := make([]uint, 12)
 	rawStruts[0] = struts.Left
 	rawStruts[1] = struts.Right
 	rawStruts[2] = struts.Top
@@ -1001,7 +1002,7 @@ func WmSyncRequestExtra(xu *xgbutil.XUtil, win xproto.Window, reqNum uint64,
 // _NET_WM_SYNC_REQUEST_COUNTER get 
 // I'm pretty sure this needs 64 bit integers, but I'm not quite sure
 // how to go about that yet. Any ideas?
-func WmSyncRequestCounter(xu *xgbutil.XUtil, win xproto.Window) (int, error) {
+func WmSyncRequestCounter(xu *xgbutil.XUtil, win xproto.Window) (uint, error) {
 	return xprop.PropValNum(xprop.GetProperty(xu, win,
 		"_NET_WM_SYNC_REQUEST_COUNTER"))
 }
@@ -1010,19 +1011,19 @@ func WmSyncRequestCounter(xu *xgbutil.XUtil, win xproto.Window) (int, error) {
 // I'm pretty sure this needs 64 bit integers, but I'm not quite sure
 // how to go about that yet. Any ideas?
 func WmSyncRequestCounterSet(xu *xgbutil.XUtil, win xproto.Window,
-	counter int) error {
+	counter uint) error {
 
 	return xprop.ChangeProp32(xu, win, "_NET_WM_SYNC_REQUEST_COUNTER",
 		"CARDINAL", counter)
 }
 
 // _NET_WM_USER_TIME get
-func WmUserTimeGet(xu *xgbutil.XUtil, win xproto.Window) (int, error) {
+func WmUserTimeGet(xu *xgbutil.XUtil, win xproto.Window) (uint, error) {
 	return xprop.PropValNum(xprop.GetProperty(xu, win, "_NET_WM_USER_TIME"))
 }
 
 // _NET_WM_USER_TIME set
-func WmUserTimeSet(xu *xgbutil.XUtil, win xproto.Window, userTime int) error {
+func WmUserTimeSet(xu *xgbutil.XUtil, win xproto.Window, userTime uint) error {
 	return xprop.ChangeProp32(xu, win, "_NET_WM_USER_TIME", "CARDINAL",
 		userTime)
 }
@@ -1040,7 +1041,7 @@ func WmUserTimeWindowSet(xu *xgbutil.XUtil, win xproto.Window,
 	timeWin xproto.Window) error {
 
 	return xprop.ChangeProp32(xu, win, "_NET_WM_USER_TIME_WINDOW", "CARDINAL",
-		int(timeWin))
+		uint(timeWin))
 }
 
 // _NET_WM_VISIBLE_ICON_NAME get
@@ -1092,7 +1093,7 @@ func WmWindowOpacitySet(xu *xgbutil.XUtil, win xproto.Window,
 	opacity float64) error {
 
 	return xprop.ChangeProp32(xu, win, "_NET_WM_WINDOW_OPACITY", "CARDINAL",
-		int(opacity*0xffffffff))
+		uint(opacity*0xffffffff))
 }
 
 // _NET_WM_WINDOW_TYPE get
@@ -1119,8 +1120,8 @@ func WmWindowTypeSet(xu *xgbutil.XUtil, win xproto.Window,
 type Workarea struct {
 	X      int
 	Y      int
-	Width  int
-	Height int
+	Width  uint
+	Height uint
 }
 
 // _NET_WORKAREA get
@@ -1134,8 +1135,8 @@ func WorkareaGet(xu *xgbutil.XUtil) ([]Workarea, error) {
 	workareas := make([]Workarea, len(rects)/4)
 	for i, _ := range workareas {
 		workareas[i] = Workarea{
-			X:      rects[i*4],
-			Y:      rects[i*4+1],
+			X:      int(rects[i*4]),
+			Y:      int(rects[i*4+1]),
 			Width:  rects[i*4+2],
 			Height: rects[i*4+3],
 		}
@@ -1145,10 +1146,10 @@ func WorkareaGet(xu *xgbutil.XUtil) ([]Workarea, error) {
 
 // _NET_WORKAREA set
 func WorkareaSet(xu *xgbutil.XUtil, workareas []Workarea) error {
-	rects := make([]int, len(workareas)*4)
+	rects := make([]uint, len(workareas)*4)
 	for i, workarea := range workareas {
-		rects[i*4+0] = workarea.X
-		rects[i*4+1] = workarea.Y
+		rects[i*4+0] = uint(workarea.X)
+		rects[i*4+1] = uint(workarea.Y)
 		rects[i*4+2] = workarea.Width
 		rects[i*4+3] = workarea.Height
 	}

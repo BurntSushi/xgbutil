@@ -91,8 +91,8 @@ func Decor(mh *Hints) bool {
 // Hints is a struct that organizes the information related to the
 // WM_NORMAL_HINTS property.
 type Hints struct {
-	Flags                               int
-	Function, Decoration, Input, Status int
+	Flags                               uint
+	Function, Decoration, Input, Status uint
 }
 
 // _MOTIF_WM_HINTS get
@@ -122,7 +122,7 @@ func WmHintsGet(xu *xgbutil.XUtil, win xproto.Window) (mh *Hints, err error) {
 
 // _MOTIF_WM_HINTS set
 func WmHintsSet(xu *xgbutil.XUtil, win xproto.Window, mh *Hints) error {
-	raw := []int{mh.Flags, mh.Function, mh.Decoration, mh.Input, mh.Status}
+	raw := []uint{mh.Flags, mh.Function, mh.Decoration, mh.Input, mh.Status}
 	return xprop.ChangeProp32(xu, win, "_MOTIF_WM_HINTS", "_MOTIF_WM_HINTS",
 		raw...)
 }

@@ -265,10 +265,10 @@ func (im *Image) XShowExtra(name string, quit bool) *xwindow.Window {
 	// Set WM_NORMAL_HINTS so the window can't be resized.
 	err = icccm.WmNormalHintsSet(im.X, win.Id, &icccm.NormalHints{
 		Flags:     icccm.SizeHintPMinSize | icccm.SizeHintPMaxSize,
-		MinWidth:  w,
-		MinHeight: h,
-		MaxWidth:  w,
-		MaxHeight: h,
+		MinWidth:  uint(w),
+		MinHeight: uint(h),
+		MaxWidth:  uint(w),
+		MaxHeight: uint(h),
 	})
 	if err != nil { // not a fatal error
 		xgbutil.Logger.Printf("Could not set WM_NORMAL_HINTS: %s", err)
