@@ -180,14 +180,15 @@ func LargestOverlap(needle Rect, haystack []Rect) int {
 // (If you don't have a partial strut, just use '0' for the extra fields.)
 // See xgbutil/examples/workarea-struts for an example of how to use this to 
 // get accurate workarea for each physical head.
-func ApplyStrut(rects []Rect, rootWidth, rootHeight int,
+func ApplyStrut(rects []Rect, rootWidth, rootHeight uint,
 	left, right, top, bottom,
 	left_start_y, left_end_y, right_start_y, right_end_y,
-	top_start_x, top_end_x, bottom_start_x, bottom_end_x int) {
+	top_start_x, top_end_x, bottom_start_x, bottom_end_x uint) {
 
-	var nx, ny int // 'n*' are new values that may or may not be used
-	var nw, nh int
-	var x, y, w, h int
+	var nx, ny uint // 'n*' are new values that may or may not be used
+	var nw, nh uint
+	var x_, y_, w_, h_ int
+	var x, y, w, h uint
 	var bt, tp, lt, rt bool
 	rWidth, rHeight := rootWidth, rootHeight
 
@@ -206,7 +207,8 @@ func ApplyStrut(rects []Rect, rootWidth, rootHeight int,
 	// when 'rects' has more than one rect, since the old school struts will
 	// typically result in undesirable behavior.
 	for _, rect := range rects {
-		x, y, w, h = RectPieces(rect)
+		x_, y_, w_, h_ = RectPieces(rect)
+		x, y, w, h = uint(x_), uint(y_), uint(w_), uint(h_)
 
 		bt = bottom_start_x != bottom_end_x &&
 			(xInRect(bottom_start_x, rect) || xInRect(bottom_end_x, rect))
@@ -219,33 +221,33 @@ func ApplyStrut(rects []Rect, rootWidth, rootHeight int,
 
 		if bt {
 			nh = h - (bottom - ((rHeight - h) - y))
-			if nh < rect.Height() {
-				rect.HeightSet(nh)
+			if nh < uint(rect.Height()) {
+				rect.HeightSet(int(nh))
 			}
 		} else if tp {
 			nh = h - (top - y)
-			if nh < rect.Height() {
-				rect.HeightSet(nh)
+			if nh < uint(rect.Height()) {
+				rect.HeightSet(int(nh))
 			}
 
 			ny = top
-			if ny > rect.Y() {
-				rect.YSet(ny)
+			if ny > uint(rect.Y()) {
+				rect.YSet(int(ny))
 			}
 		} else if rt {
 			nw = w - (right - ((rWidth - w) - x))
-			if nw < rect.Width() {
-				rect.WidthSet(nw)
+			if nw < uint(rect.Width()) {
+				rect.WidthSet(int(nw))
 			}
 		} else if lt {
 			nw = w - (left - x)
-			if nw < rect.Width() {
-				rect.WidthSet(nw)
+			if nw < uint(rect.Width()) {
+				rect.WidthSet(int(nw))
 			}
 
 			nx = left
-			if nx > rect.X() {
-				rect.XSet(nx)
+			if nx > uint(rect.X()) {
+				rect.XSet(int(nx))
 			}
 		}
 	}
@@ -253,16 +255,16 @@ func ApplyStrut(rects []Rect, rootWidth, rootHeight int,
 
 // xInRect is whether a particular x-coordinate is vertically constrained by
 // a rectangle.
-func xInRect(xtest int, rect Rect) bool {
+func xInRect(xtest uint, rect Rect) bool {
 	x, _, w, _ := RectPieces(rect)
-	return xtest >= x && xtest < (x+w)
+	return int(xtest) >= x && int(xtest) < (x+w)
 }
 
 // yInRect is whether a particular y-coordinate is horizontally constrained by
 // a rectangle.
-func yInRect(ytest int, rect Rect) bool {
+func yInRect(ytest uint, rect Rect) bool {
 	_, y, _, h := RectPieces(rect)
-	return ytest >= y && ytest < (y+h)
+	return int(ytest) >= y && int(ytest) < (y+h)
 }
 
 func min(a, b int) int {
