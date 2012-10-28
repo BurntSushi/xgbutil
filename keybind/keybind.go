@@ -10,12 +10,18 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 )
 
-var Modifiers []uint16 = []uint16{ // order matters!
-	xproto.ModMaskShift, xproto.ModMaskLock, xproto.ModMaskControl,
-	xproto.ModMask1, xproto.ModMask2, xproto.ModMask3,
-	xproto.ModMask4, xproto.ModMask5,
-	xproto.ModMaskAny,
-}
+var (
+	Modifiers []uint16 = []uint16{ // order matters!
+		xproto.ModMaskShift, xproto.ModMaskLock, xproto.ModMaskControl,
+		xproto.ModMask1, xproto.ModMask2, xproto.ModMask3,
+		xproto.ModMask4, xproto.ModMask5,
+		xproto.ModMaskAny,
+	}
+
+	NiceModifiers = []string{
+		"shift", "lock", "control", "mod1", "mod2", "mod3", "mod4", "mod5", "",
+	}
+)
 
 // Initialize attaches the appropriate callbacks to make key bindings easier.
 // i.e., update state of the world on a MappingNotify.

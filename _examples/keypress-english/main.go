@@ -4,6 +4,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 
 	"github.com/BurntSushi/xgb/xproto"
@@ -14,7 +15,19 @@ import (
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
+var flagRoot = false
+
+func init() {
+	log.SetFlags(0)
+	flag.BoolVar(&flagRoot, "root", flagRoot,
+		"When set, the keyboard will be grabbed on the root window. "+
+			"Make sure you have a way to kill the window created with "+
+			"the mouse.")
+	flag.Parse()
+}
+
 func main() {
+
 	// Connect to the X server using the DISPLAY environment variable.
 	X, err := xgbutil.NewConn()
 	if err != nil {
@@ -46,6 +59,10 @@ func main() {
 	// because we aren't trying to make a grab *and* because we want to listen
 	// to *all* key press events, rather than just a particular key sequence
 	// that has been pressed.
+	wid := win.Id
+	if flagRoot {
+		wid = X.RootWin()
+	}
 	xevent.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
 			// keybind.LookupString does the magic of implementing parts of
@@ -53,8 +70,31 @@ func main() {
 			// of the modifiers/keycode tuple.
 			// N.B. It's working for me, but probably isn't 100% correct in
 			// all environments yet.
-			log.Println("Key:", keybind.LookupString(X, e.State, e.Detail))
-		}).Connect(X, win.Id)
+			modStr := keybind.ModifierString(e.State)
+			keyStr := keybind.LookupString(X, e.State, e.Detail)
+			if len(modStr) > 0 {
+				log.Printf("Key: %s-%s\n", modStr, keyStr)
+			} else {
+				log.Println("Key:", keyStr)
+			}
+
+			if keybind.KeyMatch(X, "Escape", e.State, e.Detail) {
+				if e.State&xproto.ModMaskControl > 0 {
+					log.Println("Control-Escape detected. Quitting...")
+					xevent.Quit(X)
+				}
+			}
+		}).Connect(X, wid)
+
+	// If we want root, then we take over the entire keyboard.
+	if flagRoot {
+		if err := keybind.GrabKeyboard(X, X.RootWin()); err != nil {
+			log.Fatalf("Could not grab keyboard: %s", err)
+		}
+		log.Println("WARNING: We are taking *complete* control of the root " +
+			"window. The only way out is to press 'Control + Escape' or to " +
+			"close the window with the mouse.")
+	}
 
 	// Finally, start the main event loop. This will route any appropriate
 	// KeyPressEvents to your callback function.

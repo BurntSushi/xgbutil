@@ -57,6 +57,18 @@ func LookupString(xu *xgbutil.XUtil, mods uint16,
 	return ""
 }
 
+// ModifierString takes in a keyboard state and returns a string of all
+// modifiers in the state.
+func ModifierString(mods uint16) string {
+	modStrs := make([]string, 0, 3)
+	for i, mod := range Modifiers {
+		if mod&mods > 0 && len(NiceModifiers[i]) > 0 {
+			modStrs = append(modStrs, NiceModifiers[i])
+		}
+	}
+	return strings.Join(modStrs, "-")
+}
+
 // KeyMatch returns true if a string representation of a key can
 // be matched (case insensitive) to the (modifiers, keycode) tuple provided. 
 // String representations can be found in keybind/keysymdef.go
