@@ -4,6 +4,10 @@ install:
 	go install -p 6 . ./ewmh ./gopher ./icccm ./keybind ./motif ./mousebind \
 		./xcursor ./xevent ./xgraphics ./xinerama ./xprop ./xrect ./xwindow
 
+install-ex:
+	find ./examples/ -type d -wholename './examples/[a-z]*' -print0 \
+		| xargs -0 go install -p 6
+
 gofmt:
 	gofmt -w *.go */*.go examples/*/*.go
 	colcheck *.go */*.go examples/*/*.go
