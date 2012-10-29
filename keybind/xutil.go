@@ -10,8 +10,6 @@ would become cluttered with functions that should not be used.
 */
 
 import (
-	"strings"
-
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
@@ -46,12 +44,6 @@ func addKeyString(xu *xgbutil.XUtil, callback xgbutil.CallbackKey,
 	xu.KeybindsLck.Lock()
 	defer xu.KeybindsLck.Unlock()
 
-	keyStrLower := strings.ToLower(keyStr)
-	for _, s := range xu.Keystrings {
-		if strings.ToLower(s.Str) == keyStrLower && s.Evtype == evtype {
-			return
-		}
-	}
 	k := xgbutil.KeyString{
 		Str:      keyStr,
 		Callback: callback,

@@ -62,8 +62,10 @@ func connect(xu *xgbutil.XUtil, callback xgbutil.CallbackKey,
 		attachKeyBindCallback(xu, evtype, win, mods, keycode, callback)
 	}
 
-	// Keep track of all unique (evtype, key string).
-	addKeyString(xu, callback, evtype, win, keyStr, grab)
+	// Keep track of all unique key connections.
+	if !reconnect {
+		addKeyString(xu, callback, evtype, win, keyStr, grab)
+	}
 
 	return nil
 }
