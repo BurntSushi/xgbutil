@@ -14,48 +14,56 @@ import (
 // sets up the appropriate event handlers for the main event loop, and attaches
 // the callback to the keybinding state.
 func connect(xu *xgbutil.XUtil, callback xgbutil.CallbackKey,
-	evtype int, win xproto.Window, keyStr string, grab bool) error {
+	evtype int, win xproto.Window, keyStr string, grab, reconnect bool) error {
 
 	// Get the mods/key first
-	mods, keycode, err := ParseString(xu, keyStr)
+	mods, keycodes, err := ParseString(xu, keyStr)
 	if err != nil {
 		return err
 	}
 
 	// Only do the grab if we haven't yet on this window.
-	if grab && keyBindGrabs(xu, evtype, win, mods, keycode) == 0 {
-		err := GrabChecked(xu, win, mods, keycode)
-		if err != nil {
-			// If a bad access, let's be nice and give a good error message.
-			switch err.(type) {
-			case xproto.AccessError:
-				return fmt.Errorf("Got a bad access error when trying to bind "+
-					"'%s'. This usually means another client has already "+
-					"grabbed this keybinding.", keyStr)
-			default:
-				return fmt.Errorf("Could not bind '%s' because: %s",
-					keyStr, err)
+	for _, keycode := range keycodes {
+		if grab && keyBindGrabs(xu, evtype, win, mods, keycode) == 0 {
+			if err := GrabChecked(xu, win, mods, keycode); err != nil {
+				// If a bad access, let's be nice and give a good error message.
+				switch err.(type) {
+				case xproto.AccessError:
+					return fmt.Errorf("Got a bad access error when trying to "+
+						"bind '%s'. This usually means another client has "+
+						"already grabbed this keybinding.", keyStr)
+				default:
+					return fmt.Errorf("Could not bind '%s' because: %s",
+						keyStr, err)
+				}
 			}
 		}
+
+		// If we've never grabbed anything on this window before, we need to
+		// make sure we can respond to it in the main event loop.
+		// Never do this if we're reconnecting.
+		if !reconnect {
+			var allCb xgbutil.Callback
+			if evtype == xevent.KeyPress {
+				allCb = xevent.KeyPressFun(runKeyPressCallbacks)
+			} else {
+				allCb = xevent.KeyReleaseFun(runKeyReleaseCallbacks)
+			}
+
+			// If this is the first Key{Press|Release}Event on this window,
+			// then we need to listen to Key{Press|Release} events in the main
+			// loop.
+			if !connectedKeyBind(xu, evtype, win) {
+				allCb.Connect(xu, win)
+			}
+		}
+
+		// Finally, attach the callback.
+		attachKeyBindCallback(xu, evtype, win, mods, keycode, callback)
 	}
 
-	// If we've never grabbed anything on this window before, we need to
-	// make sure we can respond to it in the main event loop.
-	var allCb xgbutil.Callback
-	if evtype == xevent.KeyPress {
-		allCb = xevent.KeyPressFun(runKeyPressCallbacks)
-	} else {
-		allCb = xevent.KeyReleaseFun(runKeyReleaseCallbacks)
-	}
-
-	// If this is the first Key{Press|Release}Event on this window,
-	// then we need to listen to Key{Press|Release} events in the main loop.
-	if !connectedKeyBind(xu, evtype, win) {
-		allCb.Connect(xu, win)
-	}
-
-	// Finally, attach the callback.
-	attachKeyBindCallback(xu, evtype, win, mods, keycode, callback)
+	// Keep track of all unique (evtype, key string).
+	addKeyString(xu, callback, evtype, win, keyStr, grab)
 
 	return nil
 }
@@ -80,7 +88,7 @@ type KeyPressFun xevent.KeyPressFun
 func (callback KeyPressFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
 	keyStr string, grab bool) error {
 
-	return connect(xu, callback, xevent.KeyPress, win, keyStr, grab)
+	return connect(xu, callback, xevent.KeyPress, win, keyStr, grab, false)
 }
 
 func (callback KeyPressFun) Run(xu *xgbutil.XUtil, event interface{}) {
@@ -94,7 +102,7 @@ type KeyReleaseFun xevent.KeyReleaseFun
 func (callback KeyReleaseFun) Connect(xu *xgbutil.XUtil, win xproto.Window,
 	keyStr string, grab bool) error {
 
-	return connect(xu, callback, xevent.KeyRelease, win, keyStr, grab)
+	return connect(xu, callback, xevent.KeyRelease, win, keyStr, grab, false)
 }
 
 func (callback KeyReleaseFun) Run(xu *xgbutil.XUtil, event interface{}) {

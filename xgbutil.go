@@ -113,6 +113,11 @@ type XUtil struct {
 	// It is exported for use in the keybind package. Do not access it directly.
 	Keygrabs map[KeyKey]int
 
+	// Keystrings is a list of all key strings used to connect keybindings.
+	// They are used to rebuild key grabs when the keyboard mapping is updated.
+	// It is exported for use in the keybind package. Do not access it directly.
+	Keystrings []KeyString
+
 	// Mousebinds is the data structure storing all callbacks for mouse
 	// bindings.This is extremely similar to the general notion of event
 	// callbacks,but adds extra support to make handling mouse bindings easier.
@@ -209,6 +214,7 @@ func NewConnDisplay(display string) (*XUtil, error) {
 		Keybinds:         make(map[KeyKey][]CallbackKey, 10),
 		KeybindsLck:      &sync.RWMutex{},
 		Keygrabs:         make(map[KeyKey]int, 10),
+		Keystrings:       make([]KeyString, 0, 10),
 		Mousebinds:       make(map[MouseKey][]CallbackMouse, 10),
 		MousebindsLck:    &sync.RWMutex{},
 		Mousegrabs:       make(map[MouseKey]int, 10),

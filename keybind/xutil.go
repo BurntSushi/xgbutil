@@ -10,6 +10,8 @@ would become cluttered with functions that should not be used.
 */
 
 import (
+	"strings"
+
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
@@ -36,8 +38,31 @@ func attachKeyBindCallback(xu *xgbutil.XUtil, evtype int, win xproto.Window,
 	xu.Keygrabs[key] += 1
 }
 
+// addKeyString adds a new key binding string to XUtil.Keystrings.
+// The invariant is that each key string appears once and only once.
+func addKeyString(xu *xgbutil.XUtil, callback xgbutil.CallbackKey,
+	evtype int, win xproto.Window, keyStr string, grab bool) {
+
+	xu.KeybindsLck.Lock()
+	defer xu.KeybindsLck.Unlock()
+
+	keyStrLower := strings.ToLower(keyStr)
+	for _, s := range xu.Keystrings {
+		if strings.ToLower(s.Str) == keyStrLower && s.Evtype == evtype {
+			return
+		}
+	}
+	k := xgbutil.KeyString{
+		Str:      keyStr,
+		Callback: callback,
+		Evtype:   evtype,
+		Win:      win,
+		Grab:     grab,
+	}
+	xu.Keystrings = append(xu.Keystrings, k)
+}
+
 // keyBindKeys returns a copy of all the keys in the 'keybinds' map.
-// This is exported for use in the keybind package. It should not be used.
 func keyKeys(xu *xgbutil.XUtil) []xgbutil.KeyKey {
 	xu.KeybindsLck.RLock()
 	defer xu.KeybindsLck.RUnlock()
@@ -49,33 +74,6 @@ func keyKeys(xu *xgbutil.XUtil) []xgbutil.KeyKey {
 		i++
 	}
 	return keys
-}
-
-// updateKeyBindKey takes a key bind key and a new key code.
-// It will then remove the old key from keybinds and keygrabs,
-// and add the new key with the old key's data into keybinds and keygrabs.
-// Its primary purpose is to facilitate the renewal of state when xgbutil
-// receives a new keyboard mapping.
-// This is exported for use in the keybind package. It should not be used.
-func updateKeyBindKey(xu *xgbutil.XUtil, key xgbutil.KeyKey,
-	newKc xproto.Keycode) {
-
-	xu.KeybindsLck.Lock()
-	defer xu.KeybindsLck.Unlock()
-
-	newKey := xgbutil.KeyKey{key.Evtype, key.Win, key.Mod, newKc}
-
-	// Save old info
-	oldCallbacks := xu.Keybinds[key]
-	oldGrabs := xu.Keygrabs[key]
-
-	// Delete old keys
-	delete(xu.Keybinds, key)
-	delete(xu.Keygrabs, key)
-
-	// Add new keys with old info
-	xu.Keybinds[newKey] = oldCallbacks
-	xu.Keygrabs[newKey] = oldGrabs
 }
 
 // runKeyBindCallbacks executes every callback corresponding to a

@@ -82,6 +82,17 @@ type KeyKey struct {
 	Code   xproto.Keycode
 }
 
+// KeyString is the type of a key binding string used to connect to particular
+// key combinations. A list of all such key strings is maintained in order to
+// rebind keys when the keyboard mapping has been changed.
+type KeyString struct {
+	Str      string
+	Callback CallbackKey
+	Evtype   int
+	Win      xproto.Window
+	Grab     bool
+}
+
 // MouseKey is the type of the key in the map of mouse bindings.
 // It essentially represents the tuple
 // (event type, window id, modifier, button).

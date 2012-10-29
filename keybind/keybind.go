@@ -42,82 +42,51 @@ func Initialize(xu *xgbutil.XUtil) {
 func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 	keyMap, modMap := MapsGet(xu)
 
-	// Hold up... If this is MappingKeyboard, then we may have some keycode
-	// changes. This is GROSS. We basically need to go through each keycode
-	// in the map, look up the keysym using the new map and use that keysym
-	// to look up the keycode in our current map. If the current keycode
-	// does not equal the old keycode, then we log the change in a map of
-	// old keycode -> new keycode.
-	// Once the map is constructed, we look through all of our keybindings
-	// and updated appropriately. *puke*
-	// I am only somewhat confident that this is correct.
+	// So we used to go through the old mapping and the new mapping and pick
+	// out precisely where there are changes. But after allowing for a
+	// one-to-many mapping from keysym to keycodes, this process became too
+	// complex. So we're going to bust out our hammer and rebind everything
+	// based on the initial key strings.
 	if e.Request == xproto.MappingKeyboard {
-		changes := make(map[xproto.Keycode]xproto.Keycode, 0)
-		xuKeyMap := &xgbutil.KeyboardMapping{keyMap}
-
-		min, max := minMaxKeycodeGet(xu)
-
-		// let's not do too much allocation in our loop, shall we?
-		var newSym, oldSym xproto.Keysym
-		var oldKc xproto.Keycode
-		var column byte
-
-		// wrap 'int(..)' around bytes min and max to avoid overflow. Hideous.
-		for newKc := int(min); newKc <= int(max); newKc++ {
-			for column = 0; byte(column) < keyMap.KeysymsPerKeycode; column++ {
-				// use new key map
-				newSym = KeysymGetWithMap(xu, xuKeyMap, xproto.Keycode(newKc),
-					column)
-
-				// uses old key map
-				oldKc = keycodeGet(xu, newSym)
-				oldSym = KeysymGet(xu, xproto.Keycode(newKc), column)
-
-				// If the old and new keysyms are the same, ignore!
-				// Also ignore if either keysym is VoidSymbol
-				if oldSym == newSym || oldSym == 0 || newSym == 0 {
-					continue
-				}
-
-				// these should match if there are NO changes
-				if oldKc != xproto.Keycode(newKc) {
-					changes[oldKc] = xproto.Keycode(newKc)
-				}
-			}
-		}
-
-		// Now use 'changes' to do some regrabbing
-		// Loop through all key bindings and check if we have any affected
-		// key codes. (Note that each key binding may be associated with
-		// multiple callbacks.)
 		// We must ungrab everything first, in case two keys are being swapped.
-		for _, key := range keyKeys(xu) {
-			if _, ok := changes[key.Code]; ok {
-				Ungrab(xu, key.Win, key.Mod, key.Code)
+		keys := keyKeys(xu)
+		for _, key := range keys {
+			Ungrab(xu, key.Win, key.Mod, key.Code)
+			detach(xu, key.Evtype, key.Win)
+		}
+
+		// Wipe the slate clean.
+		xu.KeybindsLck.Lock()
+		xu.Keybinds = make(map[xgbutil.KeyKey][]xgbutil.CallbackKey, len(keys))
+		xu.Keygrabs = make(map[xgbutil.KeyKey]int, len(keys))
+		keyStrs := xu.Keystrings
+		xu.KeybindsLck.Unlock()
+
+		// Update our mappings before rebinding.
+		KeyMapSet(xu, keyMap)
+		ModMapSet(xu, modMap)
+
+		// Now rebind everything in Keystrings
+		for _, ks := range keyStrs {
+			err := connect(xu,
+				ks.Callback, ks.Evtype, ks.Win, ks.Str, ks.Grab, true)
+			if err != nil {
+				xgbutil.Logger.Println(err)
 			}
 		}
-		// Okay, now grab.
-		for _, key := range keyKeys(xu) {
-			if newKc, ok := changes[key.Code]; ok {
-				Grab(xu, key.Win, key.Mod, newKc)
-				updateKeyBindKey(xu, key, newKc)
-			}
-		}
+	} else {
+		// We don't have to do something with MappingModifier like we do with
+		// MappingKeyboard. This is due to us requiring that key strings use
+		// modifier names built into X. (i.e., the names seen in the output of
+		// `xmodmap`.) This means that the modifier mappings happen on the X 
+		// server side, so we don't *typically* have to care what key is 
+		// actually being pressed to trigger a modifier. (There are some 
+		// exceptional cases, and when that happens, we simply query on-demand 
+		// which keys are modifiers. See the RunKey{Press,Release}Callbacks 
+		// functions in keybind/callback.go for the deets.)
+		KeyMapSet(xu, keyMap)
+		ModMapSet(xu, modMap)
 	}
-
-	// We don't have to do something with MappingModifier like we do with
-	// MappingKeyboard. This is due to us requiring that key strings use
-	// modifier names built into X. (i.e., the names seen in the output of
-	// `xmodmap`.) This means that the modifier mappings happen on the X server
-	// side, so we don't *typically* have to care what key is actually being
-	// pressed to trigger a modifier. (There are some exceptional cases, and
-	// when that happens, we simply query on-demand which keys are modifiers.
-	// See the RunKey{Press,Release}Callbacks functions in keybind/callback.go
-	// for the deets.)
-
-	// Finally update our view of the mappings.
-	KeyMapSet(xu, keyMap)
-	ModMapSet(xu, modMap)
 }
 
 // minMaxKeycodeGet a simple accessor to the X setup info to return the
@@ -160,8 +129,10 @@ func MapsGet(xu *xgbutil.XUtil) (*xproto.GetKeyboardMappingReply,
 // Valid values of KEY should include almost anything returned by pressing
 // keys with the 'xev' program. Alternatively, you may reference the keys
 // of the 'keysyms' map defined in keybind/keysymdef.go.
-func ParseString(xu *xgbutil.XUtil, s string) (uint16, xproto.Keycode, error) {
-	mods, kc := uint16(0), xproto.Keycode(0)
+func ParseString(
+	xu *xgbutil.XUtil, s string) (uint16, []xproto.Keycode, error) {
+
+	mods, kcs := uint16(0), []xproto.Keycode{}
 	for _, part := range strings.Split(s, "-") {
 		switch strings.ToLower(part) {
 		case "shift":
@@ -183,23 +154,23 @@ func ParseString(xu *xgbutil.XUtil, s string) (uint16, xproto.Keycode, error) {
 		case "any":
 			mods |= xproto.ModMaskAny
 		default: // a key code!
-			if kc == 0 { // only accept the first keycode we see
-				kc = StrToKeycode(xu, part)
+			if len(kcs) == 0 { // only accept the first keycode we see
+				kcs = StrToKeycodes(xu, part)
 			}
 		}
 	}
 
-	if kc == 0 {
-		return 0, 0, fmt.Errorf("Could not find a valid keycode in the "+
+	if len(kcs) == 0 {
+		return 0, nil, fmt.Errorf("Could not find a valid keycode in the "+
 			"string '%s'. Key binding failed.", s)
 	}
 
-	return mods, kc, nil
+	return mods, kcs, nil
 }
 
-// StrToKeycode is a wrapper around keycodeGet meant to make our search
+// StrToKeycodes is a wrapper around keycodesGet meant to make our search
 // a bit more flexible if needed. (i.e., case-insensitive)
-func StrToKeycode(xu *xgbutil.XUtil, str string) xproto.Keycode {
+func StrToKeycodes(xu *xgbutil.XUtil, str string) []xproto.Keycode {
 	// Do some fancy case stuff before we give up.
 	sym, ok := keysyms[str]
 	if !ok {
@@ -215,9 +186,9 @@ func StrToKeycode(xu *xgbutil.XUtil, str string) xproto.Keycode {
 	// If we don't know what 'str' is, return 0.
 	// There will probably be a bad access. We should do better than that...
 	if !ok {
-		return xproto.Keycode(0)
+		return []xproto.Keycode{}
 	}
-	return keycodeGet(xu, sym)
+	return keycodesGet(xu, sym)
 }
 
 // keysymsPer gets the number of keysyms per keycode for the current key map.
@@ -225,9 +196,9 @@ func keysymsPer(xu *xgbutil.XUtil) int {
 	return int(KeyMapGet(xu).KeysymsPerKeycode)
 }
 
-// Given a keysym, find the keycode mapped to it in the current X environment.
+// Given a keysym, find all keycodes mapped to it in the current X environment.
 // keybind.Initialize MUST have been called before using this function.
-func keycodeGet(xu *xgbutil.XUtil, keysym xproto.Keysym) xproto.Keycode {
+func keycodesGet(xu *xgbutil.XUtil, keysym xproto.Keysym) []xproto.Keycode {
 	min, max := minMaxKeycodeGet(xu)
 	keyMap := KeyMapGet(xu)
 	if keyMap == nil {
@@ -236,14 +207,20 @@ func keycodeGet(xu *xgbutil.XUtil, keysym xproto.Keysym) xproto.Keycode {
 	}
 
 	var c byte
+	var keycode xproto.Keycode
+	keycodes := make([]xproto.Keycode, 0)
+	set := make(map[xproto.Keycode]bool, 0)
+
 	for kc := int(min); kc <= int(max); kc++ {
+		keycode = xproto.Keycode(kc)
 		for c = 0; c < keyMap.KeysymsPerKeycode; c++ {
-			if keysym == KeysymGet(xu, xproto.Keycode(kc), c) {
-				return xproto.Keycode(kc)
+			if keysym == KeysymGet(xu, keycode, c) && !set[keycode] {
+				keycodes = append(keycodes, keycode)
+				set[keycode] = true
 			}
 		}
 	}
-	return 0
+	return keycodes
 }
 
 // KeysymToStr converts a keysym to a string if one is available.
