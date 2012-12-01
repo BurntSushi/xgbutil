@@ -58,7 +58,6 @@ func newWindow(X *xgbutil.XUtil) {
 	win.Create(X.RootWin(), 0, 0, 200, 200,
 		xproto.CwBackPixel|xproto.CwEventMask,
 		uint32(bgColor), xproto.EventMaskButtonRelease)
-	win.Map()
 
 	// WMGracefulClose does all of the work for us. It sets the appropriate
 	// values for WM_PROTOCOLS, and listens for ClientMessages that implement
@@ -79,6 +78,10 @@ func newWindow(X *xgbutil.XUtil) {
 				os.Exit(0)
 			}
 		})
+
+	// It's important that the map comes after setting WMGracefulClose, since
+	// the WM isn't obliged to watch updates to the WM_PROTOCOLS property.
+	win.Map()
 
 	// A mouse binding so that a left click will spawn a new window.
 	// Note that we don't issue a grab here. Typically, window managers will
