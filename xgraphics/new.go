@@ -23,10 +23,10 @@ import (
 
 // NewConvert converts any image satisfying the image.Image interface to an
 // xgraphics.Image type.
-// NewConvert does not check if 'img' is an xgraphics.Image. Thus, NewConvert
-// provides a convenient mechanism for copying xgraphic.Image values.
+// If 'img' is an xgraphics.Image, it will be copied and a new image will
+// be returned.
 // Also, NewConvert attempts to optimize image conversion for some image
-// formats. (Currently, only *image.YCbCr and *image.RGBA.)
+// formats. (i.e., *image.RGBA.)
 func NewConvert(X *xgbutil.XUtil, img image.Image) *Image {
 	ximg := New(X, img.Bounds())
 
@@ -210,7 +210,7 @@ func NewDrawable(X *xgbutil.XUtil, did xproto.Drawable) (*Image, error) {
 func readDrawableData(X *xgbutil.XUtil, ximg *Image, did xproto.Drawable,
 	imgData *xproto.GetImageReply, width, height int) error {
 
-	format := getFormat(X, imgData.Depth)
+	format := GetFormat(X, imgData.Depth)
 	if format == nil {
 		return fmt.Errorf("Could not find valid format for pixmap %d "+
 			"with depth %d", did, imgData.Depth)
@@ -272,8 +272,8 @@ func readDrawableData(X *xgbutil.XUtil, ximg *Image, did xproto.Drawable,
 	return nil
 }
 
-// getFormat searches SetupInfo for a Format matching the depth provided.
-func getFormat(X *xgbutil.XUtil, depth byte) *xproto.Format {
+// GetFormat searches SetupInfo for a Format matching the depth provided.
+func GetFormat(X *xgbutil.XUtil, depth byte) *xproto.Format {
 	for _, pixForm := range X.Setup().PixmapFormats {
 		if pixForm.Depth == depth {
 			return &pixForm
@@ -301,67 +301,4 @@ func getVisualInfo(X *xgbutil.XUtil, depth byte,
 		}
 	}
 	return nil
-}
-
-// checkCompatibility reads info in the X setup info struct and emits
-// messages to stderr if they don't correspond to values that xgraphics
-// supports.
-// The idea is that in the future, we'll support more values.
-// The real reason for checkCompatibility is to make debugging easier. Without
-// it, if the values weren't what we'd expect, we'd see garbled images in the
-// best case, and probably BadLength errors in the worst case.
-func checkCompatibility(X *xgbutil.XUtil) {
-	s := X.Setup()
-	scrn := X.Screen()
-	lg := xgbutil.Logger
-	showInstructions := false
-
-	if s.ImageByteOrder != xproto.ImageOrderLSBFirst {
-		lg.Printf("Your X server uses MSB image byte order. Unfortunately, " +
-			"xgraphics currently requires LSB image byte order. You may see " +
-			"weird things. Please report this.")
-		showInstructions = true
-	}
-	if s.BitmapFormatBitOrder != xproto.ImageOrderLSBFirst {
-		lg.Printf("Your X server uses MSB bitmap bit order. Unfortunately, " +
-			"xgraphics currently requires LSB bitmap bit order. If you " +
-			"aren't using X bitmaps, you should be able to proceed normally. " +
-			"Please report this.")
-		showInstructions = true
-	}
-	if s.BitmapFormatScanlineUnit != 32 {
-		lg.Printf("xgraphics expects that the scanline unit is set to 32, but "+
-			"your X server has it set to '%d'. "+
-			"Namely, xgraphics hasn't been tested on other values. Things "+
-			"may still work. Particularly, if you aren't using X bitmaps, "+
-			"you should be completely unaffected. Please report this.",
-			s.BitmapFormatScanlineUnit)
-		showInstructions = true
-	}
-	if scrn.RootDepth != 24 {
-		lg.Printf("xgraphics expects that the root window has a depth of 24, "+
-			"but yours has depth '%d'. Its possible things will still work "+
-			"if your value is 32, but will be unlikely to work with values "+
-			"less than 24. Please report this.", scrn.RootDepth)
-		showInstructions = true
-	}
-
-	// Look for the default format for pixmaps and make sure bits per pixel
-	// is 32.
-	format := getFormat(X, scrn.RootDepth)
-	if format.BitsPerPixel != 32 {
-		lg.Printf("xgraphics expects that the bits per pixel for the root "+
-			"window depth is 32. On your system, the root depth is %d and "+
-			"the bits per pixel is %d. Things will most certainly not work. "+
-			"Please report this.",
-			scrn.RootDepth, format.BitsPerPixel)
-		showInstructions = true
-	}
-
-	// Give instructions on reporting the issue.
-	if showInstructions {
-		lg.Printf("Please report the aforementioned error message(s) at " +
-			"https://github.com/BurntSushi/xgbutil. Please also include the " +
-			"entire output of the `xdpyinfo` command in your report. Thanks!")
-	}
 }

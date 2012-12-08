@@ -86,11 +86,6 @@ func New(X *xgbutil.XUtil, r image.Rectangle) *Image {
 		}
 	}
 
-	// checkCompatibility inspects several X server configuration options for
-	// values that xgraphics expects. It emits informative errors to stderr
-	// when it sees something it doesn't expect.
-	checkCompatibility(X)
-
 	return &Image{
 		X:      X,
 		Pixmap: 0,
