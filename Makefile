@@ -4,6 +4,10 @@ install:
 	go install -p 6 . ./ewmh ./gopher ./icccm ./keybind ./motif ./mousebind \
 		./xcursor ./xevent ./xgraphics ./xinerama ./xprop ./xrect ./xwindow
 
+push:
+	git push origin master
+	git push github master
+
 build-ex:
 	find ./_examples/ -type d -wholename './_examples/[a-z]*' -print0 \
 		| xargs -0 go build -p 6
