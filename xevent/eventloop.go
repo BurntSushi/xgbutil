@@ -205,7 +205,7 @@ func processEventQueue(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 			runCallbacks(xu, e, VisibilityNotify, e.Window)
 		case xproto.CreateNotifyEvent:
 			e := CreateNotifyEvent{&event}
-			runCallbacks(xu, e, CreateNotify, e.Window)
+			runCallbacks(xu, e, CreateNotify, e.Parent)
 		case xproto.DestroyNotifyEvent:
 			e := DestroyNotifyEvent{&event}
 			runCallbacks(xu, e, DestroyNotify, e.Window)
