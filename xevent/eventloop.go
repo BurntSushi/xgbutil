@@ -214,7 +214,7 @@ func processEventQueue(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 			runCallbacks(xu, e, UnmapNotify, e.Window)
 		case xproto.MapNotifyEvent:
 			e := MapNotifyEvent{&event}
-			runCallbacks(xu, e, MapNotify, e.Window)
+			runCallbacks(xu, e, MapNotify, e.Event)
 		case xproto.MapRequestEvent:
 			e := MapRequestEvent{&event}
 			runCallbacks(xu, e, MapRequest, e.Window)
