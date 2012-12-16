@@ -6,8 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
-	"code.google.com/p/freetype-go/freetype"
-	"code.google.com/p/freetype-go/freetype/truetype"
+	"code.google.com/p/jamslam-freetype-go/freetype"
+	"code.google.com/p/jamslam-freetype-go/freetype/truetype"
 )
 
 // Text takes an image and, using the freetype package, writes text in the
@@ -39,8 +39,18 @@ func (im *Image) Text(x, y int, clr color.Color, fontSize float64,
 		return 0, 0, err
 	}
 
-	// i think this is right...
 	return int(newpt.X / 256), int(newpt.Y / 256), nil
+}
+
+// Extents returns the *correct* max width and height extents of a string
+// given a font. See freetype.MeasureString for the deets.
+func Extents(font *truetype.Font, fontSize float64, text string) (int, int) {
+	c := ftContext(font, fontSize)
+	w, h, err := c.MeasureString(text)
+	if err != nil {
+		return 0, 0
+	}
+	return int(w / 256), int(h / 256)
 }
 
 // Returns the max width and height extents of a string given a font.

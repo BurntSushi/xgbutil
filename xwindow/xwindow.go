@@ -116,7 +116,7 @@ func (w *Window) CreateChecked(parent xproto.Window, x, y, width, height,
 
 	s := w.X.Screen()
 	return xproto.CreateWindowChecked(w.X.Conn(),
-		xproto.WindowClassCopyFromParent, w.Id, parent,
+		s.RootDepth, w.Id, parent,
 		int16(x), int16(y), uint16(width), uint16(height), 0,
 		xproto.WindowClassInputOutput, s.RootVisual,
 		uint32(valueMask), valueList).Check()

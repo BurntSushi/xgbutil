@@ -56,25 +56,32 @@ func main() {
 		return bg
 	})
 
-	// Now write the text. The x,y returned is the position at the end of
-	// the text drawn.
-	_, y, err := ximg.Text(10, 10, fg, size, font, msg)
+	// Now write the text.
+	_, _, err = ximg.Text(10, 10, fg, size, font, msg)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Compute extents of first line of text.
+	firstw, firsth := xgraphics.Extents(font, size, msg)
 
 	// Now show the image in its own window.
 	win := ximg.XShowExtra("Drawing text using xgraphics", true)
 
 	// Now draw some more text below the above and demonstrate how to update
 	// only the region we've updated.
-	x2, y2, err := ximg.Text(10, y+10, fg, size, font, "Some more text.")
+	_, _, err = ximg.Text(10, 10+firsth, fg, size, font, "Some more text.")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Now compute extents of the second line of text, so we know which region
+	// to update.
+	secw, sech := xgraphics.Extents(font, size, "Some more text.")
+
 	// Now repaint on the region that we drew text on. Then update the screen.
-	ximg.SubImage(image.Rect(10, y+10, x2, y2)).XDraw()
+	bounds := image.Rect(10, 10+firsth, 10+secw, 10+firsth+sech)
+	ximg.SubImage(bounds).XDraw()
 	ximg.XPaint(win.Id)
 
 	// All we really need to do is block, which could be achieved using
