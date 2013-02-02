@@ -141,6 +141,14 @@ func processEventQueue(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 			xgbutil.Logger.Fatal("BUG: Expected an event but got nil.")
 		}
 
+		xu.HooksLck.RLock()
+		defer xu.HooksLck.RUnlock()
+		for _, hook := range xu.Hooks {
+			if !hook.Run(xu, ev) {
+				goto END
+			}
+		}
+
 		switch event := ev.(type) {
 		case xproto.KeyPressEvent:
 			e := KeyPressEvent{&event}
@@ -275,6 +283,8 @@ func processEventQueue(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 					event)
 			}
 		}
+
+	END:
 
 		if pingBefore != nil && pingAfter != nil {
 			pingAfter <- struct{}{}

@@ -71,6 +71,12 @@ type XUtil struct {
 	Callbacks    map[int]map[xproto.Window][]Callback
 	CallbacksLck *sync.RWMutex
 
+	// Hooks are called by the XEvent main loop before processing the event
+	// itself. These are meant for instances when it's not possible / easy
+	// to use the normal Hook system. You should not modify this yourself.
+	Hooks    []CallbackHook
+	HooksLck *sync.RWMutex
+
 	// eventTime is the last time recorded by an event. It is automatically
 	// updated if xgbutil's main event loop is used.
 	eventTime xproto.Timestamp
@@ -208,6 +214,8 @@ func NewConnDisplay(display string) (*XUtil, error) {
 		AtomNamesLck:     &sync.RWMutex{},
 		Callbacks:        make(map[int]map[xproto.Window][]Callback, 33),
 		CallbacksLck:     &sync.RWMutex{},
+		Hooks:            make([]CallbackHook, 0),
+		HooksLck:         &sync.RWMutex{},
 		Keymap:           nil, // we don't have anything yet
 		Modmap:           nil,
 		KeyRedirect:      0,

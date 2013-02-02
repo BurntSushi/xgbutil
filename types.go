@@ -39,6 +39,20 @@ type Callback interface {
 	Run(xu *XUtil, ev interface{})
 }
 
+// CallbackHook works similarly to the more general Callback, but it is
+// for hooks into the main xevent loop. As such it does not get attached
+// to a window.
+type CallbackHook interface {
+	// Connect connects this hook to the main loop of the passed XUtil
+	// instance.
+	Connect(xu *XUtil)
+
+	// Run is exported for use in the xevent package, but should not be
+	// used by the user.  It should return true if it's ok to process
+	// the event as usual, or false if it should be suppressed.
+	Run(xu *XUtil, ev interface{}) bool
+}
+
 // CallbackKey works similarly to the more general Callback, but it adds
 // parameters specific to key bindings.
 type CallbackKey interface {
@@ -49,7 +63,7 @@ type CallbackKey interface {
 
 	// Run is exported for use in the keybind package but should not be
 	// used by the user. (It is used to run the callback function in the
-	// main event loop.)
+	// main event loop.
 	Run(xu *XUtil, ev interface{})
 }
 
