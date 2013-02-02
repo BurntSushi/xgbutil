@@ -2,7 +2,7 @@
 Package keybind provides an easy to use interface to assign callback functions
 to human readable key sequences.
 
-Working with the X keyboard encoding is not an easy task, and the keybind 
+Working with the X keyboard encoding is not an easy task, and the keybind
 package attempts to encapsulate much of the complexity. Namely, the keybind
 package exports two function types: KeyPressFun and KeyReleaseFun. Values of
 these types are functions, and have a method called 'Connect' that attaches
@@ -44,30 +44,30 @@ shift---are pressed along with the 't' key.
 
 When to issue a passive grab
 
-One of the parameters of the 'Connect' method is whether to issue a passive 
+One of the parameters of the 'Connect' method is whether to issue a passive
 grab or not. A passive grab is useful when you need to respond to a key press
-on some parent window (like the root window) without actually focusing that 
-window. Not using a passive grab is useful when you only need to read key 
+on some parent window (like the root window) without actually focusing that
+window. Not using a passive grab is useful when you only need to read key
 presses when the window is focused.
 
 For more information on the semantics of passive grabs, please see
 http://tronche.com/gui/x/xlib/input/XGrabKey.html.
 
-Also, by default, when issuing a grab on a particular (modifiers, keycode) 
-tuple, several grabs are actually made. In particular, for each grab requested, 
+Also, by default, when issuing a grab on a particular (modifiers, keycode)
+tuple, several grabs are actually made. In particular, for each grab requested,
 another grab is made with the "num lock" mask, another grab is made with the
-"caps lock" mask, and another grab is made with both the "num lock" and "caps 
+"caps lock" mask, and another grab is made with both the "num lock" and "caps
 locks" masks. This allows key events to be reported regardless of whether
 caps lock or num lock is enabled.
 
-The extra masks added can be modified by changing the xevent.IgnoreMods slice. 
-If you modify xevent.IgnoreMods, it should be modified once on program startup 
-(i.e., before any key or mouse bindings are established) and never modified 
+The extra masks added can be modified by changing the xevent.IgnoreMods slice.
+If you modify xevent.IgnoreMods, it should be modified once on program startup
+(i.e., before any key or mouse bindings are established) and never modified
 again.
 
 Key bindings on the root window example
 
-To run a particular function whenever the 'Mod4-Control-Shift-t' key 
+To run a particular function whenever the 'Mod4-Control-Shift-t' key
 combination is pressed (mod4 is typically the 'super' or 'windows' key, but can
 vary based on your system), use something like:
 
@@ -83,8 +83,8 @@ window will only be reported when the root window has focus if no grab exists.
 
 Key bindings on a window you create example
 
-This code snippet attaches an event handler to some window you've created 
-without using a grab. Thus, the function will only be activated when the key 
+This code snippet attaches an event handler to some window you've created
+without using a grab. Thus, the function will only be activated when the key
 sequence is pressed and your window has focus.
 
 	keybind.Initialize(XUtilValue) // call once before using keybind package
@@ -95,10 +95,10 @@ sequence is pressed and your window has focus.
 
 Run a function on all key press events example
 
-This code snippet actually does *not* use the keybind package, but illustrates 
-how the Key{Press,Release} event handlers in the xevent package can still be 
-useful. Namely, the keybind package discriminates among events depending upon 
-the key sequences pressed, whereas the xevent package is more general: it can 
+This code snippet actually does *not* use the keybind package, but illustrates
+how the Key{Press,Release} event handlers in the xevent package can still be
+useful. Namely, the keybind package discriminates among events depending upon
+the key sequences pressed, whereas the xevent package is more general: it can
 only discriminate at the event level.
 
 	xevent.KeyPressFun(
@@ -106,12 +106,12 @@ only discriminate at the event level.
 			// do something when any key is pressed
 		}).Connect(XUtilValue, your-window-id)
 
-This is the kind of handler you might use to capture all key press events. 
-(i.e., if you have a text box for a user to type in.) Additionally, if you're 
-using this sort of event handler, keybind.LookupString will probably be of some 
-use. Its contract is that given a (modifiers, keycode) tuple 
-(information found in all Key{Press,Release} events) it will return a string 
-representation of the key pressed. We can modify the above example slightly to 
+This is the kind of handler you might use to capture all key press events.
+(i.e., if you have a text box for a user to type in.) Additionally, if you're
+using this sort of event handler, keybind.LookupString will probably be of some
+use. Its contract is that given a (modifiers, keycode) tuple
+(information found in all Key{Press,Release} events) it will return a string
+representation of the key pressed. We can modify the above example slightly to
 echo the key pressed:
 
 	xevent.KeyPressFun(
@@ -122,7 +122,7 @@ echo the key pressed:
 
 More examples
 
-Complete working examples can be found in the examples directory of xgbutil. Of 
+Complete working examples can be found in the examples directory of xgbutil. Of
 particular interest are probably 'keypress-english' and 'simple-keybinding'.
 
 */

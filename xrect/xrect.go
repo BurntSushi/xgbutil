@@ -149,10 +149,10 @@ func IntersectArea(r1 Rect, r2 Rect) int {
 	return 0
 }
 
-// LargestOverlap returns the index of the rectangle in 'haystack' that has the 
+// LargestOverlap returns the index of the rectangle in 'haystack' that has the
 // largest overlap with the rectangle 'needle'.
-// This is commonly used to find which monitor a window should belong on. 
-// (Since it can technically be partially displayed on more than one monitor 
+// This is commonly used to find which monitor a window should belong on.
+// (Since it can technically be partially displayed on more than one monitor
 // at a time.)
 // Be careful, the return value can be -1 if there is no overlap.
 func LargestOverlap(needle Rect, haystack []Rect) int {
@@ -178,7 +178,7 @@ func LargestOverlap(needle Rect, haystack []Rect) int {
 // Note that if struts overlap, the *most restrictive* one is used. This seems
 // like the most sensible response to a weird scenario.
 // (If you don't have a partial strut, just use '0' for the extra fields.)
-// See xgbutil/examples/workarea-struts for an example of how to use this to 
+// See xgbutil/examples/workarea-struts for an example of how to use this to
 // get accurate workarea for each physical head.
 func ApplyStrut(rects []Rect, rootWidth, rootHeight uint,
 	left, right, top, bottom,

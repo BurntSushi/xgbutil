@@ -34,10 +34,10 @@ func main() {
 	ximg.XShowExtra("Screenshot", true)
 
 	// If you'd like to save it as a png, use:
-	// err = ximg.SavePng("screenshot.png") 
-	// if err != nil { 
-	// log.Fatal(err) 
-	// } 
+	// err = ximg.SavePng("screenshot.png")
+	// if err != nil {
+	// log.Fatal(err)
+	// }
 
 	xevent.Main(X)
 }

@@ -147,9 +147,9 @@ func Ungrab(xu *xgbutil.XUtil, win xproto.Window, mods uint16,
 }
 
 // GrabPointer grabs the entire pointer.
-// Returns whether GrabStatus is successful and an error if one is reported by 
+// Returns whether GrabStatus is successful and an error if one is reported by
 // XGB. It is possible to not get an error and the grab to be unsuccessful.
-// The purpose of 'win' is that after a grab is successful, ALL Button*Events 
+// The purpose of 'win' is that after a grab is successful, ALL Button*Events
 // will be sent to that window. Make sure you have a callback attached :-)
 func GrabPointer(xu *xgbutil.XUtil, win xproto.Window, confine xproto.Window,
 	cursor xproto.Cursor) (bool, error) {

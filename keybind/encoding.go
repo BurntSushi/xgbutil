@@ -70,7 +70,7 @@ func ModifierString(mods uint16) string {
 }
 
 // KeyMatch returns true if a string representation of a key can
-// be matched (case insensitive) to the (modifiers, keycode) tuple provided. 
+// be matched (case insensitive) to the (modifiers, keycode) tuple provided.
 // String representations can be found in keybind/keysymdef.go
 func KeyMatch(xu *xgbutil.XUtil,
 	keyStr string, mods uint16, keycode xproto.Keycode) bool {

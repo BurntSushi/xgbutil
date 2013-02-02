@@ -129,7 +129,7 @@ func FreePixmap(X *xgbutil.XUtil, pixid xproto.Pixmap) {
 // FindIcon takes a window id and attempts to return an xgraphics.Image of
 // that window's icon.
 // It will first try to look for an icon in _NET_WM_ICON that is closest to
-// the size specified. 
+// the size specified.
 // If there are no icons in _NET_WM_ICON, then WM_HINTS will be checked for
 // an icon.
 // If an icon is found from either one and doesn't match the size

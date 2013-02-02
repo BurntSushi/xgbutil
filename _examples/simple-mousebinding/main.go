@@ -44,8 +44,8 @@ func main() {
 	// See the documentation for the Connect method for more details.
 	err = cb1.Connect(X, X.RootWin(), "Mod4-1", false, true)
 
-	// A mouse binding can fail if the mouse string could not be parsed, or if 
-	// you're trying to bind a button that has already been grabbed by another 
+	// A mouse binding can fail if the mouse string could not be parsed, or if
+	// you're trying to bind a button that has already been grabbed by another
 	// client.
 	if err != nil {
 		log.Fatal(err)

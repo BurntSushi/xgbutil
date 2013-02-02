@@ -239,9 +239,9 @@ func main() {
 
 // midRect takes an (x, y) position where the pointer was clicked, along with
 // the width and height of the thing being drawn and the width and height of
-// the canvas, and returns a Rectangle whose midpoint (roughly) is (x, y) and 
-// whose width and height match the parameters when the rectangle doesn't 
-// extend past the border of the canvas. Make sure to check if the rectange is 
+// the canvas, and returns a Rectangle whose midpoint (roughly) is (x, y) and
+// whose width and height match the parameters when the rectangle doesn't
+// extend past the border of the canvas. Make sure to check if the rectange is
 // empty or not before using it!
 func midRect(x, y, width, height, canWidth, canHeight int) image.Rectangle {
 	return image.Rect(

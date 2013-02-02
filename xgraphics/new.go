@@ -290,7 +290,7 @@ func getVisualInfo(X *xgbutil.XUtil, depth byte,
 
 	for _, depthInfo := range X.Screen().AllowedDepths {
 		fmt.Printf("%#v\n", depthInfo)
-		// fmt.Printf("%#v\n", depthInfo.Visuals) 
+		// fmt.Printf("%#v\n", depthInfo.Visuals)
 		fmt.Println("------------")
 		if depthInfo.Depth == depth {
 			for _, visual := range depthInfo.Visuals {

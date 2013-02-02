@@ -12,7 +12,7 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 )
 
-// Callback is an interface that should be implemented by event callback 
+// Callback is an interface that should be implemented by event callback
 // functions. Namely, to assign a function to a particular event/window
 // combination, simply define a function with type 'SomeEventFun' (pre-defined
 // in xevent/callback.go), and call the 'Connect' method.

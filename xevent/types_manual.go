@@ -13,7 +13,7 @@ type ClientMessageEvent struct {
 
 const ClientMessage = xproto.ClientMessage
 
-// NewClientMessage takes all arguments required to build a ClientMessageEvent 
+// NewClientMessage takes all arguments required to build a ClientMessageEvent
 // struct and hides the messy details.
 // The variadic parameters coincide with the "data" part of a client message.
 // The type of the variadic parameters depends upon the value of Format.
@@ -76,7 +76,7 @@ type ConfigureNotifyEvent struct {
 
 const ConfigureNotify = xproto.ConfigureNotify
 
-// NewConfigureNotify takes all arguments required to build a 
+// NewConfigureNotify takes all arguments required to build a
 // ConfigureNotifyEvent struct and returns a ConfigureNotifyEvent value.
 func NewConfigureNotify(Event, Window, AboveSibling xproto.Window,
 	X, Y, Width, Height int, BorderWidth uint16,

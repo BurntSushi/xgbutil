@@ -78,11 +78,11 @@ func updateMaps(xu *xgbutil.XUtil, e xevent.MappingNotifyEvent) {
 		// We don't have to do something with MappingModifier like we do with
 		// MappingKeyboard. This is due to us requiring that key strings use
 		// modifier names built into X. (i.e., the names seen in the output of
-		// `xmodmap`.) This means that the modifier mappings happen on the X 
-		// server side, so we don't *typically* have to care what key is 
-		// actually being pressed to trigger a modifier. (There are some 
-		// exceptional cases, and when that happens, we simply query on-demand 
-		// which keys are modifiers. See the RunKey{Press,Release}Callbacks 
+		// `xmodmap`.) This means that the modifier mappings happen on the X
+		// server side, so we don't *typically* have to care what key is
+		// actually being pressed to trigger a modifier. (There are some
+		// exceptional cases, and when that happens, we simply query on-demand
+		// which keys are modifiers. See the RunKey{Press,Release}Callbacks
 		// functions in keybind/callback.go for the deets.)
 		KeyMapSet(xu, keyMap)
 		ModMapSet(xu, modMap)
@@ -125,7 +125,7 @@ func MapsGet(xu *xgbutil.XUtil) (*xproto.GetKeyboardMappingReply,
 // ParseString takes a string of the format '[Mod[-Mod[...]]]-KEY',
 // i.e., 'Mod4-j', and returns a modifiers/keycode combo.
 // An error is returned if the string is malformed, or if no valid KEY can
-// be found. 
+// be found.
 // Valid values of KEY should include almost anything returned by pressing
 // keys with the 'xev' program. Alternatively, you may reference the keys
 // of the 'keysyms' map defined in keybind/keysymdef.go.
@@ -317,7 +317,7 @@ func Ungrab(xu *xgbutil.XUtil, win xproto.Window,
 }
 
 // GrabKeyboard grabs the entire keyboard.
-// Returns whether GrabStatus is successful and an error if one is reported by 
+// Returns whether GrabStatus is successful and an error if one is reported by
 // XGB. It is possible to not get an error and the grab to be unsuccessful.
 // The purpose of 'win' is that after a grab is successful, ALL Key*Events will
 // be sent to that window. Make sure you have a callback attached :-)

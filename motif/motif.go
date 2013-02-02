@@ -4,7 +4,7 @@ properties.
 
 The main purpose here is that some applications communicate "no window
 decorations" to the window manager using _MOTIF_WM_HINTS. (Like Google
-Chrome.) I haven't seen Motif stuff used for other purposes in the wild for 
+Chrome.) I haven't seen Motif stuff used for other purposes in the wild for
 a long time.
 
 As a result, only the useful bits are implemented here. More may be added

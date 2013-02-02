@@ -49,7 +49,7 @@ func (im *Image) XSurfaceSet(wid xproto.Window) error {
 }
 
 // CreatePixmap allocates an X resource identifier for a pixmap. (It does not
-// do any drawing.) You only need to call this if you're using XDraw/XExpPaint. 
+// do any drawing.) You only need to call this if you're using XDraw/XExpPaint.
 // If you're using XSurfaceSet/XDraw/XPaint, then CreatePixmap is called for
 // you automatically.
 func (im *Image) CreatePixmap() error {
@@ -160,8 +160,8 @@ func (im *Image) xdraw(checked bool) error {
 	// X's max request size (by default) is (2^16) * 4 = 262144 bytes, which
 	// corresponds precisely to a 256x256 sized image with 32 bits per pixel.
 	// Thus, we check the size of the image data and calculate the number of
-	// rows of the image we'll send in each request. If a single row of an 
-	// image exceeds the max request length, we're in trouble.  N.B. The 
+	// rows of the image we'll send in each request. If a single row of an
+	// image exceeds the max request length, we're in trouble.  N.B. The
 	// constant 28 comes from the fixed size part of a PutImage request.
 	rowsPer := (xgbutil.MaxReqSize - 28) / (width * 4)
 	bytesPer := rowsPer * width * 4

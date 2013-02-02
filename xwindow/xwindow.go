@@ -49,9 +49,9 @@ func Generate(xu *xgbutil.XUtil) (*Window, error) {
 	return New(xu, wid), nil
 }
 
-// Create is a convenience constructor that will generate a new window id (with 
-// the Generate constructor) and make a bare-bones call to CreateChecked (with 
-// geometry (0, 0) 1x1). An error can be generated from Generate or 
+// Create is a convenience constructor that will generate a new window id (with
+// the Generate constructor) and make a bare-bones call to CreateChecked (with
+// geometry (0, 0) 1x1). An error can be generated from Generate or
 // CreateChecked.
 func Create(xu *xgbutil.XUtil, parent xproto.Window) (*Window, error) {
 	win, err := Generate(xu)
@@ -176,7 +176,7 @@ func RootGeometry(xu *xgbutil.XUtil) xrect.Rect {
 
 // Configure issues a raw Configure request with the parameters given and
 // updates the geometry of the window.
-// This should probably only be used when passing along ConfigureNotify events 
+// This should probably only be used when passing along ConfigureNotify events
 // (from the perspective of the window manager). In other cases, one should
 // opt for [WM][Move][Resize] or Stack[Sibling].
 func (win *Window) Configure(flags, x, y, w, h int,
@@ -218,7 +218,7 @@ func (win *Window) Configure(flags, x, y, w, h int,
 
 // MROpt is like MoveResize, but exposes the X value mask so that any
 // combination of x/y/width/height can be set. It's a strictly convenience
-// function. (i.e., when you need to set 'y' and 'height' but not 'x' or 
+// function. (i.e., when you need to set 'y' and 'height' but not 'x' or
 // 'width'.)
 func (w *Window) MROpt(flags, x, y, width, height int) {
 	// Make sure only x/y/width/height are used.

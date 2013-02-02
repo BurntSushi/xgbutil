@@ -17,7 +17,7 @@ var Logger = log.New(os.Stderr, "[xgbutil] ", log.Lshortfile)
 // BigReq, but it probably isn't worth it at the moment.
 const MaxReqSize = (1 << 16) * 4
 
-// An XUtil represents the state of xgbutil. It keeps track of the current 
+// An XUtil represents the state of xgbutil. It keeps track of the current
 // X connection, the root window, event callbacks, key/mouse bindings, etc.
 // Regrettably, many of the members are exported, even though they should not
 // be used directly by the user. They are exported for use in sub-packages.

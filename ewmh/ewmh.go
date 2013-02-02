@@ -999,7 +999,7 @@ func WmSyncRequestExtra(xu *xgbutil.XUtil, win xproto.Window, reqNum uint64,
 		low, high)
 }
 
-// _NET_WM_SYNC_REQUEST_COUNTER get 
+// _NET_WM_SYNC_REQUEST_COUNTER get
 // I'm pretty sure this needs 64 bit integers, but I'm not quite sure
 // how to go about that yet. Any ideas?
 func WmSyncRequestCounter(xu *xgbutil.XUtil, win xproto.Window) (uint, error) {

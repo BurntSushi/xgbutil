@@ -135,7 +135,7 @@ func paintGradient(X *xgbutil.XUtil, wid xproto.Window, width, height int,
 // at which ConfigureNotify events are sent to us, thereby creating a "lag".
 // Compression works by examining the "future" of the event queue, and skipping
 // ahead to the most recent ConfigureNotify event and throwing away the rest.
-// 
+//
 // A more detailed treatment of event compression can be found in
 // xgbutil/examples/compress-events.
 func compressConfigureNotify(X *xgbutil.XUtil,

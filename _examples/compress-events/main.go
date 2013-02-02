@@ -9,8 +9,8 @@ MotionNotify events by displaying two windows that listen for MotionNotify
 events. The green window compresses them while the red window does not.
 Hovering over each window will print the x and y positions in each
 MotionNotify event received. You should notice that the red window
-lags behind the pointer (particularly if you moved the pointer quickly in 
-and out of the window) while the green window always keeps up, regardless 
+lags behind the pointer (particularly if you moved the pointer quickly in
+and out of the window) while the green window always keeps up, regardless
 of the speed of the pointer.
 
 In each case, we simulate work by sleeping for some amount of time. (The
@@ -33,8 +33,8 @@ compressed events in the usual way.)
 N.B. This functionality isn't included in xgbutil because event compression
 isn't something that is always desirable, and the conditions under which
 compression happens can vary. In particular, compressing ConfigureRequest
-events from the perspective of the window manager can be faulty, since 
-changes to other properties (like WM_NORMAL_HINTS) can change the semantics 
+events from the perspective of the window manager can be faulty, since
+changes to other properties (like WM_NORMAL_HINTS) can change the semantics
 of a ConfigureRequest event. (i.e., your compression would need to
 specifically look for events that could change future ConfigureRequest
 events.)
@@ -83,7 +83,7 @@ func newWindow(X *xgbutil.XUtil, color uint32) *xwindow.Window {
 // queue for any future MotionNotify events that can be received without
 // blocking. The most recent MotionNotify event is then returned.
 // Note that we need to make sure that the Event, Child, Detail, State, Root
-// and SameScreen fields are the same to ensure the same window/action is 
+// and SameScreen fields are the same to ensure the same window/action is
 // generating events. That is, we are only compressing the RootX, RootY,
 // EventX and EventY fields.
 // This function is not thread safe, since Peek returns a *copy* of the

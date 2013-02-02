@@ -44,7 +44,7 @@ func Read(xu *xgbutil.XUtil, block bool) {
 }
 
 // Main starts the main X event loop. It will read events and call appropriate
-// callback functions. 
+// callback functions.
 // N.B. If you have multiple X connections in the same program, you should be
 // able to run this in different goroutines concurrently. However, only
 // *one* of these should run for *each* connection.

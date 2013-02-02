@@ -8,7 +8,7 @@ import (
 )
 
 // Drag is the public interface that will make the appropriate connections
-// to register a drag event for three functions: the begin function, the 
+// to register a drag event for three functions: the begin function, the
 // step function and the end function.
 // The 'grabwin' is the window that the grab is placed on (and therefore the
 // window where all button events are redirected to after the drag has started),
