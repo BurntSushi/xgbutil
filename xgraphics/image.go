@@ -189,7 +189,7 @@ func (im *Image) SetBGRA(x, y int, c BGRA) {
 func (im *Image) For(each func(x, y int) BGRA) {
 	for x := im.Rect.Min.X; x < im.Rect.Max.X; x++ {
 		for y := im.Rect.Min.Y; y < im.Rect.Max.Y; y++ {
-			im.SetBGRA(x, y, each(x, y))
+			im.SetBGRA(x, y, each(x-im.Rect.Min.X, y-im.Rect.Min.Y))
 		}
 	}
 }
@@ -202,7 +202,7 @@ func (im *Image) ForExp(each func(x, y int) (r, g, b, a uint8)) {
 	for x = im.Rect.Min.X; x < im.Rect.Max.X; x++ {
 		for y = im.Rect.Min.Y; y < im.Rect.Max.Y; y++ {
 			i = im.PixOffset(x, y)
-			r, g, b, a = each(x, y)
+			r, g, b, a = each(x-im.Rect.Min.X, y-im.Rect.Min.Y)
 
 			im.Pix[i+0] = b
 			im.Pix[i+1] = g
