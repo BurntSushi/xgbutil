@@ -109,6 +109,31 @@ func ErrorHandlerGet(xu *xgbutil.XUtil) xgbutil.ErrorHandlerFun {
 	return xu.ErrorHandler
 }
 
+type HookFun func(xu *xgbutil.XUtil, event interface{}) bool
+
+func (callback HookFun) Connect(xu *xgbutil.XUtil) {
+	xu.HooksLck.Lock()
+	defer xu.HooksLck.Unlock()
+
+	// COW
+	newHooks := make([]xgbutil.CallbackHook, len(xu.Hooks))
+	copy(newHooks, xu.Hooks)
+	newHooks = append(newHooks, callback)
+
+	xu.Hooks = newHooks
+}
+
+func (callback HookFun) Run(xu *xgbutil.XUtil, event interface{}) bool {
+	return callback(xu, event)
+}
+
+func getHooks(xu *xgbutil.XUtil) []xgbutil.CallbackHook {
+	xu.HooksLck.RLock()
+	defer xu.HooksLck.RUnlock()
+
+	return xu.Hooks
+}
+
 // RedirectKeyEvents, when set to a window id (greater than 0), will force
 // *all* Key{Press,Release} to callbacks attached to the specified window.
 // This is close to emulating a Keyboard grab without the racing.

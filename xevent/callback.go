@@ -14,18 +14,6 @@ import (
 	"github.com/BurntSushi/xgbutil"
 )
 
-type HookFun func(xu *xgbutil.XUtil, event interface{}) bool
-
-func (callback HookFun) Connect(xu *xgbutil.XUtil) {
-	xu.HooksLck.Lock()
-	xu.Hooks = append(xu.Hooks, callback)
-	xu.HooksLck.Unlock()
-}
-
-func (callback HookFun) Run(xu *xgbutil.XUtil, event interface{}) bool {
-	return callback(xu, event)
-}
-
 type KeyPressFun func(xu *xgbutil.XUtil, event KeyPressEvent)
 
 func (callback KeyPressFun) Connect(xu *xgbutil.XUtil,

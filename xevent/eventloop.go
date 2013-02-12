@@ -141,9 +141,8 @@ func processEventQueue(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 			xgbutil.Logger.Fatal("BUG: Expected an event but got nil.")
 		}
 
-		xu.HooksLck.RLock()
-		defer xu.HooksLck.RUnlock()
-		for _, hook := range xu.Hooks {
+		hooks := getHooks(xu)
+		for _, hook := range hooks {
 			if !hook.Run(xu, ev) {
 				goto END
 			}
