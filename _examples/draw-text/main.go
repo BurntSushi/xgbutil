@@ -63,7 +63,7 @@ func main() {
 	}
 
 	// Compute extents of first line of text.
-	firstw, firsth := xgraphics.Extents(font, size, msg)
+	_, firsth := xgraphics.Extents(font, size, msg)
 
 	// Now show the image in its own window.
 	win := ximg.XShowExtra("Drawing text using xgraphics", true)
