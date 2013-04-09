@@ -182,6 +182,10 @@ func RootGeometry(xu *xgbutil.XUtil) xrect.Rect {
 func (win *Window) Configure(flags, x, y, w, h int,
 	sibling xproto.Window, stackMode byte) {
 
+	if win == nil {
+		return
+	}
+
 	vals := []uint32{}
 
 	if xproto.ConfigWindowX&flags > 0 {
@@ -291,11 +295,19 @@ func (w *Window) StackSibling(sibling xproto.Window, mode byte) {
 
 // Map is a simple alias to map the window.
 func (w *Window) Map() {
+	if w == nil {
+		return
+	}
+
 	xproto.MapWindow(w.X.Conn(), w.Id)
 }
 
 // Unmap is a simple alias to unmap the window.
 func (w *Window) Unmap() {
+	if w == nil {
+		return
+	}
+
 	xproto.UnmapWindow(w.X.Conn(), w.Id)
 }
 
