@@ -338,13 +338,21 @@ func (w *Window) Detach() {
 // If you're trying to change the top-level active window, please use
 // ewmh.ActiveWindowReq instead.
 func (w *Window) Focus() {
-	xproto.SetInputFocus(w.X.Conn(), xproto.InputFocusPointerRoot, w.Id, 0)
+	mode := byte(xproto.InputFocusPointerRoot)
+	err := xproto.SetInputFocusChecked(w.X.Conn(), mode, w.Id, 0).Check()
+	if err != nil {
+		xgbutil.Logger.Println(err)
+	}
 }
 
 // FocusParent is just like Focus, except it sets the "revert-to" mode to
 // Parent. This should be used when setting focus to a sub-window.
 func (w *Window) FocusParent(tstamp xproto.Timestamp) {
-	xproto.SetInputFocus(w.X.Conn(), xproto.InputFocusParent, w.Id, tstamp)
+	mode := byte(xproto.InputFocusParent)
+	err := xproto.SetInputFocusChecked(w.X.Conn(), mode, w.Id, tstamp).Check()
+	if err != nil {
+		xgbutil.Logger.Println(err)
+	}
 }
 
 // Kill forcefully destroys a client. It is almost never what you want, and if
