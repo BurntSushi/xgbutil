@@ -28,8 +28,8 @@ XGB project URL: https://github.com/BurntSushi/xgb
 
 Quick Example
 =============
-go get github.com/BurntSushi/xgbutil/examples/window-name-sizes
-GO/PATH/bin/window-name-sizes
+go get github.com/BurntSushi/xgbutil/_examples/window-name-sizes
+"$GOPATH"/bin/window-name-sizes
 
 The output will be a list of names of all top-level windows and their geometry 
 including window manager decorations. (Assuming your window manager supports 
