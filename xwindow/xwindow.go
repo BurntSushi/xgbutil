@@ -217,6 +217,10 @@ func (win *Window) Configure(flags, x, y, w, h int,
 		vals = append(vals, uint32(stackMode))
 	}
 
+	// Nobody should be setting border widths any more.
+	// We toss it out since `vals` must have length equal to the number
+	// of bits set in `flags`.
+	flags &= ^xproto.ConfigWindowBorderWidth
 	xproto.ConfigureWindow(win.X.Conn(), win.Id, uint16(flags), vals)
 }
 
