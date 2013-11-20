@@ -63,7 +63,8 @@ func main() {
 
 	err = img.XSurfaceSet(win.Id)
 	if err != nil {
-		log.Printf("Error while setting window surface to image %d: %s\n", win, err)
+		log.Printf("Error while setting window surface to image %d: %s\n",
+			win, err)
 	} else {
 		log.Printf("Window %d surface set to image OK\n", win)
 	}
@@ -114,8 +115,9 @@ func updater(img *xgraphics.Image, win *xwindow.Window) {
 		genTotal += time.Now().Sub(genStart)
 
 		drawStart = time.Now()
-		//hopefully using checked will block us from drawing again before x draws
-		//although XDraw might block anyway, we can check for an error here
+		//hopefully using checked will block us from drawing again before x
+		//draws although XDraw might block anyway, we can check for an error
+		//here
 		err := img.XDrawChecked()
 		if err != nil {
 			log.Println(err)
@@ -127,4 +129,3 @@ func updater(img *xgraphics.Image, win *xwindow.Window) {
 		drawTotal += time.Now().Sub(drawStart)
 	}
 }
-
