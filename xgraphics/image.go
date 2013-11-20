@@ -220,6 +220,8 @@ func (im *Image) ForExp(each func(x, y int) (r, g, b, a uint8)) {
 // This method is cheap to call. It should be used to update only specific
 // regions of an X pixmap to avoid sending an entire image to the X server when
 // only a piece of it is updated.
+//
+// Note that if the intersection of `r` and `im` is empty, `nil` is returned.
 func (im *Image) SubImage(r image.Rectangle) *Image {
 	r = r.Intersect(im.Rect)
 	if r.Empty() {
