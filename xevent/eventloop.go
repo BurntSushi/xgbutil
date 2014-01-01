@@ -52,15 +52,15 @@ func Main(xu *xgbutil.XUtil) {
 	mainEventLoop(xu, nil, nil, nil)
 }
 
-// MainPing starts the main X event loop, and returns a pingBefore and a
+// MainPing starts the main X event loop, and returns three "ping" channels:
+// the first is pinged before an event is dequeued, the second is pinged
+// after all callbacks for a particular event have been called and the last
+// is pinged when the event loop stops (e.g., after a call to xevent.Quit).
 // pingAfter channel.
-// A benign value will be sent to the pingBefore channel right before an
-// event/error is dequeued.
-// A benign value will also be sent to the pingAfter channel right after
-// all callbacks for the dequeued event have finished executing.
+//
 // This is useful if your event loop needs to draw from other sources. e.g.,
 //
-//	pingBefore, pingAfter := xevent.MainPing()
+//	pingBefore, pingAfter, pingQuit := xevent.MainPing()
 //	for {
 //		select {
 //		case <-pingBefore:
@@ -68,15 +68,14 @@ func Main(xu *xgbutil.XUtil) {
 //			<-pingAfter
 //		case val <- someOtherChannel:
 //			// do some work with val
+//		case <-pingQuit:
+//			fmt.Printf("xevent loop has quit")
+//			return
 //		}
 //	}
 //
 // Note that an unbuffered channel is returned, which implies that any work
-// done in 'val' will delay further X event processing.
-//
-// Two ping channels are returned so that your code stays thread safe by
-// default. If you'd like to achieve concurrency, simply do "other work"
-// in another goroutine or do a non-blocking receive on pingAfter.
+// done with 'val' will delay further X event processing.
 //
 // A complete example using MainPing can be found in the examples directory in
 // the xgbutil package under the name multiple-source-event-loop.
