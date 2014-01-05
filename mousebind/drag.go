@@ -22,14 +22,14 @@ func Drag(xu *xgbutil.XUtil, grabwin xproto.Window, win xproto.Window,
 
 	ButtonPressFun(
 		func(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent) {
-			dragBegin(xu, ev, grabwin, win, begin, step, end)
+			DragBegin(xu, ev, grabwin, win, begin, step, end)
 		}).Connect(xu, win, buttonStr, false, grab)
 
 	// If the grab win isn't the dummy, then setup event handlers for the
 	// grab window.
 	if grabwin != xu.Dummy() {
 		xevent.MotionNotifyFun(dragStep).Connect(xu, grabwin)
-		xevent.ButtonReleaseFun(dragEnd).Connect(xu, grabwin)
+		xevent.ButtonReleaseFun(DragEnd).Connect(xu, grabwin)
 	}
 }
 
@@ -59,9 +59,14 @@ func dragUngrab(xu *xgbutil.XUtil) {
 	mouseDragSet(xu, false)
 }
 
-// dragStart executes the "begin" function registered for the current drag.
+// DragBegin executes the "begin" function registered for the current drag.
 // It also initiates the grab with the cursor id return by the begin callback.
-func dragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
+//
+// N.B. This function is automatically called in the Drag convenience function.
+// This should be used when the drag can be started from a source other than
+// a button press handled by the WM. If you use this function, then there
+// should also be a call to DragEnd when the drag is done.
+func DragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
 	grabwin xproto.Window, win xproto.Window,
 	begin xgbutil.MouseDragBeginFun, step xgbutil.MouseDragFun,
 	end xgbutil.MouseDragFun) {
@@ -139,8 +144,9 @@ func dragStep(xu *xgbutil.XUtil, ev xevent.MotionNotifyEvent) {
 		int(laste.EventX), int(laste.EventY))
 }
 
-// dragEnd executes the "end" function registered for the current drag.
-func dragEnd(xu *xgbutil.XUtil, ev xevent.ButtonReleaseEvent) {
+// DragEnd executes the "end" function registered for the current drag.
+// This must be called at some point if DragStart has been called.
+func DragEnd(xu *xgbutil.XUtil, ev xevent.ButtonReleaseEvent) {
 	if mouseDragEnd(xu) != nil {
 		mouseDragEnd(xu)(xu, int(ev.RootX), int(ev.RootY),
 			int(ev.EventX), int(ev.EventY))

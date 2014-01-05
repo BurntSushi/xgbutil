@@ -28,7 +28,7 @@ var pointerMasks uint16 = xproto.EventMaskPointerMotion |
 // i.e., prep the dummy window to handle mouse dragging events
 func Initialize(xu *xgbutil.XUtil) {
 	xevent.MotionNotifyFun(dragStep).Connect(xu, xu.Dummy())
-	xevent.ButtonReleaseFun(dragEnd).Connect(xu, xu.Dummy())
+	xevent.ButtonReleaseFun(DragEnd).Connect(xu, xu.Dummy())
 }
 
 // ParseString takes a string of the format '[Mod[-Mod[...]]]-BUTTONNUMBER',
