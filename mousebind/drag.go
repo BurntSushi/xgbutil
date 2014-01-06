@@ -65,7 +65,8 @@ func dragUngrab(xu *xgbutil.XUtil) {
 // N.B. This function is automatically called in the Drag convenience function.
 // This should be used when the drag can be started from a source other than
 // a button press handled by the WM. If you use this function, then there
-// should also be a call to DragEnd when the drag is done.
+// should also be a call to DragEnd when the drag is done. (This is
+// automatically done for you if you use Drag.)
 func DragBegin(xu *xgbutil.XUtil, ev xevent.ButtonPressEvent,
 	grabwin xproto.Window, win xproto.Window,
 	begin xgbutil.MouseDragBeginFun, step xgbutil.MouseDragFun,
