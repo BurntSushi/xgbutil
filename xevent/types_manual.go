@@ -13,6 +13,82 @@ type ClientMessageEvent struct {
 
 const ClientMessage = xproto.ClientMessage
 
+func number2byte(v interface{}) byte {
+	switch rv := v.(type) {
+	case int8:
+		return byte(rv)
+	case int16:
+		return byte(rv)
+	case int32:
+		return byte(rv)
+	case int:
+		return byte(rv)
+	case int64:
+		return byte(rv)
+	case uint8:
+		return byte(rv)
+	case uint16:
+		return byte(rv)
+	case uint32:
+		return byte(rv)
+	case uint:
+		return byte(rv)
+	case uint64:
+		return byte(rv)
+	}
+	panic("number2byte: unspoorted type")
+}
+func number2uint16(v interface{}) uint16 {
+	switch rv := v.(type) {
+	case int8:
+		return uint16(rv)
+	case int16:
+		return uint16(rv)
+	case int32:
+		return uint16(rv)
+	case int:
+		return uint16(rv)
+	case int64:
+		return uint16(rv)
+	case uint8:
+		return uint16(rv)
+	case uint16:
+		return uint16(rv)
+	case uint32:
+		return uint16(rv)
+	case uint:
+		return uint16(rv)
+	case uint64:
+		return uint16(rv)
+	}
+	panic("number2byte: unspoorted type")
+}
+func number2uint32(v interface{}) uint32 {
+	switch rv := v.(type) {
+	case int8:
+		return uint32(rv)
+	case int16:
+		return uint32(rv)
+	case int32:
+		return uint32(rv)
+	case int:
+		return uint32(rv)
+	case int64:
+		return uint32(rv)
+	case uint8:
+		return uint32(rv)
+	case uint16:
+		return uint32(rv)
+	case uint32:
+		return uint32(rv)
+	case uint64:
+		return uint32(rv)
+	case uint:
+		return uint32(rv)
+	}
+	panic("number2byte: unspoorted type")
+}
+
 // NewClientMessage takes all arguments required to build a ClientMessageEvent
 // struct and hides the messy details.
 // The variadic parameters coincide with the "data" part of a client message.
@@ -35,7 +111,7 @@ func NewClientMessage(Format byte, Window xproto.Window, Type xproto.Atom,
 			if i >= len(data) {
 				break
 			}
-			buf[i] = data[i].(byte)
+			buf[i] = number2byte(data[i])
 		}
 		clientData = xproto.ClientMessageDataUnionData8New(buf)
 	case 16:
@@ -44,7 +120,7 @@ func NewClientMessage(Format byte, Window xproto.Window, Type xproto.Atom,
 			if i >= len(data) {
 				break
 			}
-			buf[i] = uint16(data[i].(int16))
+			buf[i] = number2uint16(data[i])
 		}
 		clientData = xproto.ClientMessageDataUnionData16New(buf)
 	case 32:
@@ -53,7 +129,7 @@ func NewClientMessage(Format byte, Window xproto.Window, Type xproto.Atom,
 			if i >= len(data) {
 				break
 			}
-			buf[i] = uint32(data[i].(int))
+			buf[i] = number2uint32(data[i])
 		}
 		clientData = xproto.ClientMessageDataUnionData32New(buf)
 	default:
