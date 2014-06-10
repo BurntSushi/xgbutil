@@ -263,5 +263,8 @@ func PropValStrs(reply *xproto.GetPropertyReply, err error) ([]string, error) {
 			sstart = i + 1
 		}
 	}
+	if sstart < int(reply.ValueLen) {
+		strs = append(strs, string(reply.Value[sstart:]))
+	}
 	return strs, nil
 }
