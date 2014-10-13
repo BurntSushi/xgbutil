@@ -111,7 +111,9 @@ func (im *Image) XExpPaint(wid xproto.Window, x, y int) {
 // sub-image and only that sub-image.
 func (im *Image) XPaintRects(wid xproto.Window, rects ...image.Rectangle) {
 	for _, rect := range rects {
-		im.SubImage(rect).XDraw()
+		if si := im.SubImage(rect); si != nil {
+			si.XDraw()
+		}
 	}
 	im.XPaint(wid)
 }
