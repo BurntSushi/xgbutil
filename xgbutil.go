@@ -195,6 +195,14 @@ func NewConnDisplay(display string) (*XUtil, error) {
 		return nil, err
 	}
 
+	return NewConnXgb(c)
+
+}
+
+// NewConnXgb use the specific xgb.Conn to create a new XUtil.
+//
+//  NewConn, NewConnDisplay are wrapper of this function.
+func NewConnXgb(c *xgb.Conn) (*XUtil, error) {
 	setup := xproto.Setup(c)
 	screen := setup.DefaultScreen(c)
 
@@ -232,6 +240,7 @@ func NewConnDisplay(display string) (*XUtil, error) {
 		ErrorHandler:     func(err xgb.Error) { Logger.Println(err) },
 	}
 
+	var err error = nil
 	// Create a general purpose graphics context
 	xu.gc, err = xproto.NewGcontextId(xu.conn)
 	if err != nil {
