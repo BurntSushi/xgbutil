@@ -151,11 +151,9 @@ func (im *Image) xdraw(checked bool) error {
 		data = im.Pix
 	} else {
 		data = make([]uint8, width*height*4)
-		for x := im.Rect.Min.X; x < im.Rect.Max.X; x++ {
-			for y := im.Rect.Min.Y; y < im.Rect.Max.Y; y++ {
-				i := (y-im.Rect.Min.Y)*width*4 + (x-im.Rect.Min.X)*4
-				copy(data[i:i+4], im.Pix[im.PixOffset(x, y):])
-			}
+		for y := im.Rect.Min.Y; y < im.Rect.Max.Y; y++ {
+			i := (y-im.Rect.Min.Y)*width*4
+			copy(data[i:i+4*width], im.Pix[im.PixOffset(im.Rect.Min.X, y):])
 		}
 	}
 
