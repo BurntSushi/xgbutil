@@ -248,36 +248,36 @@ func readDrawableData(X *xgbutil.XUtil, ximg *Image, did xproto.Drawable,
 			}
 		}
 	case 24, 32:
- 		switch format.BitsPerPixel {
-                case 24:
-                	bytesPer := int(format.BitsPerPixel) / 8
-                	var i int
-                        ximg.For(func(x, y int) BGRA {
-                                i = y*width*bytesPer + x*bytesPer
-                                return BGRA{
-                                        B: imgData.Data[i],
-                                        G: imgData.Data[i+1],
-                                        R: imgData.Data[i+2],
-                                        A: 0xff,
-                                }
-                        })
-                case 32:
-                	bytesPer := int(format.BitsPerPixel) / 8
-                	var i int
-                        ximg.For(func(x, y int) BGRA {
-                                i = y*width*bytesPer + x*bytesPer
-                                return BGRA{
-                                        B: imgData.Data[i],
-                                        G: imgData.Data[i+1],
-                                        R: imgData.Data[i+2],
-                                        A: imgData.Data[i+3],
-                                }
-                        })
-                default:
-                        return fmt.Errorf("The image returned for pixmap id %d has "+
-                        "an unsupported value for bits-per-pixel: %d",
-                        did, format.BitsPerPixel)
-                }
+		switch format.BitsPerPixel {
+		case 24:
+			bytesPer := int(format.BitsPerPixel) / 8
+			var i int
+			ximg.For(func(x, y int) BGRA {
+				i = y*width*bytesPer + x*bytesPer
+				return BGRA{
+					B: imgData.Data[i],
+					G: imgData.Data[i+1],
+					R: imgData.Data[i+2],
+					A: 0xff,
+				}
+			})
+		case 32:
+			bytesPer := int(format.BitsPerPixel) / 8
+			var i int
+			ximg.For(func(x, y int) BGRA {
+				i = y*width*bytesPer + x*bytesPer
+				return BGRA{
+					B: imgData.Data[i],
+					G: imgData.Data[i+1],
+					R: imgData.Data[i+2],
+					A: imgData.Data[i+3],
+				}
+			})
+		default:
+			return fmt.Errorf("The image returned for pixmap id %d has "+
+				"an unsupported value for bits-per-pixel: %d",
+				did, format.BitsPerPixel)
+		}
 
 	default:
 		return fmt.Errorf("The image returned for pixmap id %d has an "+

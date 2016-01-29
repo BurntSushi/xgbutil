@@ -222,7 +222,7 @@ func (im *Image) ForExp(each func(x, y int) (r, g, b, a uint8)) {
 // only a piece of it is updated.
 //
 // Note that if the intersection of `r` and `im` is empty, `nil` is returned.
-func (im *Image) SubImage(r image.Rectangle) *Image {
+func (im *Image) SubImage(r image.Rectangle) image.Image {
 	r = r.Intersect(im.Rect)
 	if r.Empty() {
 		return nil

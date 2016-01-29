@@ -81,7 +81,7 @@ func main() {
 
 	// Now repaint on the region that we drew text on. Then update the screen.
 	bounds := image.Rect(10, 10+firsth, 10+secw, 10+firsth+sech)
-	ximg.SubImage(bounds).XDraw()
+	ximg.SubImage(bounds).(*xgraphics.Image).XDraw()
 	ximg.XPaint(win.Id)
 
 	// All we really need to do is block, which could be achieved using

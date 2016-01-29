@@ -111,7 +111,7 @@ func (im *Image) XExpPaint(wid xproto.Window, x, y int) {
 // sub-image and only that sub-image.
 func (im *Image) XPaintRects(wid xproto.Window, rects ...image.Rectangle) {
 	for _, rect := range rects {
-		if si := im.SubImage(rect); si != nil {
+		if si := im.SubImage(rect).(*Image); si != nil {
 			si.XDraw()
 		}
 	}
@@ -152,7 +152,7 @@ func (im *Image) xdraw(checked bool) error {
 	} else {
 		data = make([]uint8, width*height*4)
 		for y := im.Rect.Min.Y; y < im.Rect.Max.Y; y++ {
-			i := (y-im.Rect.Min.Y)*width*4
+			i := (y - im.Rect.Min.Y) * width * 4
 			copy(data[i:i+4*width], im.Pix[im.PixOffset(im.Rect.Min.X, y):])
 		}
 	}

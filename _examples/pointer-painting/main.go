@@ -74,7 +74,7 @@ func drawPencil(canvas *xgraphics.Image, win *xwindow.Window, x, y int) {
 	log.Printf("Drawing pencil point at (%d, %d)", x, y)
 
 	// Create the subimage of the canvas to draw to.
-	tip := canvas.SubImage(tipRect)
+	tip := canvas.SubImage(tipRect).(*xgraphics.Image)
 	fmt.Println(tip.Rect)
 
 	// Now color each pixel in tip with the pencil color.
@@ -114,7 +114,7 @@ func drawGopher(canvas *xgraphics.Image, gopher image.Image,
 	}
 
 	// Create the canvas subimage.
-	subCanvas := canvas.SubImage(gopherRect)
+	subCanvas := canvas.SubImage(gopherRect).(*xgraphics.Image)
 
 	// Blend the gopher image into the sub-canvas.
 	// This does alpha blending.
