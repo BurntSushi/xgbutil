@@ -6,8 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
-	"code.google.com/p/jamslam-freetype-go/freetype"
-	"code.google.com/p/jamslam-freetype-go/freetype/truetype"
+	"github.com/BurntSushi/freetype-go/freetype"
+	"github.com/BurntSushi/freetype-go/freetype/truetype"
 )
 
 // Text takes an image and, using the freetype package, writes text in the

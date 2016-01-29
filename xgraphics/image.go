@@ -29,8 +29,7 @@ import (
 	"io"
 	"os"
 
-	"code.google.com/p/graphics-go/graphics"
-
+	"github.com/BurntSushi/graphics-go/graphics"
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/BurntSushi/xgbutil"
