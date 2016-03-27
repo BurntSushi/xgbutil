@@ -88,9 +88,7 @@ func keyCallbacks(xu *xgbutil.XUtil,
 	defer xu.KeybindsLck.RUnlock()
 
 	cbs := make([]xgbutil.CallbackKey, len(xu.Keybinds[key]))
-	for i, cb := range xu.Keybinds[key] {
-		cbs[i] = cb
-	}
+	copy(cbs, xu.Keybinds[key])
 	return cbs
 }
 

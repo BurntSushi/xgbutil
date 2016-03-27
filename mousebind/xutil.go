@@ -57,9 +57,7 @@ func mouseCallbacks(xu *xgbutil.XUtil,
 	defer xu.MousebindsLck.RUnlock()
 
 	cbs := make([]xgbutil.CallbackMouse, len(xu.Mousebinds[key]))
-	for i, cb := range xu.Mousebinds[key] {
-		cbs[i] = cb
-	}
+	copy(cbs, xu.Mousebinds[key])
 	return cbs
 }
 
