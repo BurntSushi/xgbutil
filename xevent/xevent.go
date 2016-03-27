@@ -87,9 +87,7 @@ func Peek(xu *xgbutil.XUtil) []xgbutil.EventOrError {
 	defer xu.EvqueueLck.RUnlock()
 
 	cpy := make([]xgbutil.EventOrError, len(xu.Evqueue))
-	for i, everr := range xu.Evqueue {
-		cpy[i] = everr
-	}
+	copy(cpy, xu.Evqueue)
 	return cpy
 }
 
@@ -184,9 +182,7 @@ func attachCallback(xu *xgbutil.XUtil, evtype int, win xproto.Window,
 
 	// COW
 	newCallbacks := make([]xgbutil.Callback, len(xu.Callbacks[evtype][win]))
-	for i, cb := range xu.Callbacks[evtype][win] {
-		newCallbacks[i] = cb
-	}
+	copy(newCallbacks, xu.Callbacks[evtype][win])
 	newCallbacks = append(newCallbacks, fun)
 	xu.Callbacks[evtype][win] = newCallbacks
 }
