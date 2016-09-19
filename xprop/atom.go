@@ -84,11 +84,10 @@ func atomGet(xu *xgbutil.XUtil, name string) (xproto.Atom, bool) {
 
 // atomNameGet retrieves an atom name from a cache if it exists.
 func atomNameGet(xu *xgbutil.XUtil, aid xproto.Atom) (string, bool) {
-	name, ok := xu.AtomNames[aid]
-
 	xu.AtomNamesLck.RLock()
 	defer xu.AtomNamesLck.RUnlock()
 
+	name, ok := xu.AtomNames[aid]
 	return name, ok
 }
 
