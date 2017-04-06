@@ -25,7 +25,6 @@ import (
 // Note that we ignore the logic that asks us to check if particular key codes
 // are mapped to particular modifiers (i.e., "XK_Caps_Lock" to "Lock" modifier).
 // We just check if the modifiers are activated. That's good enough for me.
-// XXX: We ignore num lock stuff.
 // XXX: We don't support ShiftLock, only CapsLock
 func LookupString(xu *xgbutil.XUtil, mods uint16,
 	keycode xproto.Keycode) string {
@@ -47,6 +46,7 @@ func LookupString(xu *xgbutil.XUtil, mods uint16,
 	lock := mods&xproto.ModMaskLock > 0
 	mode := mods&symToMod[keysyms["Mode_switch"]] > 0
 	level3 := mods&symToMod[keysyms["ISO_Level3_Shift"]] > 0
+	numpad := mods&symToMod[keysyms["Num_Lock"]] > 0
 
 	// TODO(dh): do we need to handle ISO_Level3_Lock as well, or is
 	// the X server doing that for us?
@@ -58,6 +58,18 @@ func LookupString(xu *xgbutil.XUtil, mods uint16,
 		group = []xproto.Keysym{k3, k4}
 	default:
 		group = []xproto.Keysym{k1, k2}
+	}
+
+	if numpad && ((group[1] >= 0xFF80 && group[1] <= 0xFFBD) || (group[1] >= 0x11000000 && group[1] <= 0x1100FFFF)) {
+		// TODO(dh): if Lock is on and is ShiftLock (as opposed to
+		// CapsLock), it should be treated like Shift. Currently, this
+		// function doesn't differentiate between CapsLock and
+		// ShiftLock, so we're skipping that step. Luckily, ShiftLock
+		// is very rare nowadays.
+		if shift {
+			return KeysymToStr(group[0])
+		}
+		return KeysymToStr(group[1])
 	}
 	switch {
 	case !shift && !lock:
