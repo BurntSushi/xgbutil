@@ -229,6 +229,16 @@ func keycodesGet(xu *xgbutil.XUtil, keysym xproto.Keysym) []xproto.Keycode {
 // representations (i.e., 'braceleft' to '{').
 // If no match is found initially, an empty string is returned.
 func KeysymToStr(keysym xproto.Keysym) string {
+	// For any future extension of the keysyms with characters already
+	// found in ISO 10646 / Unicode, the following algorithm shall be
+	// used. The new keysym code position will simply be the character's
+	// Unicode number plus 0x01000000. The keysym values in the range
+	// 0x01000100 to 0x0110ffff are reserved to represent Unicode
+	// characters in the range U+0100 to U+10FFFF.
+	if keysym >= 0x01000100 && keysym <= 0x0110ffff {
+		return string(keysym - 0x01000000)
+	}
+
 	symStr, ok := strKeysyms[keysym]
 	if !ok {
 		return ""
