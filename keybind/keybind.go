@@ -223,6 +223,20 @@ func keycodesGet(xu *xgbutil.XUtil, keysym xproto.Keysym) []xproto.Keycode {
 	return keycodes
 }
 
+// KeysymName returns the name of keysym.
+func KeysymName(keysym xproto.Keysym) string {
+	if s, ok := strKeysyms[keysym]; ok {
+		return s
+	}
+
+	if keysym >= 0x01000100 && keysym <= 0x0110ffff {
+		return fmt.Sprintf("U%4x", keysym-0x01000000)
+	}
+
+	// We shouldn't get here.
+	return ""
+}
+
 // KeysymToStr converts a keysym to a string if one is available.
 // If one is found, KeysymToStr also checks the 'weirdKeysyms' map, which
 // contains a map from multi-character strings to single character
