@@ -29,24 +29,31 @@ import (
 func LookupString(xu *xgbutil.XUtil, mods uint16,
 	keycode xproto.Keycode) string {
 
+	var modeMod, level3Mod, numlockMod uint16
 	modMap := ModMapGet(xu)
-	symToMod := map[xproto.Keysym]uint16{}
 	for i, kc := range modMap.Keycodes {
 		if kc == 0 {
 			continue
 		}
-		// map keysyms to modifiers. we're only really interested in
-		// Mode_switch, ISO_Level3_Shift and Num_Lock, though.
-		symToMod[KeysymGet(xu, kc, 0)] = Modifiers[byte(i)/modMap.KeycodesPerModifier]
+
+		mod := Modifiers[byte(i)/modMap.KeycodesPerModifier]
+		switch KeysymGet(xu, kc, 0) {
+		case keysyms["Mode_switch"]:
+			modeMod = mod
+		case keysyms["ISO_Level3_Shift"]:
+			level3Mod = mod
+		case keysyms["Num_Lock"]:
+			numlockMod = mod
+		}
 	}
 
 	k1, k2, k3, k4, k5, k6 := interpretSymList(xu, keycode)
 
 	shift := mods&xproto.ModMaskShift > 0
 	lock := mods&xproto.ModMaskLock > 0
-	mode := mods&symToMod[keysyms["Mode_switch"]] > 0
-	level3 := mods&symToMod[keysyms["ISO_Level3_Shift"]] > 0
-	numpad := mods&symToMod[keysyms["Num_Lock"]] > 0
+	mode := mods&modeMod > 0
+	level3 := mods&level3Mod > 0
+	numpad := mods&numlockMod > 0
 
 	// TODO(dh): do we need to handle ISO_Level3_Lock as well, or is
 	// the X server doing that for us?
