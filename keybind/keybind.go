@@ -229,6 +229,14 @@ func keycodesGet(xu *xgbutil.XUtil, keysym xproto.Keysym) []xproto.Keycode {
 // representations (i.e., 'braceleft' to '{').
 // If no match is found initially, an empty string is returned.
 func KeysymToStr(keysym xproto.Keysym) string {
+	// Keysyms that represent characters in the Latin-1 character set
+	// match the code points in said set. Latin-1 is a subset of
+	// Unicode.
+	if (keysym >= 0x20 && keysym <= 0x7e) ||
+		(keysym >= 0xa0 && keysym <= 0xff) {
+		return string(keysym)
+	}
+
 	// For any future extension of the keysyms with characters already
 	// found in ISO 10646 / Unicode, the following algorithm shall be
 	// used. The new keysym code position will simply be the character's
