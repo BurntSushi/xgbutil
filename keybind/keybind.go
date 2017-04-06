@@ -226,7 +226,8 @@ func keycodesGet(xu *xgbutil.XUtil, keysym xproto.Keysym) []xproto.Keycode {
 // KeysymToStr converts a keysym to a string if one is available.
 // If one is found, KeysymToStr also checks the 'weirdKeysyms' map, which
 // contains a map from multi-character strings to single character
-// representations (i.e., 'braceleft' to '{').
+// representations (i.e., 'braceleft' to '{'). Whenever possible,
+// KeysymToStr returns a UTF-8 string instead of symbolic names.
 // If no match is found initially, an empty string is returned.
 func KeysymToStr(keysym xproto.Keysym) string {
 	// Keysyms that represent characters in the Latin-1 character set
@@ -245,6 +246,12 @@ func KeysymToStr(keysym xproto.Keysym) string {
 	// characters in the range U+0100 to U+10FFFF.
 	if keysym >= 0x01000100 && keysym <= 0x0110ffff {
 		return string(keysym - 0x01000000)
+	}
+
+	// Use a lookup table to map old, non-Latin-1 keysyms to Unicode.
+	if r, ok := keysymUnicode[keysym]; ok {
+		// Map keysyms to their unicode equivalent where possible
+		return r
 	}
 
 	symStr, ok := strKeysyms[keysym]
