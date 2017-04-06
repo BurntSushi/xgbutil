@@ -18,7 +18,7 @@ import (
 	"github.com/BurntSushi/xgbutil"
 )
 
-// LookupString attempts to convert a (modifiers, keycode) to an english string.
+// LookupKeysym attempts to convert a (modifiers, keycode) to an english string.
 // It essentially implements the rules described at http://goo.gl/qum9q
 // Namely, the bulleted list that describes how key syms should be interpreted
 // when various modifiers are pressed.
@@ -26,9 +26,7 @@ import (
 // are mapped to particular modifiers (i.e., "XK_Caps_Lock" to "Lock" modifier).
 // We just check if the modifiers are activated. That's good enough for me.
 // XXX: We don't support ShiftLock, only CapsLock
-func LookupString(xu *xgbutil.XUtil, mods uint16,
-	keycode xproto.Keycode) string {
-
+func LookupKeysym(xu *xgbutil.XUtil, mods uint16, keycode xproto.Keycode) xproto.Keysym {
 	var modeMod, level3Mod, numlockMod uint16
 	modMap := ModMapGet(xu)
 	for i, kc := range modMap.Keycodes {
@@ -74,13 +72,13 @@ func LookupString(xu *xgbutil.XUtil, mods uint16,
 		// ShiftLock, so we're skipping that step. Luckily, ShiftLock
 		// is very rare nowadays.
 		if shift {
-			return KeysymToStr(group[0])
+			return group[0]
 		}
-		return KeysymToStr(group[1])
+		return group[1]
 	}
 	switch {
 	case !shift && !lock:
-		return KeysymToStr(group[0])
+		return group[0]
 	case !shift && lock:
 		// The Shift modifier is off, and the Lock modifier is on and
 		// is interpreted as CapsLock. In this case, the first KeySym
@@ -91,9 +89,9 @@ func LookupString(xu *xgbutil.XUtil, mods uint16,
 		if lower == group[0] {
 			// either group[0] is alphabetic and lower case, or lower
 			// == upper == group[0]
-			return KeysymToStr(upper)
+			return upper
 		} else {
-			return KeysymToStr(group[0])
+			return group[0]
 		}
 	case shift && lock:
 		// The Shift modifier is on, and the Lock modifier is on and
@@ -104,15 +102,23 @@ func LookupString(xu *xgbutil.XUtil, mods uint16,
 		if lower == group[1] {
 			// either groups[1] is alphabetic and lower case, or lower
 			// == upper == group[1]
-			return KeysymToStr(upper)
+			return upper
 		} else {
-			return KeysymToStr(group[1])
+			return group[1]
 		}
 	case shift:
-		return KeysymToStr(group[1])
+		return group[1]
 	}
 
-	return ""
+	return 0
+}
+
+// LookupString is a convenience function that applies KeysymToStr to
+// the result of LookupKeysym.
+func LookupString(xu *xgbutil.XUtil, mods uint16,
+	keycode xproto.Keycode) string {
+
+	return KeysymToStr(LookupKeysym(xu, mods, keycode))
 }
 
 // ModifierString takes in a keyboard state and returns a string of all
