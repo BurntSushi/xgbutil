@@ -16,8 +16,8 @@ strKeysyms is a mapping from key symbols to english strings.
 import "github.com/BurntSushi/xgb/xproto"
 
 func init() {
-	strKeysyms = make(map[xproto.Keysym]string, len(keysyms))
-	for kstr, keysym := range keysyms {
+	strKeysyms = make(map[xproto.Keysym]string, len(Keysyms))
+	for kstr, keysym := range Keysyms {
 		// If we already have this keysym as a key, skip it.
 		// (Prefer the first. This may be bad.)
 		if _, ok := strKeysyms[keysym]; !ok {
@@ -85,7 +85,7 @@ var weirdKeysyms = map[string]rune{
 // TODO: Hard code the reverse map to be faster.
 var strKeysyms map[xproto.Keysym]string
 
-var keysyms map[string]xproto.Keysym = map[string]xproto.Keysym{
+var Keysyms map[string]xproto.Keysym = map[string]xproto.Keysym{
 	"VoidSymbol":                  0xffffff,
 	"BackSpace":                   0xff08,
 	"Tab":                         0xff09,

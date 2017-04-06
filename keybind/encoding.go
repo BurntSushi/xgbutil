@@ -36,11 +36,11 @@ func LookupKeysym(xu *xgbutil.XUtil, mods uint16, keycode xproto.Keycode) xproto
 
 		mod := Modifiers[byte(i)/modMap.KeycodesPerModifier]
 		switch KeysymGet(xu, kc, 0) {
-		case keysyms["Mode_switch"]:
+		case Keysyms["Mode_switch"]:
 			modeMod = mod
-		case keysyms["ISO_Level3_Shift"]:
+		case Keysyms["ISO_Level3_Shift"]:
 			level3Mod = mod
-		case keysyms["Num_Lock"]:
+		case Keysyms["Num_Lock"]:
 			numlockMod = mod
 		}
 	}
@@ -202,99 +202,99 @@ func convertCase(sym xproto.Keysym) (lower, upper xproto.Keysym) {
 
 	switch sym >> 8 {
 	case 0: /* Latin 1 */
-		if (sym >= keysyms["A"]) && (sym <= keysyms["Z"]) {
-			lower += (keysyms["a"] - keysyms["A"])
-		} else if (sym >= keysyms["a"]) && (sym <= keysyms["z"]) {
-			upper -= (keysyms["a"] - keysyms["A"])
-		} else if (sym >= keysyms["Agrave"]) && (sym <= keysyms["Odiaeresis"]) {
-			lower += (keysyms["agrave"] - keysyms["Agrave"])
-		} else if (sym >= keysyms["agrave"]) && (sym <= keysyms["odiaeresis"]) {
-			upper -= (keysyms["agrave"] - keysyms["Agrave"])
-		} else if (sym >= keysyms["Ooblique"]) && (sym <= keysyms["Thorn"]) {
-			lower += (keysyms["oslash"] - keysyms["Ooblique"])
-		} else if (sym >= keysyms["oslash"]) && (sym <= keysyms["thorn"]) {
-			upper -= (keysyms["oslash"] - keysyms["Ooblique"])
+		if (sym >= Keysyms["A"]) && (sym <= Keysyms["Z"]) {
+			lower += (Keysyms["a"] - Keysyms["A"])
+		} else if (sym >= Keysyms["a"]) && (sym <= Keysyms["z"]) {
+			upper -= (Keysyms["a"] - Keysyms["A"])
+		} else if (sym >= Keysyms["Agrave"]) && (sym <= Keysyms["Odiaeresis"]) {
+			lower += (Keysyms["agrave"] - Keysyms["Agrave"])
+		} else if (sym >= Keysyms["agrave"]) && (sym <= Keysyms["odiaeresis"]) {
+			upper -= (Keysyms["agrave"] - Keysyms["Agrave"])
+		} else if (sym >= Keysyms["Ooblique"]) && (sym <= Keysyms["Thorn"]) {
+			lower += (Keysyms["oslash"] - Keysyms["Ooblique"])
+		} else if (sym >= Keysyms["oslash"]) && (sym <= Keysyms["thorn"]) {
+			upper -= (Keysyms["oslash"] - Keysyms["Ooblique"])
 		}
 	case 1: /* Latin 2 */
 		/* Assume the KeySym is a legal value (ignore discontinuities) */
-		if sym == keysyms["Aogonek"] {
-			lower = keysyms["aogonek"]
-		} else if sym >= keysyms["Lstroke"] && sym <= keysyms["Sacute"] {
-			lower += (keysyms["lstroke"] - keysyms["Lstroke"])
-		} else if sym >= keysyms["Scaron"] && sym <= keysyms["Zacute"] {
-			lower += (keysyms["scaron"] - keysyms["Scaron"])
-		} else if sym >= keysyms["Zcaron"] && sym <= keysyms["Zabovedot"] {
-			lower += (keysyms["zcaron"] - keysyms["Zcaron"])
-		} else if sym == keysyms["aogonek"] {
-			upper = keysyms["Aogonek"]
-		} else if sym >= keysyms["lstroke"] && sym <= keysyms["sacute"] {
-			upper -= (keysyms["lstroke"] - keysyms["Lstroke"])
-		} else if sym >= keysyms["scaron"] && sym <= keysyms["zacute"] {
-			upper -= (keysyms["scaron"] - keysyms["Scaron"])
-		} else if sym >= keysyms["zcaron"] && sym <= keysyms["zabovedot"] {
-			upper -= (keysyms["zcaron"] - keysyms["Zcaron"])
-		} else if sym >= keysyms["Racute"] && sym <= keysyms["Tcedilla"] {
-			lower += (keysyms["racute"] - keysyms["Racute"])
-		} else if sym >= keysyms["racute"] && sym <= keysyms["tcedilla"] {
-			upper -= (keysyms["racute"] - keysyms["Racute"])
+		if sym == Keysyms["Aogonek"] {
+			lower = Keysyms["aogonek"]
+		} else if sym >= Keysyms["Lstroke"] && sym <= Keysyms["Sacute"] {
+			lower += (Keysyms["lstroke"] - Keysyms["Lstroke"])
+		} else if sym >= Keysyms["Scaron"] && sym <= Keysyms["Zacute"] {
+			lower += (Keysyms["scaron"] - Keysyms["Scaron"])
+		} else if sym >= Keysyms["Zcaron"] && sym <= Keysyms["Zabovedot"] {
+			lower += (Keysyms["zcaron"] - Keysyms["Zcaron"])
+		} else if sym == Keysyms["aogonek"] {
+			upper = Keysyms["Aogonek"]
+		} else if sym >= Keysyms["lstroke"] && sym <= Keysyms["sacute"] {
+			upper -= (Keysyms["lstroke"] - Keysyms["Lstroke"])
+		} else if sym >= Keysyms["scaron"] && sym <= Keysyms["zacute"] {
+			upper -= (Keysyms["scaron"] - Keysyms["Scaron"])
+		} else if sym >= Keysyms["zcaron"] && sym <= Keysyms["zabovedot"] {
+			upper -= (Keysyms["zcaron"] - Keysyms["Zcaron"])
+		} else if sym >= Keysyms["Racute"] && sym <= Keysyms["Tcedilla"] {
+			lower += (Keysyms["racute"] - Keysyms["Racute"])
+		} else if sym >= Keysyms["racute"] && sym <= Keysyms["tcedilla"] {
+			upper -= (Keysyms["racute"] - Keysyms["Racute"])
 		}
 	case 2: /* Latin 3 */
 		/* Assume the KeySym is a legal value (ignore discontinuities) */
-		if sym >= keysyms["Hstroke"] && sym <= keysyms["Hcircumflex"] {
-			lower += (keysyms["hstroke"] - keysyms["Hstroke"])
-		} else if sym >= keysyms["Gbreve"] && sym <= keysyms["Jcircumflex"] {
-			lower += (keysyms["gbreve"] - keysyms["Gbreve"])
-		} else if sym >= keysyms["hstroke"] && sym <= keysyms["hcircumflex"] {
-			upper -= (keysyms["hstroke"] - keysyms["Hstroke"])
-		} else if sym >= keysyms["gbreve"] && sym <= keysyms["jcircumflex"] {
-			upper -= (keysyms["gbreve"] - keysyms["Gbreve"])
-		} else if sym >= keysyms["Cabovedot"] && sym <= keysyms["Scircumflex"] {
-			lower += (keysyms["cabovedot"] - keysyms["Cabovedot"])
-		} else if sym >= keysyms["cabovedot"] && sym <= keysyms["scircumflex"] {
-			upper -= (keysyms["cabovedot"] - keysyms["Cabovedot"])
+		if sym >= Keysyms["Hstroke"] && sym <= Keysyms["Hcircumflex"] {
+			lower += (Keysyms["hstroke"] - Keysyms["Hstroke"])
+		} else if sym >= Keysyms["Gbreve"] && sym <= Keysyms["Jcircumflex"] {
+			lower += (Keysyms["gbreve"] - Keysyms["Gbreve"])
+		} else if sym >= Keysyms["hstroke"] && sym <= Keysyms["hcircumflex"] {
+			upper -= (Keysyms["hstroke"] - Keysyms["Hstroke"])
+		} else if sym >= Keysyms["gbreve"] && sym <= Keysyms["jcircumflex"] {
+			upper -= (Keysyms["gbreve"] - Keysyms["Gbreve"])
+		} else if sym >= Keysyms["Cabovedot"] && sym <= Keysyms["Scircumflex"] {
+			lower += (Keysyms["cabovedot"] - Keysyms["Cabovedot"])
+		} else if sym >= Keysyms["cabovedot"] && sym <= Keysyms["scircumflex"] {
+			upper -= (Keysyms["cabovedot"] - Keysyms["Cabovedot"])
 		}
 	case 3: /* Latin 4 */
 		/* Assume the KeySym is a legal value (ignore discontinuities) */
-		if sym >= keysyms["Rcedilla"] && sym <= keysyms["Tslash"] {
-			lower += (keysyms["rcedilla"] - keysyms["Rcedilla"])
-		} else if sym >= keysyms["rcedilla"] && sym <= keysyms["tslash"] {
-			upper -= (keysyms["rcedilla"] - keysyms["Rcedilla"])
-		} else if sym == keysyms["ENG"] {
-			lower = keysyms["eng"]
-		} else if sym == keysyms["eng"] {
-			upper = keysyms["ENG"]
-		} else if sym >= keysyms["Amacron"] && sym <= keysyms["Umacron"] {
-			lower += (keysyms["amacron"] - keysyms["Amacron"])
-		} else if sym >= keysyms["amacron"] && sym <= keysyms["umacron"] {
-			upper -= (keysyms["amacron"] - keysyms["Amacron"])
+		if sym >= Keysyms["Rcedilla"] && sym <= Keysyms["Tslash"] {
+			lower += (Keysyms["rcedilla"] - Keysyms["Rcedilla"])
+		} else if sym >= Keysyms["rcedilla"] && sym <= Keysyms["tslash"] {
+			upper -= (Keysyms["rcedilla"] - Keysyms["Rcedilla"])
+		} else if sym == Keysyms["ENG"] {
+			lower = Keysyms["eng"]
+		} else if sym == Keysyms["eng"] {
+			upper = Keysyms["ENG"]
+		} else if sym >= Keysyms["Amacron"] && sym <= Keysyms["Umacron"] {
+			lower += (Keysyms["amacron"] - Keysyms["Amacron"])
+		} else if sym >= Keysyms["amacron"] && sym <= Keysyms["umacron"] {
+			upper -= (Keysyms["amacron"] - Keysyms["Amacron"])
 		}
 	case 6: /* Cyrillic */
 		/* Assume the KeySym is a legal value (ignore discontinuities) */
-		if sym >= keysyms["Serbian_DJE"] && sym <= keysyms["Serbian_DZE"] {
-			lower -= (keysyms["Serbian_DJE"] - keysyms["Serbian_dje"])
-		} else if sym >= keysyms["Serbian_dje"] && sym <= keysyms["Serbian_dze"] {
-			upper += (keysyms["Serbian_DJE"] - keysyms["Serbian_dje"])
-		} else if sym >= keysyms["Cyrillic_YU"] && sym <= keysyms["Cyrillic_HARDSIGN"] {
-			lower -= (keysyms["Cyrillic_YU"] - keysyms["Cyrillic_yu"])
-		} else if sym >= keysyms["Cyrillic_yu"] && sym <= keysyms["Cyrillic_hardsign"] {
-			upper += (keysyms["Cyrillic_YU"] - keysyms["Cyrillic_yu"])
+		if sym >= Keysyms["Serbian_DJE"] && sym <= Keysyms["Serbian_DZE"] {
+			lower -= (Keysyms["Serbian_DJE"] - Keysyms["Serbian_dje"])
+		} else if sym >= Keysyms["Serbian_dje"] && sym <= Keysyms["Serbian_dze"] {
+			upper += (Keysyms["Serbian_DJE"] - Keysyms["Serbian_dje"])
+		} else if sym >= Keysyms["Cyrillic_YU"] && sym <= Keysyms["Cyrillic_HARDSIGN"] {
+			lower -= (Keysyms["Cyrillic_YU"] - Keysyms["Cyrillic_yu"])
+		} else if sym >= Keysyms["Cyrillic_yu"] && sym <= Keysyms["Cyrillic_hardsign"] {
+			upper += (Keysyms["Cyrillic_YU"] - Keysyms["Cyrillic_yu"])
 		}
 	case 7: /* Greek */
 		/* Assume the KeySym is a legal value (ignore discontinuities) */
-		if sym >= keysyms["Greek_ALPHAaccent"] && sym <= keysyms["Greek_OMEGAaccent"] {
-			lower += (keysyms["Greek_alphaaccent"] - keysyms["Greek_ALPHAaccent"])
-		} else if sym >= keysyms["Greek_alphaaccent"] && sym <= keysyms["Greek_omegaaccent"] &&
-			sym != keysyms["Greek_iotaaccentdieresis"] &&
-			sym != keysyms["Greek_upsilonaccentdieresis"] {
-			upper -= (keysyms["Greek_alphaaccent"] - keysyms["Greek_ALPHAaccent"])
-		} else if sym >= keysyms["Greek_ALPHA"] && sym <= keysyms["Greek_OMEGA"] {
-			lower += (keysyms["Greek_alpha"] - keysyms["Greek_ALPHA"])
-		} else if sym >= keysyms["Greek_alpha"] && sym <= keysyms["Greek_omega"] &&
-			sym != keysyms["Greek_finalsmallsigma"] {
-			upper -= (keysyms["Greek_alpha"] - keysyms["Greek_ALPHA"])
+		if sym >= Keysyms["Greek_ALPHAaccent"] && sym <= Keysyms["Greek_OMEGAaccent"] {
+			lower += (Keysyms["Greek_alphaaccent"] - Keysyms["Greek_ALPHAaccent"])
+		} else if sym >= Keysyms["Greek_alphaaccent"] && sym <= Keysyms["Greek_omegaaccent"] &&
+			sym != Keysyms["Greek_iotaaccentdieresis"] &&
+			sym != Keysyms["Greek_upsilonaccentdieresis"] {
+			upper -= (Keysyms["Greek_alphaaccent"] - Keysyms["Greek_ALPHAaccent"])
+		} else if sym >= Keysyms["Greek_ALPHA"] && sym <= Keysyms["Greek_OMEGA"] {
+			lower += (Keysyms["Greek_alpha"] - Keysyms["Greek_ALPHA"])
+		} else if sym >= Keysyms["Greek_alpha"] && sym <= Keysyms["Greek_omega"] &&
+			sym != Keysyms["Greek_finalsmallsigma"] {
+			upper -= (Keysyms["Greek_alpha"] - Keysyms["Greek_ALPHA"])
 		}
 	case 0x14: /* Armenian */
-		if sym >= keysyms["Armenian_AYB"] && sym <= keysyms["Armenian_fe"] {
+		if sym >= Keysyms["Armenian_AYB"] && sym <= Keysyms["Armenian_fe"] {
 			lower = sym | 1
 			upper = sym & ^xproto.Keysym(1)
 		}

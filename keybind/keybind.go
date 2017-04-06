@@ -172,15 +172,15 @@ func ParseString(
 // a bit more flexible if needed. (i.e., case-insensitive)
 func StrToKeycodes(xu *xgbutil.XUtil, str string) []xproto.Keycode {
 	// Do some fancy case stuff before we give up.
-	sym, ok := keysyms[str]
+	sym, ok := Keysyms[str]
 	if !ok {
-		sym, ok = keysyms[strings.Title(str)]
+		sym, ok = Keysyms[strings.Title(str)]
 	}
 	if !ok {
-		sym, ok = keysyms[strings.ToLower(str)]
+		sym, ok = Keysyms[strings.ToLower(str)]
 	}
 	if !ok {
-		sym, ok = keysyms[strings.ToUpper(str)]
+		sym, ok = Keysyms[strings.ToUpper(str)]
 	}
 
 	// If we don't know what 'str' is, return 0.
