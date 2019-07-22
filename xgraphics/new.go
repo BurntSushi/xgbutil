@@ -174,7 +174,7 @@ func NewIcccmIcon(X *xgbutil.XUtil, iconPixmap,
 // This is used in NewIcccmIcon.
 func NewDrawable(X *xgbutil.XUtil, did xproto.Drawable) (*Image, error) {
 	// Get the geometry of the pixmap for use in the GetImage request.
-	pgeom, err := xwindow.RawGeometry(X, xproto.Drawable(did))
+	pgeom, err := xwindow.RawGeometry(X, did)
 	if err != nil {
 		return nil, err
 	}

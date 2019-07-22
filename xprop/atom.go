@@ -57,7 +57,7 @@ func Atom(xu *xgbutil.XUtil, name string,
 func AtomName(xu *xgbutil.XUtil, aid xproto.Atom) (string, error) {
 	// Check the cache first
 	if atomName, ok := atomNameGet(xu, aid); ok {
-		return string(atomName), nil
+		return atomName, nil
 	}
 
 	reply, err := xproto.GetAtomName(xu.Conn(), aid).Reply()
@@ -67,7 +67,7 @@ func AtomName(xu *xgbutil.XUtil, aid xproto.Atom) (string, error) {
 	}
 
 	// If we're here, it means we didn't have ths ATOM id cached. So cache it.
-	atomName := string(reply.Name)
+	atomName := reply.Name
 	cacheAtom(xu, atomName, aid)
 
 	return atomName, nil

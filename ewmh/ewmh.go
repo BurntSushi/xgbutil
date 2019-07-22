@@ -510,8 +510,7 @@ func WmDesktopGet(xu *xgbutil.XUtil, win xproto.Window) (uint, error) {
 
 // _NET_WM_DESKTOP set
 func WmDesktopSet(xu *xgbutil.XUtil, win xproto.Window, desk uint) error {
-	return xprop.ChangeProp32(xu, win, "_NET_WM_DESKTOP", "CARDINAL",
-		uint(desk))
+	return xprop.ChangeProp32(xu, win, "_NET_WM_DESKTOP", "CARDINAL", desk)
 }
 
 // _NET_WM_DESKTOP req
@@ -1085,7 +1084,7 @@ func WmWindowOpacityGet(xu *xgbutil.XUtil, win xproto.Window) (float64, error) {
 		return 0, err
 	}
 
-	return float64(uint(intOpacity)) / float64(0xffffffff), nil
+	return float64(intOpacity) / float64(0xffffffff), nil
 }
 
 // _NET_WM_WINDOW_OPACITY set

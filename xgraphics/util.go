@@ -65,9 +65,9 @@ func Blend(dest *Image, src image.Image, sp image.Point) {
 			alpha = float64(uint8(sa)) / 255.0
 
 			dest.SetBGRA(dx, dy, BGRA{
-				blend(uint8(bgra.B), uint8(sb), alpha),
-				blend(uint8(bgra.G), uint8(sg), alpha),
-				blend(uint8(bgra.R), uint8(sr), alpha),
+				blend(bgra.B, uint8(sb), alpha),
+				blend(bgra.G, uint8(sg), alpha),
+				blend(bgra.R, uint8(sr), alpha),
 				0xff,
 			})
 		}
