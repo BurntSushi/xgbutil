@@ -240,7 +240,7 @@ func NewConnXgb(c *xgb.Conn) (*XUtil, error) {
 		ErrorHandler:     func(err xgb.Error) { Logger.Println(err) },
 	}
 
-	var err error = nil
+	var err error
 	// Create a general purpose graphics context
 	xu.gc, err = xproto.NewGcontextId(xu.conn)
 	if err != nil {
