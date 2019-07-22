@@ -14,7 +14,7 @@ var NoWindow xproto.Window = 0
 
 // IgnoreMods is a list of X modifiers that we don't want interfering
 // with our mouse or key bindings. In particular, for each mouse or key binding
-// issued, there is a seperate mouse or key binding made for each of the
+// issued, there is a separate mouse or key binding made for each of the
 // modifiers specified.
 //
 // You may modify this slice to add (or remove) modifiers, but it should be

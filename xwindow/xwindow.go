@@ -12,7 +12,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xrect"
 )
 
-// Window represents an X window. It contains an XUtilValue to simplfy the
+// Window represents an X window. It contains an XUtilValue to simplify the
 // parameter lists for methods declared on the Window type.
 // Geom is updated whenever Geometry is called, or when Move, Resize or
 // MoveResize are called.
