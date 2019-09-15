@@ -172,15 +172,15 @@ func ParseString(
 // a bit more flexible if needed. (i.e., case-insensitive)
 func StrToKeycodes(xu *xgbutil.XUtil, str string) []xproto.Keycode {
 	// Do some fancy case stuff before we give up.
-	sym, ok := keysyms[str]
+	sym, ok := Keysyms[str]
 	if !ok {
-		sym, ok = keysyms[strings.Title(str)]
+		sym, ok = Keysyms[strings.Title(str)]
 	}
 	if !ok {
-		sym, ok = keysyms[strings.ToLower(str)]
+		sym, ok = Keysyms[strings.ToLower(str)]
 	}
 	if !ok {
-		sym, ok = keysyms[strings.ToUpper(str)]
+		sym, ok = Keysyms[strings.ToUpper(str)]
 	}
 
 	// If we don't know what 'str' is, return 0.
@@ -223,12 +223,51 @@ func keycodesGet(xu *xgbutil.XUtil, keysym xproto.Keysym) []xproto.Keycode {
 	return keycodes
 }
 
+// KeysymName returns the name of keysym.
+func KeysymName(keysym xproto.Keysym) string {
+	if s, ok := strKeysyms[keysym]; ok {
+		return s
+	}
+
+	if keysym >= 0x01000100 && keysym <= 0x0110ffff {
+		return fmt.Sprintf("U%4x", keysym-0x01000000)
+	}
+
+	// We shouldn't get here.
+	return ""
+}
+
 // KeysymToStr converts a keysym to a string if one is available.
 // If one is found, KeysymToStr also checks the 'weirdKeysyms' map, which
 // contains a map from multi-character strings to single character
-// representations (i.e., 'braceleft' to '{').
+// representations (i.e., 'braceleft' to '{'). Whenever possible,
+// KeysymToStr returns a UTF-8 string instead of symbolic names.
 // If no match is found initially, an empty string is returned.
 func KeysymToStr(keysym xproto.Keysym) string {
+	// Keysyms that represent characters in the Latin-1 character set
+	// match the code points in said set. Latin-1 is a subset of
+	// Unicode.
+	if (keysym >= 0x20 && keysym <= 0x7e) ||
+		(keysym >= 0xa0 && keysym <= 0xff) {
+		return string(keysym)
+	}
+
+	// For any future extension of the keysyms with characters already
+	// found in ISO 10646 / Unicode, the following algorithm shall be
+	// used. The new keysym code position will simply be the character's
+	// Unicode number plus 0x01000000. The keysym values in the range
+	// 0x01000100 to 0x0110ffff are reserved to represent Unicode
+	// characters in the range U+0100 to U+10FFFF.
+	if keysym >= 0x01000100 && keysym <= 0x0110ffff {
+		return string(keysym - 0x01000000)
+	}
+
+	// Use a lookup table to map old, non-Latin-1 keysyms to Unicode.
+	if r, ok := keysymUnicode[keysym]; ok {
+		// Map keysyms to their unicode equivalent where possible
+		return r
+	}
+
 	symStr, ok := strKeysyms[keysym]
 	if !ok {
 		return ""
