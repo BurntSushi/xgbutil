@@ -258,7 +258,7 @@ func processEventQueue(xu *xgbutil.XUtil, pingBefore, pingAfter chan struct{}) {
 		case xproto.SelectionRequestEvent:
 			e := SelectionRequestEvent{&event}
 			xu.TimeSet(e.Time)
-			runCallbacks(xu, e, SelectionRequest, e.Requestor)
+			runCallbacks(xu, e, SelectionRequest, e.Owner)
 		case xproto.SelectionNotifyEvent:
 			e := SelectionNotifyEvent{&event}
 			xu.TimeSet(e.Time)
